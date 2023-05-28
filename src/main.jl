@@ -1,7 +1,7 @@
 # SOPHYSM - SOlid tumors PHYlogentic Spatial Modeller
 using Gtk
 using JHistint
-# using J_Space
+using J_Space
 
 function create_gui()
     # function listener for loadButton
@@ -17,46 +17,96 @@ function create_gui()
     # function listener for segmentationButton (Output JHistInt)
     function segmentationButton_clicked_callback(widget)
         Gtk.set_gtk_property!(simulationButton, :sensitive, true)
+
         # setting parameter for segmentation
         threshold_gray = get_gtk_property(thresholdGray_entry, :text, String)
         threshold_marker = get_gtk_property(thresholdMarker_entry, :text, String)
         if(threshold_gray == "")
             threshold_gray = 0.15
+        else
+            threshold_gray = parse(Float64, threshold_gray)
         end
         if(threshold_marker == "")
             threshold_marker = -0.3
+        else
+            threshold_marker = parse(Float64, threshold_marker)
         end
-        # setting filepath for output files
+
+        # setting filepath and directory for JHistint output files
         res = split(filepath_to_segment, "\\")
         data = []
         for i in res
             push!(data, i)
         end
         filename = data[end]
-        filepath_output = joinpath(@__DIR__, "..", "output_files", filename)
+        build_dir = joinpath(@__DIR__, "..", "output_files", filename)
+        build_dir = replace(build_dir, r"....$" => "_output")
+        if isdir(build_dir)
+            # do nothing
+        else
+            mkdir(build_dir) # create directory for saving J_Space files
+        end
+        filepath_output = joinpath(build_dir, filename)
+
         # Interface with JHistint for segmentation
         JHistint.start_segmentation_SOPHYSM(filepath_to_segment, filepath_output, threshold_gray, threshold_marker)
+
         # load Segmented Slide in GUI
-        Gtk.set_gtk_property!(segmented_slide, :file, replace(filepath_output, r"....$" => "_seg.png"))
+        Gtk.set_gtk_property!(segmented_slide, :file, replace(filepath_output, r"....$" => "_seg-0.png"))
     end
 
     # function listener for simulationButton (Output J-Space)
     function simulationButton_clicked_callback(widget)
-        # extract adjacency matrix_data
-        # start simulation, mkdir, save files, print result
-        gbox3 = GtkGrid()
-        test = Gtk.Image()
-        Gtk.set_gtk_property!(test, :file, joinpath(@__DIR__, "..", "images", "SlideExample_mini_2.tif"))  # Specifica il percorso dell'immagine 1
-        gbox3[1,1] = test
+        # setting filepath and directory for J-Space output files
+        filepath_file_JSPACE = replace(filepath_output, r"....$" => "_Files_JSpace")
+        if isdir(filepath_file_JSPACE)
+            # do nothing
+        else
+            mkdir(filepath_file_JSPACE) # create directory for saving J_Space files
+        end
 
+        filepath_plot_JSPACE = replace(filepath_output, r"....$" => "_Plots_JSpace")
+        if isdir(filepath_plot_JSPACE)
+            # do nothing
+        else
+            mkdir(filepath_plot_JSPACE) # create directory for saving J_Space plots
+        end
+        filepath_reference_JSPACE = replace(filepath_output, r"....$" => "_reference.fasta")
+        filepath_matrix = replace(filepath_output, r"....$" => ".txt")
+
+        # Interface with J-Space for simulation
+        Start_J_Space(filepath_reference_JSPACE, filepath_matrix, filepath_file_JSPACE, filepath_plot_JSPACE, filename)
+
+        # load result in GUI
+        gbox3 = GtkGrid()
+        Conf_t_10 = Gtk.Image()
+        Conf_t_20 = Gtk.Image()
+        Final_conf = Gtk.Image()
+        driver_tree = Gtk.Image()
+        Gtk.set_gtk_property!(Conf_t_10, :file, joinpath(filepath_plot_JSPACE, "Conf_t_10.png"))
+        Gtk.set_gtk_property!(Conf_t_20, :file, joinpath(filepath_plot_JSPACE, "Conf_t_20.png"))
+        Gtk.set_gtk_property!(Final_conf, :file, joinpath(filepath_plot_JSPACE, "Final_conf.png"))
+        Gtk.set_gtk_property!(driver_tree, :file, joinpath(filepath_plot_JSPACE, "driver_tree.png"))
+        # gbox3[1,1] = Conf_t_10
+        # gbox3[1,2] = Conf_t_20
+        gbox3[1,1] = Final_conf
+        gbox3[2,1] = driver_tree
+        # FIX ART SIMULATOR OUTPUT
+
+        # window setting
+        Gtk.set_gtk_property!(gbox3, :border_width, 5)
+        Gtk.set_gtk_property!(gbox3, :column_spacing, 5)
+        Gtk.set_gtk_property!(gbox3, :row_spacing, 5)
         second_window = GtkWindow("SOPHYSM - J-Space Simulator Output", 1000, 300)
         push!(second_window, gbox3)
+        Gtk.set_gtk_property!(second_window, :border_width, 10)
         showall(second_window)
     end
 
     # MAIN WINDOW -- START
     filepath_to_segment = ""
     filepath_output = ""
+    filename = ""
     # Horizontal Box
     vbox = Gtk.Box(:h, 2)
     # Grid Box
