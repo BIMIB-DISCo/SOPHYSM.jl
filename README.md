@@ -7,7 +7,7 @@ SOPHYSM is a software for spatial phylogenetic modeling of solid tumors. It inte
 
 ## Usage
 The software provides a user interface where users can upload the histological slide to be segmented in formats such as `.png`, `.jpg`, `.tif`. The image will be displayed on the screen, and before initiating the segmentation process, users can assign values for the grayscale threshold and the marker distance threshold. For further information consults: [Julia Images Documentation - Watershed algorithm](https://juliaimages.org/v0.21/imagesegmentation/).  
-The segmentation result will be displayed next to the uploaded image, allowing the opportunity to re-segment the image if the result is unsatisfactory. Upon completion of the segmentation process, users can proceed with the simulation using the `J-Space` module. The simulation results will be displayed in a separate window, and the Julia REPL terminal will provide tracking of the simulation stages. The remaining results from the simulation will be saved in the `output_files` directory within the generated directory for the uploaded image.
+The segmentation result will be displayed next to the uploaded image, allowing the opportunity to re-segment the image if the result is unsatisfactory. Upon completion of the segmentation process, users can proceed with the simulation using the `J-Space` module. The simulation results will be displayed in a separate window, and the Julia REPL terminal will provide tracking of the simulation steps. The remaining results from the simulation will be saved in the `output_files` directory within the generated directory for the uploaded image.
 
 <table align="center">
     <tr>
