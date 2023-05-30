@@ -26,9 +26,23 @@ The segmentation result will be displayed next to the uploaded image, allowing t
     </tr>
     <tr>
       <td>
-        <img src="" alt="Definition of Parameters for Segmentation">
+        <img src="docs/segmentation.PNG" alt="Definition of Parameters for Segmentation">
         <br>
         Definition of Parameters for Segmentation
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="docs/seg_result.PNG" alt="Segmentation Result">
+        <br>
+        Segmentation Result
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="docs/sim_result.PNG" alt="Simulation Result">
+        <br>
+        Simulation Result
       </td>
     </tr>
  </table>
