@@ -11,38 +11,38 @@ The segmentation result will be displayed next to the uploaded image, allowing t
 
 <table align="center">
     <tr>
-      <td>
+      <td align="center">
         <img src="docs/start.PNG" alt="Starting SOPHYSM">
         <br>
         Starting SOPHYSM
       </td>
     </tr>
     <tr>
-      <td>
+      <td align="center">
         <img src="docs/load.PNG" alt="Loading Histological Slide">
         <br>
         Loading Histological Slide
       </td>
     </tr>
     <tr>
-      <td>
+      <td align="center">
         <img src="docs/segmentation.PNG" alt="Definition of Parameters for Segmentation">
         <br>
         Definition of Parameters for Segmentation
       </td>
     </tr>
     <tr>
-      <td>
+      <td align="center">
         <img src="docs/seg_result.PNG" alt="Segmentation Result">
         <br>
-        Segmentation Result
+         Segmentation Result
       </td>
     </tr>
     <tr>
-      <td>
+      <td align="center">
         <img src="docs/sim_result.PNG" alt="Simulation Result">
         <br>
-        Simulation Result
+        Simulation Result (on the left the state of the lattice\graph at last t, on the right the driver tree)
       </td>
     </tr>
  </table>
