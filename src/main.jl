@@ -33,7 +33,11 @@ function create_gui()
         end
 
         # setting filepath and directory for JHistint output files
-        res = split(filepath_to_segment, "\\")
+        if Sys.iswindows()
+            res = split(filepath_to_segment, "\\")
+        elseif Sys.islinux()
+            res = split(filepath_to_segment, "/")
+        end
         data = []
         for i in res
             push!(data, i)
