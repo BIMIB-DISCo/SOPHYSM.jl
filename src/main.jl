@@ -77,9 +77,17 @@ function create_gui()
         end
         filepath_reference_JSPACE = replace(filepath_output, r"....$" => "_reference.fasta")
         filepath_matrix = replace(filepath_output, r"....$" => ".txt")
+        filepath_dataframe_labels = replace(filepath_output, r"....$" => "_dataframe_label.csv")
+        filepath_dataframe_edges = replace(filepath_output, r"....$" => "_dataframe_edges.csv")
 
         # Interface with J-Space for simulation
-        Start_J_Space(filepath_reference_JSPACE, filepath_matrix, filepath_file_JSPACE, filepath_plot_JSPACE, filename)
+        Start_J_Space(filepath_reference_JSPACE,
+                        filepath_matrix,
+                        filepath_file_JSPACE,
+                        filepath_plot_JSPACE,
+                        filename,
+                        filepath_dataframe_edges,
+                        filepath_dataframe_labels)
 
         # load result in GUI
         gbox3 = GtkGrid()
