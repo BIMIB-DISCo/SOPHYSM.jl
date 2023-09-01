@@ -2,8 +2,60 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
+  <object class="GtkMessageDialog" id="invalidNameProjectMessage">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - ERROR</property>
+    <property name="icon-name">dialog-error</property>
+    <property name="type-hint">dialog</property>
+    <property name="message-type">error</property>
+    <property name="text" translatable="yes">Error: Invalid Project Name</property>
+    <property name="use-markup">True</property>
+    <property name="secondary-text" translatable="yes">Unable to create folder with an invalid name. Select a different Project Name ...</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="homogeneous">True</property>
+            <property name="layout-style">expand</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkButton" id="invalidNameProjectButton">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
+  </object>
   <object class="GtkWindow" id="mainWindow">
     <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogentic Spatial Modeller</property>
     <child>
       <object class="GtkBox" id="boxLayout">
         <property name="visible">True</property>
@@ -130,6 +182,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
+                    <property name="always-show-image">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -143,7 +196,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_segmentationButton_clicked" object="thresholdDialog" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -255,8 +307,149 @@
       </object>
     </child>
   </object>
+  <object class="GtkDialog" id="newProjectDialog">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogentic Spatial Modeller</property>
+    <property name="modal">True</property>
+    <property name="window-position">center-on-parent</property>
+    <property name="default-width">400</property>
+    <property name="default-height">60</property>
+    <property name="destroy-with-parent">True</property>
+    <property name="icon-name">document-new</property>
+    <property name="type-hint">dialog</property>
+    <signal name="delete-event" handler="on_newProjectDialog_delete_event" swapped="no"/>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="newProjectDialogBox">
+        <property name="width-request">-1</property>
+        <property name="height-request">-1</property>
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="newProjectButto">
+            <property name="can-focus">False</property>
+            <property name="layout-style">expand</property>
+            <child>
+              <object class="GtkButton" id="newProjectOkButton">
+                <property name="label" translatable="yes">Confirm</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="newProjectCancelButton">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="newProjectBox">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <child>
+              <object class="GtkLabel" id="projectNameLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Project Name : </property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="projectNameEntry">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="placeholder-text" translatable="yes">Insert Project Name ...</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkMessageDialog" id="projectAlreadyExistMessage">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - ERROR</property>
+    <property name="icon-name">dialog-error</property>
+    <property name="type-hint">dialog</property>
+    <property name="message-type">error</property>
+    <property name="text" translatable="yes">Error: Project Already Exist</property>
+    <property name="use-markup">True</property>
+    <property name="secondary-text" translatable="yes">An error occurred while attempting to create a folder that already exists. Select a different Project Name ...</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="homogeneous">True</property>
+            <property name="layout-style">expand</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkButton" id="errorNameCancelButton">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkDialog" id="thresholdDialog">
     <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogentic Spatial Modeller</property>
+    <property name="resizable">False</property>
     <property name="default-width">400</property>
     <property name="default-height">100</property>
     <property name="icon-name">dialog-question</property>
@@ -269,10 +462,11 @@
         <child internal-child="action_area">
           <object class="GtkButtonBox" id="thresholdButtonBox">
             <property name="can-focus">False</property>
-            <property name="layout-style">end</property>
+            <property name="homogeneous">True</property>
+            <property name="layout-style">expand</property>
             <child>
               <object class="GtkButton" id="thresholdOkButton">
-                <property name="label" translatable="yes">Ok</property>
+                <property name="label" translatable="yes">Update Segmentation Values</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -298,8 +492,8 @@
             </child>
           </object>
           <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
         </child>
@@ -312,22 +506,10 @@
             <property name="column-spacing">15</property>
             <property name="baseline-row">10</property>
             <child>
-              <object class="GtkLabel" id="thresholdGreyscaleLabel">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Greyscale filter's threshold (default 0.15) :  </property>
-                <property name="xalign">0</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">0</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkLabel" id="thresholdMarkersLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Marker's distance threshold (default -0-3) :</property>
+                <property name="label" translatable="yes">Marker's distance threshold :</property>
                 <property name="xalign">0</property>
               </object>
               <packing>
@@ -336,12 +518,11 @@
               </packing>
             </child>
             <child>
-              <object class="GtkTextView" id="thresholdGreyscaleTextField">
+              <object class="GtkEntry" id="thresholdGreyscaleEntry">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="hexpand">True</property>
-                <property name="input-purpose">number</property>
-                <property name="monospace">True</property>
+                <property name="placeholder-text" translatable="yes">Insert a value .... (Default = 0.15)</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>
@@ -349,15 +530,27 @@
               </packing>
             </child>
             <child>
-              <object class="GtkTextView" id="thresholdMarkersTextField">
+              <object class="GtkEntry" id="thresholdMarkersEntry">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="hexpand">True</property>
-                <property name="input-purpose">number</property>
+                <property name="placeholder-text" translatable="yes">Insert a value... (Default = -0.3)</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>
                 <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="thresholdGreyscaleLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Greyscale filter's threshold :  </property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
               </packing>
             </child>
           </object>
@@ -365,13 +558,23 @@
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="padding">10</property>
-            <property name="position">1</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="defaultSettingsButton">
+            <property name="label" translatable="yes">Use Default Settings</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
           </packing>
         </child>
       </object>
-    </child>
-    <child type="titlebar">
-      <placeholder/>
     </child>
   </object>
 </interface>
