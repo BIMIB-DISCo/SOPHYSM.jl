@@ -2,6 +2,124 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
+  <object class="GtkDialog" id="chooseCollectionDialog">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogenetic Spatial Modeller</property>
+    <property name="type-hint">dialog</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
+            <child>
+              <object class="GtkButton" id="collectionOkButton">
+                <property name="label" translatable="yes">Download Collection</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="collectionCancelButton">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkLabel" id="labelCollection">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Please enter the data collection you wish to download :
+TCGA-BRCA = Breast Invasive Carcinoma (Breast)
+TCGA-OV = Ovarian Serous Cystadenocarcinoma (Ovary)
+TCGA-LUAD = Lung Adenocarcinoma (Bronchus and Lung)
+TCGA-UCEC = Uterine Corpus Endometrial Carcinoma (Corpus uteri)
+TCGA-GBM = Glioblastoma Multiforme (Brain)
+TCGA-HSNC = Head and Neck Squamous Cell Carcinoma (Larynx, Lip, Tonsil, Gum, Other and unspecified parths of mouth)
+TCGA-KIRC = Kidney Renal Clear Cell Carcinoma (Kidney)
+TCGA-LGG = Brain Lower Grade Glioma (Brain)
+TCGA-LUSC = Lung Squamous Cell Carcinoma (Bronchus and lung)
+TCGA-TCHA = Thyroid Carcinoma (Thyroid gland)
+TCGA-PRAD = Prostate Adenocarcinoma (Prostate gland)
+TCGA-SKCM = Skin Cutaneous Melanoma (Skin)
+TCGA-COAD = Colon Adenocarcinoma (Colon)
+TCGA-STAD = Stomach Adenocarcinoma (Stomach)
+TCGA-BLCA = Bladder Urothelial Carcinoma (Bladder)
+TCGA-LIHC = Liver Hepatocellular Carcinoma (Liver and intrahepatic bile ducts)
+TCGA-CESC = Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (Cervix uteri)
+TCGA-KIRP = Kidney Renal Papillary Cell Carcinoma (Kidney)
+TCGA-SARC = Sarcoma (Various)
+TCGA-ESCA = Esophageal Carcinoma (Esophagus)
+TCGA-PAAD = Pancreatic Adenocarcinoma (Pancreas)
+TCGA-READ = Rectum Adenocarcinoma (Rectum)
+TCGA-PCPG = Pheochromocytoma and Paraganglioma (Adrenal gland)
+TCGA-TGCT = Testicular Germ Cell Tumors (Testis)
+TCGA-THYM = Thymoma (Thymus)
+TCGA-ACC = Adrenocortical Carcinoma -Adenomas and Adenocarcinomas (Adrenal gland)
+TCGA-MESO = Mesothelioma (Heart, mediastinum and pleura)
+TCGA-UVM = Uveal Melanoma (Eye and adnexa)
+TCGA-KICH = Kidney Chromophobe (Kidney)
+TCGA-UCS = Uterine Carcinosarcoma (Uterus, NOS)
+TCGA-CHOL = Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)
+TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="nameCollectionEntry">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="primary-icon-tooltip-text" translatable="yes"> </property>
+                <property name="placeholder-text" translatable="yes">Enter the acronym related to the collection (example BRCA, OV, LUAD):</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkMessageDialog" id="invalidNameProjectMessage">
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - ERROR</property>
@@ -610,6 +728,67 @@ of tumor architecture and cellular interactions in space.</property>
       <placeholder/>
     </child>
   </object>
+  <object class="GtkMessageDialog" id="slideAlreadyExistMessage1">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - WARNING</property>
+    <property name="icon-name">dialog-warning</property>
+    <property name="type-hint">dialog</property>
+    <property name="message-type">error</property>
+    <property name="text" translatable="yes">Warning: Slide Analysis Already Exist</property>
+    <property name="use-markup">True</property>
+    <property name="secondary-text" translatable="yes">An error occurred while attempting to create a folder that already exists. Do you intend to proceed and delete the previous segmentation and simulation results related to the image?</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="homogeneous">True</property>
+            <property name="layout-style">expand</property>
+            <child>
+              <object class="GtkButton" id="errorSlideCancelButton1">
+                <property name="label" translatable="yes">Mantain Previous Analysis</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="errorSlideOkButton1">
+                <property name="label" translatable="yes">Overwrite Folder and Start New Analysis</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
+  </object>
   <object class="GtkDialog" id="thresholdDialog">
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogenetic Spatial Modeller</property>
@@ -687,6 +866,7 @@ of tumor architecture and cellular interactions in space.</property>
                 <property name="can-focus">True</property>
                 <property name="hexpand">True</property>
                 <property name="placeholder-text" translatable="yes">Insert a value .... (Default = 0.15)</property>
+                <property name="input-purpose">number</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>
@@ -699,6 +879,7 @@ of tumor architecture and cellular interactions in space.</property>
                 <property name="can-focus">True</property>
                 <property name="hexpand">True</property>
                 <property name="placeholder-text" translatable="yes">Insert a value... (Default = -0.3)</property>
+                <property name="input-purpose">number</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>
@@ -739,6 +920,57 @@ of tumor architecture and cellular interactions in space.</property>
           </packing>
         </child>
       </object>
+    </child>
+  </object>
+  <object class="GtkMessageDialog" id="thresholdErrorMessage">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - ERROR</property>
+    <property name="icon-name">dialog-warning</property>
+    <property name="type-hint">dialog</property>
+    <property name="message-type">error</property>
+    <property name="text" translatable="yes">Error: Invalid Threshold </property>
+    <property name="use-markup">True</property>
+    <property name="secondary-text" translatable="yes">An error occurred while attempting to set manual thresholds. Type different Threshold values ...</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="homogeneous">True</property>
+            <property name="layout-style">expand</property>
+            <child>
+              <object class="GtkButton" id="thresholdErrorCancelButton">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <placeholder/>
     </child>
   </object>
 </interface>
