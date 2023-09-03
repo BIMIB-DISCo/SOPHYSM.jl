@@ -1,6 +1,6 @@
 ### -*- Mode: Julia -*-
 
-### SOPHYSM - SOlid tumors PHYlogentic Spatial Modeller.
+### SOPHYSM - SOlid tumors PHYlogenetic Spatial Modeller.
 ### SOPHYSM_app.jl
 
 ### Packages
@@ -69,6 +69,7 @@ project_name = ""
 slide_name = ""
 threshold_gray = ""
 threshold_marker = ""
+collection_name = ""
 
 ###  BUTTON LISTENER
 ## menuBar Buttons
@@ -127,7 +128,9 @@ signal_connect(quitButton, "button-press-event") do widget, event
     destroy(newProjectDialog)
     destroy(projectAlreadyExistMessage)
     destroy(invalidNameProjectMessage)
-    # ************** add destroy
+    destroy(slideAlreadyExistMessage)
+    destroy(thresholdErrorMessage)
+    destroy(chooseCollectionDialog)
 end
 
 signal_connect(loadImageButton, "button-press-event") do widget, event
@@ -183,8 +186,11 @@ signal_connect(downloadSingleCollectionButton, "button-press-event") do widget, 
 end
 
 signal_connect(downloadAllCollectionButton, "button-press-event") do widget, event
+    path_download_dataset =
+        open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
+                    action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
-    # JHistint.download_single_collection(collection_name)
+    ### JHistint.download_all_collection()
 end
 
 # slideAlreadyExistMessage elements
@@ -207,7 +213,7 @@ end
 signal_connect(errorSlideCancelButton, "button-press-event") do widget, event
     hide(slideAlreadyExistMessage)
     set_gtk_property!(segmentationButton, :sensitive, false)
-    ### SHOW OLD RESULT
+    ### SHOW PREVIOUS ANALYSIS
 end
 ## newProjectDialog elements
 signal_connect(newProjectDialog, "delete-event") do widget, event
@@ -263,9 +269,12 @@ signal_connect(collectionCancelButton, "button-press-event") do widget, event
 end
 
 signal_connect(collectionOkButton, "button-press-event") do widget, event
-    collection_name = get_gtk_property(nameCollectionEntry, :text, String)
+    global collection_name = get_gtk_property(nameCollectionEntry, :text, String)
+    path_download_dataset =
+        open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
+                    action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
-    # JHistint.download_single_collection(collection_name)
+    ### JHistint.download_single_collection(collection_name)
     hide(chooseCollectionDialog)
 end
 
@@ -305,6 +314,7 @@ signal_connect(defaultSettingsButton, "button-press-event") do widget, event
                     "Selected Marker's Distance Threshold : " * threshold_marker)
     global threshold_gray = parse(Float64, threshold_gray)
     global threshold_marker = parse(Float64, threshold_marker)
+    Gtk.set_gtk_property!(simulationButton, :sensitive, true)
     hide(thresholdDialog)
 end
 
@@ -371,7 +381,6 @@ signal_connect(segmentationButton, "button-press-event") do widget, event
     set_gtk_property!(segmentedImage, :file,
                           replace(filepath_slide_to_segment,
                                   r"....$" => "_seg-0.png"))
-    Gtk.set_gtk_property!(simulationButton, :sensitive, true)
 end
 
 signal_connect(simulationButton, "button-press-event") do widget, event
@@ -382,7 +391,7 @@ signal_connect(simulationButton, "button-press-event") do widget, event
     end
     filepath_plot_JSPACE = replace(filepath_slide_to_segment,
                                    r"....$" => "_Plots_JSpace")
-    if |isdir(filepath_plot_JSPACE)
+    if !isdir(filepath_plot_JSPACE)
         mkdir(filepath_plot_JSPACE)
     end
     filepath_reference_JSPACE =
