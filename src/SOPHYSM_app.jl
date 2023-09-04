@@ -10,6 +10,7 @@ using J_Space
 
 ### Data from SOPHYSM.glade
 SOPHYSM_app = GtkBuilder(filename = "SOPHYSM.glade")
+workspaceDialog = SOPHYSM_app["workspaceDialog"]
 mainWindow = SOPHYSM_app["mainWindow"]
 thresholdDialog = SOPHYSM_app["thresholdDialog"]
 newProjectDialog = SOPHYSM_app["newProjectDialog"]
@@ -18,14 +19,18 @@ invalidNameProjectMessage = SOPHYSM_app["invalidNameProjectMessage"]
 slideAlreadyExistMessage = SOPHYSM_app["slideAlreadyExistMessage"]
 thresholdErrorMessage = SOPHYSM_app["thresholdErrorMessage"]
 chooseCollectionDialog = SOPHYSM_app["chooseCollectionDialog"]
+## workspaceDialog
+workspaceOkButton = SOPHYSM_app["workspaceOkButton"]
+workspaceCancelButton = SOPHYSM_app["workspaceCancelButton"]
+workspaceChooserButton = SOPHYSM_app["workspaceChooserButton"]
 ## menuBar
-newProjectButton = SOPHYSM_app["newProjectButton"]
-loadProjectButton = SOPHYSM_app["loadProjectButton"]
-closeProjectButton = SOPHYSM_app["closeProjectButton"]
-quitButton = SOPHYSM_app["quitButton"]
-loadImageButton = SOPHYSM_app["loadImageButton"]
-downloadSingleCollectionButton = SOPHYSM_app["downloadSingleCollectionButton"]
-downloadAllCollectionButton = SOPHYSM_app["downloadAllCollectionButton"]
+newProjectMenuItem = SOPHYSM_app["newProjectMenuItem"]
+loadProjectMenuItem = SOPHYSM_app["loadProjectMenuItem"]
+closeProjectMenuItem = SOPHYSM_app["closeProjectMenuItem"]
+quitMenuItem = SOPHYSM_app["quitMenuItem"]
+loadImageMenuItem = SOPHYSM_app["loadImageMenuItem"]
+downloadSingleCollectionMenuItem = SOPHYSM_app["downloadSingleCollectionMenuItem"]
+downloadAllCollectionMenuItem = SOPHYSM_app["downloadAllCollectionMenuItem"]
 ## ProjectBox
 segmentationButton = SOPHYSM_app["segmentationButton"]
 simulationButton = SOPHYSM_app["simulationButton"]
@@ -71,13 +76,23 @@ threshold_gray = ""
 threshold_marker = ""
 collection_name = ""
 
-###  BUTTON LISTENER
-## menuBar Buttons
-signal_connect(newProjectButton, "button-press-event") do widget, event
+###  LISTENER
+## workspaceDialog elements
+signal_connect(workspaceOkButton, "button-press-event") do widget, event
+    showall(mainWindow)
+end
+
+signal_connect(workspaceCancelButton, "button-press-event") do widget, event
+
+end
+
+
+## menuBar elements
+signal_connect(newProjectMenuItem, "button-press-event") do widget, event
     run(newProjectDialog)
 end
 
-signal_connect(loadProjectButton, "button-press-event") do widget, event
+signal_connect(loadProjectMenuItem, "button-press-event") do widget, event
     global path_project_folder =
         open_dialog("SOPHYSM - Select Project Folder",
                     action=GtkFileChooserAction.SELECT_FOLDER)
@@ -95,7 +110,7 @@ signal_connect(loadProjectButton, "button-press-event") do widget, event
         set_gtk_property!(descriptionLabel, :label,
                         "Project Name : " * project_name)
         set_gtk_property!(loadButton, :sensitive, true)
-        set_gtk_property!(loadImageButton, :sensitive, true)
+        set_gtk_property!(loadImageMenuItem, :sensitive, true)
         set_gtk_property!(segmentationButton, :sensitive, false)
         set_gtk_property!(simulationButton, :sensitive, false)
         set_gtk_property!(selectedImage, :file, "")
@@ -107,9 +122,9 @@ signal_connect(loadProjectButton, "button-press-event") do widget, event
     end
 end
 
-signal_connect(closeProjectButton, "button-press-event") do widget, event
+signal_connect(closeProjectMenuItem, "button-press-event") do widget, event
     set_gtk_property!(loadButton, :sensitive, false)
-    set_gtk_property!(loadImageButton, :sensitive, false)
+    set_gtk_property!(loadImageMenuItem, :sensitive, false)
     set_gtk_property!(segmentationButton, :sensitive, false)
     set_gtk_property!(simulationButton, :sensitive, false)
     set_gtk_property!(descriptionLabel, :label,
@@ -122,18 +137,11 @@ signal_connect(closeProjectButton, "button-press-event") do widget, event
                     "Selected Marker's Distance Threshold : _____")
 end
 
-signal_connect(quitButton, "button-press-event") do widget, event
-    destroy(mainWindow)
-    destroy(thresholdDialog)
-    destroy(newProjectDialog)
-    destroy(projectAlreadyExistMessage)
-    destroy(invalidNameProjectMessage)
-    destroy(slideAlreadyExistMessage)
-    destroy(thresholdErrorMessage)
-    destroy(chooseCollectionDialog)
+signal_connect(quitMenuItem, "button-press-event") do widget, event
+    hide(mainWindow)
 end
 
-signal_connect(loadImageButton, "button-press-event") do widget, event
+signal_connect(loadImageMenuItem, "button-press-event") do widget, event
     global filepath_slide =
         open_dialog("SOPHYSM - Select Histological Image",
                     GtkNullContainer(),
@@ -181,11 +189,11 @@ signal_connect(loadImageButton, "button-press-event") do widget, event
    end
 end
 
-signal_connect(downloadSingleCollectionButton, "button-press-event") do widget, event
+signal_connect(downloadSingleCollectionMenuItem, "button-press-event") do widget, event
     run(chooseCollectionDialog)
 end
 
-signal_connect(downloadAllCollectionButton, "button-press-event") do widget, event
+signal_connect(downloadAllCollectionMenuItem, "button-press-event") do widget, event
     path_download_dataset =
         open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                     action=GtkFileChooserAction.SELECT_FOLDER)
@@ -234,7 +242,7 @@ signal_connect(newProjectOkButton, "button-press-event") do widget, event
             hide(newProjectDialog)
             set_gtk_property!(descriptionLabel, :label, "Project Name : "*project_name)
             set_gtk_property!(loadButton, :sensitive, true)
-            set_gtk_property!(loadImageButton, :sensitive, true)
+            set_gtk_property!(loadImageMenuItem, :sensitive, true)
             set_gtk_property!(segmentationButton, :sensitive, false)
             set_gtk_property!(simulationButton, :sensitive, false)
             set_gtk_property!(selectedImage, :file, "")
@@ -306,16 +314,8 @@ signal_connect(thresholdOkButton, "button-press-event") do widget, event
 end
 
 signal_connect(defaultSettingsButton, "button-press-event") do widget, event
-    global threshold_gray = "0.15"
-    global threshold_marker = "-0.3"
-    set_gtk_property!(thresholdGreyscaleValueLabel, :label,
-                    "Selected Greyscale Filter's Threshold : " * threshold_gray)
-    set_gtk_property!(thresholdMarkersValueLabel, :label,
-                    "Selected Marker's Distance Threshold : " * threshold_marker)
-    global threshold_gray = parse(Float64, threshold_gray)
-    global threshold_marker = parse(Float64, threshold_marker)
-    Gtk.set_gtk_property!(simulationButton, :sensitive, true)
-    hide(thresholdDialog)
+    set_gtk_property!(thresholdGreyscaleEntry, :text, "0.15")
+    set_gtk_property!(thresholdMarkersEntry, :text, "-0.3")
 end
 
 # invalidThresholdMessage element
@@ -416,6 +416,6 @@ signal_connect(simulationButton, "button-press-event") do widget, event
                     filepath_dataframe_labels)
 end
 
-showall(mainWindow)
+showall(workspaceDialog)
 
 ### end of file -- SOPHYSM_app.jl

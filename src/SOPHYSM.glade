@@ -171,10 +171,9 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
       <placeholder/>
     </child>
   </object>
-  <object class="GtkWindow" id="mainWindow">
+  <object class="GtkApplicationWindow" id="mainWindow">
     <property name="can-focus">False</property>
-    <property name="hexpand">True</property>
-    <property name="vexpand">True</property>
+    <property name="hexpand">False</property>
     <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogenetic Spatial Modeller</property>
     <child>
       <object class="GtkBox" id="boxLayout">
@@ -186,7 +185,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
           <object class="GtkMenuBar" id="menuBar">
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkMenuItem" id="sophysmButton">
+              <object class="GtkMenuItem" id="sophysmMenu">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">SOPHYSM</property>
@@ -196,7 +195,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkMenuItem" id="newProjectButton">
+                      <object class="GtkMenuItem" id="newProjectMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">New Project</property>
@@ -204,7 +203,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="loadProjectButton">
+                      <object class="GtkMenuItem" id="loadProjectMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Load Project</property>
@@ -212,14 +211,15 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="closeProjectButton">
+                      <object class="GtkMenuItem" id="closeProjectMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Close Project</property>
+                        <property name="use-underline">True</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="quitButton">
+                      <object class="GtkMenuItem" id="quitMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Quit</property>
@@ -231,7 +231,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem" id="fileButton">
+              <object class="GtkMenuItem" id="fileMenu">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">File</property>
@@ -241,7 +241,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkMenuItem" id="loadImageButton">
+                      <object class="GtkMenuItem" id="loadImageMenuItem">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
                         <property name="can-focus">False</property>
@@ -254,17 +254,17 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem" id="archiveButton">
+              <object class="GtkMenuItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Cancer Digital Slide Archive (CDSA)</property>
+                <property name="label" translatable="yes">Data Sources</property>
                 <property name="use-underline">True</property>
                 <child type="submenu">
                   <object class="GtkMenu">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkMenuItem" id="downloadSingleCollectionButton">
+                      <object class="GtkMenuItem" id="downloadSingleCollectionMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Download Single Collection</property>
@@ -272,7 +272,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="downloadAllCollectionButton">
+                      <object class="GtkMenuItem" id="downloadAllCollectionMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Download All Collection</property>
@@ -306,18 +306,22 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                   <object class="GtkLabel" id="titleLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="xpad">10</property>
+                    <property name="ypad">10</property>
                     <property name="label" translatable="yes">SOPHYSM 
 SOlid tumors PHYlogenetic Spatial Modeller
+
 SOPHYSM is a software for spatial phylogenetic 
-modeling of solid tumors. It integrates image-processing
- functionalities for the segmentation of histological slides,
- allowing the extraction of spatial and morphological 
+modeling of solid tumors. 
+
+It integrates image-processing functionalities 
+for the segmentation of histological slides,
+allowing the extraction of spatial and morphological 
 information from microscopic images, 
 thereby providing a better understanding 
 of tumor architecture and cellular interactions in space.</property>
-                    <property name="justify">center</property>
+                    <property name="xalign">0.5</property>
                     <attributes>
-                      <attribute name="font-desc" value="Rockwell 9"/>
                       <attribute name="foreground" value="#000000000000"/>
                     </attributes>
                   </object>
@@ -342,10 +346,9 @@ of tumor architecture and cellular interactions in space.</property>
                   <object class="GtkLabel" id="descriptionLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="xpad">0</property>
+                    <property name="ypad">10</property>
                     <property name="label" translatable="yes">Project Name : ______________________</property>
-                    <attributes>
-                      <attribute name="font-desc" value="Rockwell 9"/>
-                    </attributes>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -371,6 +374,10 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="sensitive">False</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
                     <property name="always-show-image">True</property>
                   </object>
                   <packing>
@@ -386,6 +393,10 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="sensitive">False</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -400,6 +411,10 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="sensitive">False</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -436,10 +451,10 @@ of tumor architecture and cellular interactions in space.</property>
                   <object class="GtkLabel" id="thresholdGreyscaleValueLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="xpad">5</property>
                     <property name="label" translatable="yes">Selected Greyscale Filter's Threshold : _____</property>
-                    <attributes>
-                      <attribute name="font-desc" value="Rockwell 9"/>
-                    </attributes>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -451,10 +466,10 @@ of tumor architecture and cellular interactions in space.</property>
                   <object class="GtkLabel" id="thresholdMarkersValueLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="xpad">5</property>
                     <property name="label" translatable="yes">Selected Marker's Distance Threshold : _____</property>
-                    <attributes>
-                      <attribute name="font-desc" value="Rockwell 9"/>
-                    </attributes>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -910,6 +925,97 @@ of tumor architecture and cellular interactions in space.</property>
     </child>
     <child type="titlebar">
       <placeholder/>
+    </child>
+  </object>
+  <object class="GtkDialog" id="workspaceDialog">
+    <property name="width-request">400</property>
+    <property name="height-request">100</property>
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogenetic Spatial Modeller</property>
+    <property name="type-hint">splashscreen</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
+            <child>
+              <object class="GtkButton" id="workspaceOkButton">
+                <property name="label" translatable="yes">Confirm Workspace</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="workspaceCancelButton">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <child>
+              <object class="GtkLabel" id="workspaceLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Select Workspace :  </property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkFileChooserButton" id="workspaceChooserButton">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">5</property>
+                <property name="margin-end">5</property>
+                <property name="margin-top">5</property>
+                <property name="margin-bottom">5</property>
+                <property name="action">select-folder</property>
+                <property name="title" translatable="yes">Choose Folder</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
     </child>
   </object>
 </interface>
