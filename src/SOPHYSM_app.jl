@@ -20,6 +20,7 @@ thresholdErrorMessage = SOPHYSM_app["thresholdErrorMessage"]
 chooseCollectionDialog = SOPHYSM_app["chooseCollectionDialog"]
 jspaceOutputDialog = SOPHYSM_app["jspaceOutputDialog"]
 ## menuBar
+menuBar = SOPHYSM_app["menuBar"]
 newProjectMenuItem = SOPHYSM_app["newProjectMenuItem"]
 loadProjectMenuItem = SOPHYSM_app["loadProjectMenuItem"]
 closeProjectMenuItem = SOPHYSM_app["closeProjectMenuItem"]
@@ -199,14 +200,12 @@ end
 
 signal_connect(downloadSingleCollectionMenuItem, "button-press-event") do widget, event
     run(chooseCollectionDialog)
-    # selection download folder
 end
 
 signal_connect(downloadAllCollectionMenuItem, "button-press-event") do widget, event
     path_download_dataset =
         open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                     action=GtkFileChooserAction.SELECT_FOLDER)
-    # selection download folder
     # Call JHistInt
     ### JHistint.download_all_collection()
 end
@@ -456,6 +455,7 @@ end
 workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
                 action=GtkFileChooserAction.SELECT_FOLDER)
 if(workspace_path != "")
+    set_gtk_property!(menuBar, :sensitive, true)
     set_gtk_property!(mainWindow, :sensitive, true)
     showall(mainWindow)
 else
