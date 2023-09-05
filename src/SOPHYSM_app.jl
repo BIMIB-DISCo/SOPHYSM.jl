@@ -5,12 +5,11 @@
 
 ### Packages
 using Gtk
-using JHistint
-using J_Space
+# using JHistint
+# using J_Space
 
 ### Data from SOPHYSM.glade
 SOPHYSM_app = GtkBuilder(filename = "SOPHYSM.glade")
-workspaceDialog = SOPHYSM_app["workspaceDialog"]
 mainWindow = SOPHYSM_app["mainWindow"]
 thresholdDialog = SOPHYSM_app["thresholdDialog"]
 newProjectDialog = SOPHYSM_app["newProjectDialog"]
@@ -19,10 +18,7 @@ invalidNameProjectMessage = SOPHYSM_app["invalidNameProjectMessage"]
 slideAlreadyExistMessage = SOPHYSM_app["slideAlreadyExistMessage"]
 thresholdErrorMessage = SOPHYSM_app["thresholdErrorMessage"]
 chooseCollectionDialog = SOPHYSM_app["chooseCollectionDialog"]
-## workspaceDialog
-workspaceOkButton = SOPHYSM_app["workspaceOkButton"]
-workspaceCancelButton = SOPHYSM_app["workspaceCancelButton"]
-workspaceChooserButton = SOPHYSM_app["workspaceChooserButton"]
+jspaceOutputWindow = SOPHYSM_app["jspaceOutputWindow"]
 ## menuBar
 newProjectMenuItem = SOPHYSM_app["newProjectMenuItem"]
 loadProjectMenuItem = SOPHYSM_app["loadProjectMenuItem"]
@@ -65,6 +61,12 @@ errorSlideCancelButton = SOPHYSM_app["errorSlideCancelButton"]
 collectionOkButton = SOPHYSM_app["collectionOkButton"]
 collectionCancelButton = SOPHYSM_app["collectionCancelButton"]
 nameCollectionEntry = SOPHYSM_app["nameCollectionEntry"]
+## jspaceOutputWindow
+conf10PlotButton = SOPHYSM_app["conf10PlotButton"]
+conf20PlotButton = SOPHYSM_app["conf20PlotButton"]
+confFinalPlotButton = SOPHYSM_app["confFinalPlotButton"]
+driverTreeButton = SOPHYSM_app["driverTreeButton"]
+outputPlotImage = SOPHYSM_app["outputPlotImage"]
 ## Variables
 path_project_folder = ""
 path_slide_folder = ""
@@ -75,18 +77,16 @@ slide_name = ""
 threshold_gray = ""
 threshold_marker = ""
 collection_name = ""
+workspace_path = ""
+# Variables Output J-Space
+filepath_file_JSPACE = ""
+filepath_plot_JSPACE = ""
+filepath_reference_JSPACE = ""
+filepath_matrix = ""
+filepath_dataframe_labels = ""
+filepath_dataframe_edges = ""
 
 ###  LISTENER
-## workspaceDialog elements
-signal_connect(workspaceOkButton, "button-press-event") do widget, event
-    showall(mainWindow)
-end
-
-signal_connect(workspaceCancelButton, "button-press-event") do widget, event
-
-end
-
-
 ## menuBar elements
 signal_connect(newProjectMenuItem, "button-press-event") do widget, event
     run(newProjectDialog)
@@ -139,6 +139,13 @@ end
 
 signal_connect(quitMenuItem, "button-press-event") do widget, event
     hide(mainWindow)
+    hide(thresholdDialog)
+    hide(newProjectDialog)
+    hide(projectAlreadyExistMessage)
+    hide(invalidNameProjectMessage)
+    hide(slideAlreadyExistMessage)
+    hide(thresholdErrorMessage)
+    hide(chooseCollectionDialog)
 end
 
 signal_connect(loadImageMenuItem, "button-press-event") do widget, event
@@ -191,12 +198,14 @@ end
 
 signal_connect(downloadSingleCollectionMenuItem, "button-press-event") do widget, event
     run(chooseCollectionDialog)
+    # selection download folder
 end
 
 signal_connect(downloadAllCollectionMenuItem, "button-press-event") do widget, event
     path_download_dataset =
         open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                     action=GtkFileChooserAction.SELECT_FOLDER)
+    # selection download folder
     # Call JHistInt
     ### JHistint.download_all_collection()
 end
@@ -230,7 +239,7 @@ end
 
 signal_connect(newProjectOkButton, "button-press-event") do widget, event
     global project_name = get_gtk_property(projectNameEntry, :text, String)
-    global path_project_folder = joinpath(@__DIR__, "..", "workspace", project_name)
+    global path_project_folder = joinpath(workspace_path, project_name)
     if project_name == ""
         run(invalidNameProjectMessage)
     else
@@ -384,26 +393,26 @@ signal_connect(segmentationButton, "button-press-event") do widget, event
 end
 
 signal_connect(simulationButton, "button-press-event") do widget, event
-    filepath_file_JSPACE = replace(filepath_slide_to_segment,
+    global filepath_file_JSPACE = replace(filepath_slide_to_segment,
                                    r"....$" => "_Files_JSpace")
     if !isdir(filepath_file_JSPACE)
         mkdir(filepath_file_JSPACE)
     end
-    filepath_plot_JSPACE = replace(filepath_slide_to_segment,
+    global filepath_plot_JSPACE = replace(filepath_slide_to_segment,
                                    r"....$" => "_Plots_JSpace")
     if !isdir(filepath_plot_JSPACE)
         mkdir(filepath_plot_JSPACE)
     end
-    filepath_reference_JSPACE =
+    global filepath_reference_JSPACE =
         replace(filepath_slide_to_segment,
                 r"....$" => "_reference.fasta")
-    filepath_matrix =
+    global filepath_matrix =
         replace(filepath_slide_to_segment,
                 r"....$" => ".txt")
-    filepath_dataframe_labels =
+    global filepath_dataframe_labels =
         replace(filepath_slide_to_segment,
                 r"....$" => "_dataframe_labels.csv")
-    filepath_dataframe_edges =
+    global filepath_dataframe_edges =
         replace(filepath_slide_to_segment,
                 r"....$" => "_dataframe_edges.csv")
     # Launch J-Space Simulation
@@ -414,8 +423,38 @@ signal_connect(simulationButton, "button-press-event") do widget, event
                     slide_name,
                     filepath_dataframe_edges,
                     filepath_dataframe_labels)
+    run(jspaceOutputWindow)
 end
 
-showall(workspaceDialog)
+## jspaceOutputWindow elements
+signal_connect(conf10PlotButton, "button-press-event") do widget, event
+    filepath_conf10Plot = joinpath(filepath_plot_JSPACE, "Conf_t_10.png")
+    set_gtk_property!(outputPlotImage, :file, filepath_conf10Plot)
+end
+
+signal_connect(conf20PlotButton, "button-press-event") do widget, event
+    filepath_conf20Plot = joinpath(filepath_plot_JSPACE, "Conf_t_20.png")
+    set_gtk_property!(outputPlotImage, :file, filepath_conf20Plot)
+end
+
+signal_connect(confFinalPlotButton, "button-press-event") do widget, event
+    filepath_confFinalPlot = joinpath(filepath_plot_JSPACE, "Final_conf.png")
+    set_gtk_property!(outputPlotImage, :file, filepath_confFinalPlot)
+end
+
+signal_connect(driverTreeButton, "button-press-event") do widget, event
+    filepath_driverTree = joinpath(filepath_plot_JSPACE, "driver_tree.png")
+    set_gtk_property!(outputPlotImage, :file, filepath_driverTree)
+end
+
+## Start GUI
+workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
+                action=GtkFileChooserAction.SELECT_FOLDER)
+if(workspace_path != "")
+    set_gtk_property!(mainWindow, :sensitive, true)
+    showall(mainWindow)
+else
+    hide(mainWindow)
+end
 
 ### end of file -- SOPHYSM_app.jl
