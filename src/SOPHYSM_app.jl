@@ -18,7 +18,7 @@ invalidNameProjectMessage = SOPHYSM_app["invalidNameProjectMessage"]
 slideAlreadyExistMessage = SOPHYSM_app["slideAlreadyExistMessage"]
 thresholdErrorMessage = SOPHYSM_app["thresholdErrorMessage"]
 chooseCollectionDialog = SOPHYSM_app["chooseCollectionDialog"]
-jspaceOutputWindow = SOPHYSM_app["jspaceOutputWindow"]
+jspaceOutputDialog = SOPHYSM_app["jspaceOutputDialog"]
 ## menuBar
 newProjectMenuItem = SOPHYSM_app["newProjectMenuItem"]
 loadProjectMenuItem = SOPHYSM_app["loadProjectMenuItem"]
@@ -61,12 +61,13 @@ errorSlideCancelButton = SOPHYSM_app["errorSlideCancelButton"]
 collectionOkButton = SOPHYSM_app["collectionOkButton"]
 collectionCancelButton = SOPHYSM_app["collectionCancelButton"]
 nameCollectionEntry = SOPHYSM_app["nameCollectionEntry"]
-## jspaceOutputWindow
+## jspaceOutputDialog
 conf10PlotButton = SOPHYSM_app["conf10PlotButton"]
 conf20PlotButton = SOPHYSM_app["conf20PlotButton"]
 confFinalPlotButton = SOPHYSM_app["confFinalPlotButton"]
 driverTreeButton = SOPHYSM_app["driverTreeButton"]
 outputPlotImage = SOPHYSM_app["outputPlotImage"]
+jspaceOutputCloseButton = SOPHYSM_app["jspaceOutputCloseButton"]
 ## Variables
 path_project_folder = ""
 path_slide_folder = ""
@@ -77,7 +78,7 @@ slide_name = ""
 threshold_gray = ""
 threshold_marker = ""
 collection_name = ""
-workspace_path = ""
+
 # Variables Output J-Space
 filepath_file_JSPACE = ""
 filepath_plot_JSPACE = ""
@@ -423,10 +424,10 @@ signal_connect(simulationButton, "button-press-event") do widget, event
                     slide_name,
                     filepath_dataframe_edges,
                     filepath_dataframe_labels)
-    run(jspaceOutputWindow)
+    run(jspaceOutputDialog)
 end
 
-## jspaceOutputWindow elements
+## jspaceOutputDialog elements
 signal_connect(conf10PlotButton, "button-press-event") do widget, event
     filepath_conf10Plot = joinpath(filepath_plot_JSPACE, "Conf_t_10.png")
     set_gtk_property!(outputPlotImage, :file, filepath_conf10Plot)
@@ -445,6 +446,10 @@ end
 signal_connect(driverTreeButton, "button-press-event") do widget, event
     filepath_driverTree = joinpath(filepath_plot_JSPACE, "driver_tree.png")
     set_gtk_property!(outputPlotImage, :file, filepath_driverTree)
+end
+
+signal_connect(jspaceOutputCloseButton, "button-press-event") do widget, event
+    hide(jspaceOutputDialog)
 end
 
 ## Start GUI
