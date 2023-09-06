@@ -5,8 +5,8 @@
 
 ### Packages
 using Gtk
-# using JHistint
-# using J_Space
+using JHistint
+using J_Space
 
 ### Data from SOPHYSM.glade
 SOPHYSM_app = GtkBuilder(filename = "SOPHYSM.glade")
@@ -20,7 +20,6 @@ thresholdErrorMessage = SOPHYSM_app["thresholdErrorMessage"]
 chooseCollectionDialog = SOPHYSM_app["chooseCollectionDialog"]
 jspaceOutputDialog = SOPHYSM_app["jspaceOutputDialog"]
 ## menuBar
-menuBar = SOPHYSM_app["menuBar"]
 newProjectMenuItem = SOPHYSM_app["newProjectMenuItem"]
 loadProjectMenuItem = SOPHYSM_app["loadProjectMenuItem"]
 closeProjectMenuItem = SOPHYSM_app["closeProjectMenuItem"]
@@ -287,9 +286,6 @@ end
 
 signal_connect(collectionOkButton, "button-press-event") do widget, event
     global collection_name = get_gtk_property(nameCollectionEntry, :text, String)
-    path_download_dataset =
-        open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
-                    action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
     ### JHistint.download_single_collection(collection_name)
     hide(chooseCollectionDialog)
@@ -455,7 +451,8 @@ end
 workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
                 action=GtkFileChooserAction.SELECT_FOLDER)
 if(workspace_path != "")
-    set_gtk_property!(menuBar, :sensitive, true)
+    # set-visible for Gtk Crash
+    set_gtk_property!(mainWindow, :visible, true)
     set_gtk_property!(mainWindow, :sensitive, true)
     showall(mainWindow)
 else

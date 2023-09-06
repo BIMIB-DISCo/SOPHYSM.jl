@@ -236,7 +236,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                 </child>
                 <child>
                   <object class="GtkButton" id="conf20PlotButton">
-                    <property name="label" translatable="yes">Show Plot of State of the Lattice at = 20</property>
+                    <property name="label" translatable="yes">Show Plot of State of the Lattice at t = 20</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
