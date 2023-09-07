@@ -35,6 +35,8 @@ descriptionLabel = SOPHYSM_app["descriptionLabel"]
 ## ResultBox
 selectedImage = SOPHYSM_app["selectedImage"]
 segmentedImage = SOPHYSM_app["segmentedImage"]
+graphVertexImage = SOPHYSM_app["graphVertexImage"]
+graphEdgesImage = SOPHYSM_app["graphEdgesImage"]
 thresholdGreyscaleValueLabel = SOPHYSM_app["thresholdGreyscaleValueLabel"]
 thresholdMarkersValueLabel = SOPHYSM_app["thresholdMarkersValueLabel"]
 ## thresholdDialog
@@ -66,7 +68,9 @@ conf10PlotButton = SOPHYSM_app["conf10PlotButton"]
 conf20PlotButton = SOPHYSM_app["conf20PlotButton"]
 confFinalPlotButton = SOPHYSM_app["confFinalPlotButton"]
 driverTreeButton = SOPHYSM_app["driverTreeButton"]
+phyloTreeButton = SOPHYSM_app["phyloTreeButton"]
 outputPlotImage = SOPHYSM_app["outputPlotImage"]
+infolPlotLabel = SOPHYSM_app["infolPlotLabel"]
 jspaceOutputCloseButton = SOPHYSM_app["jspaceOutputCloseButton"]
 ## Variables
 path_project_folder = ""
@@ -206,7 +210,7 @@ signal_connect(downloadAllCollectionMenuItem, "button-press-event") do widget, e
         open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                     action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
-    ### JHistint.download_all_collection()
+    ## JHistint.download_all_collection_SOPHYSM(path_download_dataset)
 end
 
 # slideAlreadyExistMessage elements
@@ -286,8 +290,11 @@ end
 
 signal_connect(collectionOkButton, "button-press-event") do widget, event
     global collection_name = get_gtk_property(nameCollectionEntry, :text, String)
+    path_download_dataset =
+        open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
+                    action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
-    ### JHistint.download_single_collection(collection_name)
+    ## JHistint.download_single_collection_SOPHYSM(collection_name, path_download_dataset)
     hide(chooseCollectionDialog)
 end
 
@@ -386,6 +393,12 @@ signal_connect(segmentationButton, "button-press-event") do widget, event
     set_gtk_property!(segmentedImage, :file,
                           replace(filepath_slide_to_segment,
                                   r"....$" => "_seg-0.png"))
+    set_gtk_property!(graphVertexImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_graph_vertex.png"))
+    set_gtk_property!(graphEdgesImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_graph_edges.png"))
 end
 
 signal_connect(simulationButton, "button-press-event") do widget, event
@@ -425,22 +438,32 @@ end
 ## jspaceOutputDialog elements
 signal_connect(conf10PlotButton, "button-press-event") do widget, event
     filepath_conf10Plot = joinpath(filepath_plot_JSPACE, "Conf_t_10.png")
+    set_gtk_property!(infoPlotLabel, :label, "Selected Plot : State of the Lattice at time T = 10 of the Simulation")
     set_gtk_property!(outputPlotImage, :file, filepath_conf10Plot)
 end
 
 signal_connect(conf20PlotButton, "button-press-event") do widget, event
+    set_gtk_property!(infoPlotLabel, :label, "Selected Plot : State of the Lattice at time T = 20 of the Simulation")
     filepath_conf20Plot = joinpath(filepath_plot_JSPACE, "Conf_t_20.png")
     set_gtk_property!(outputPlotImage, :file, filepath_conf20Plot)
 end
 
 signal_connect(confFinalPlotButton, "button-press-event") do widget, event
+    set_gtk_property!(infoPlotLabel, :label, "Selected Plot : State of the Lattice at time T = Final of the Simulation")
     filepath_confFinalPlot = joinpath(filepath_plot_JSPACE, "Final_conf.png")
     set_gtk_property!(outputPlotImage, :file, filepath_confFinalPlot)
 end
 
 signal_connect(driverTreeButton, "button-press-event") do widget, event
+    set_gtk_property!(infoPlotLabel, :label, "Selected Plot : Mutational Tree of the Driver Mutations")
     filepath_driverTree = joinpath(filepath_plot_JSPACE, "driver_tree.png")
     set_gtk_property!(outputPlotImage, :file, filepath_driverTree)
+end
+
+signal_connect(phyloTreeButton, "button-press-event") do widget, event
+    set_gtk_property!(infoPlotLabel, :label, "Selected Plot : Ground Truth Phylogenetic Tree")
+    filepath_phyloTree = joinpath(filepath_plot_JSPACE, "phylo_tree.png")
+    set_gtk_property!(outputPlotImage, :file, filepath_phyloTree)
 end
 
 signal_connect(jspaceOutputCloseButton, "button-press-event") do widget, event
