@@ -28,10 +28,11 @@ loadImageMenuItem = SOPHYSM_app["loadImageMenuItem"]
 downloadSingleCollectionMenuItem = SOPHYSM_app["downloadSingleCollectionMenuItem"]
 downloadAllCollectionMenuItem = SOPHYSM_app["downloadAllCollectionMenuItem"]
 ## ProjectBox
+workspacePositionLabel = SOPHYSM_app["workspacePositionLabel"]
+descriptionLabel = SOPHYSM_app["descriptionLabel"]
 segmentationButton = SOPHYSM_app["segmentationButton"]
 simulationButton = SOPHYSM_app["simulationButton"]
 loadButton = SOPHYSM_app["loadButton"]
-descriptionLabel = SOPHYSM_app["descriptionLabel"]
 ## ResultBox
 selectedImage = SOPHYSM_app["selectedImage"]
 segmentedImage = SOPHYSM_app["segmentedImage"]
@@ -70,7 +71,7 @@ confFinalPlotButton = SOPHYSM_app["confFinalPlotButton"]
 driverTreeButton = SOPHYSM_app["driverTreeButton"]
 phyloTreeButton = SOPHYSM_app["phyloTreeButton"]
 outputPlotImage = SOPHYSM_app["outputPlotImage"]
-infolPlotLabel = SOPHYSM_app["infolPlotLabel"]
+infoPlotLabel = SOPHYSM_app["infoPlotLabel"]
 jspaceOutputCloseButton = SOPHYSM_app["jspaceOutputCloseButton"]
 ## Variables
 path_project_folder = ""
@@ -82,6 +83,7 @@ slide_name = ""
 threshold_gray = ""
 threshold_marker = ""
 collection_name = ""
+path_download_dataset = ""
 
 # Variables Output J-Space
 filepath_file_JSPACE = ""
@@ -118,8 +120,14 @@ signal_connect(loadProjectMenuItem, "button-press-event") do widget, event
         set_gtk_property!(loadImageMenuItem, :sensitive, true)
         set_gtk_property!(segmentationButton, :sensitive, false)
         set_gtk_property!(simulationButton, :sensitive, false)
-        set_gtk_property!(selectedImage, :file, "")
-        set_gtk_property!(segmentedImage, :file, "")
+        set_gtk_property!(selectedImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(selectedImage, :icon_size, 6)
+        set_gtk_property!(segmentedImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(segmentedImage, :icon_size, 6)
+        set_gtk_property!(graphVertexImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(graphVertexImage, :icon_size, 6)
+        set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(graphEdgesImage, :icon_size, 6)
         set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                         "Selected Greyscale Filter's Threshold : _____")
         set_gtk_property!(thresholdMarkersValueLabel, :label,
@@ -134,8 +142,14 @@ signal_connect(closeProjectMenuItem, "button-press-event") do widget, event
     set_gtk_property!(simulationButton, :sensitive, false)
     set_gtk_property!(descriptionLabel, :label,
                     "Project Name : ______________________")
-    set_gtk_property!(selectedImage, :file, "")
-    set_gtk_property!(segmentedImage, :file, "")
+    set_gtk_property!(selectedImage, :icon_name, "image-x-generic-symbolic")
+    set_gtk_property!(selectedImage, :icon_size, 6)
+    set_gtk_property!(segmentedImage, :icon_name, "image-x-generic-symbolic")
+    set_gtk_property!(segmentedImage, :icon_size, 6)
+    set_gtk_property!(graphVertexImage, :icon_name, "image-x-generic-symbolic")
+    set_gtk_property!(graphVertexImage, :icon_size, 6)
+    set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
+    set_gtk_property!(graphEdgesImage, :icon_size, 6)
     set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                     "Selected Greyscale Filter's Threshold : _____")
     set_gtk_property!(thresholdMarkersValueLabel, :label,
@@ -202,15 +216,18 @@ signal_connect(loadImageMenuItem, "button-press-event") do widget, event
 end
 
 signal_connect(downloadSingleCollectionMenuItem, "button-press-event") do widget, event
+    global path_download_dataset =
+        open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
+                    action=GtkFileChooserAction.SELECT_FOLDER)
     run(chooseCollectionDialog)
 end
 
 signal_connect(downloadAllCollectionMenuItem, "button-press-event") do widget, event
-    path_download_dataset =
+    global path_download_dataset =
         open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                     action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
-    ## JHistint.download_all_collection_SOPHYSM(path_download_dataset)
+    JHistint.download_all_collection_SOPHYSM(path_download_dataset)
 end
 
 # slideAlreadyExistMessage elements
@@ -257,8 +274,14 @@ signal_connect(newProjectOkButton, "button-press-event") do widget, event
             set_gtk_property!(loadImageMenuItem, :sensitive, true)
             set_gtk_property!(segmentationButton, :sensitive, false)
             set_gtk_property!(simulationButton, :sensitive, false)
-            set_gtk_property!(selectedImage, :file, "")
-            set_gtk_property!(segmentedImage, :file, "")
+            set_gtk_property!(selectedImage, :icon_name, "image-x-generic-symbolic")
+            set_gtk_property!(selectedImage, :icon_size, 6)
+            set_gtk_property!(segmentedImage, :icon_name, "image-x-generic-symbolic")
+            set_gtk_property!(segmentedImage, :icon_size, 6)
+            set_gtk_property!(graphVertexImage, :icon_name, "image-x-generic-symbolic")
+            set_gtk_property!(graphVertexImage, :icon_size, 6)
+            set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
+            set_gtk_property!(graphEdgesImage, :icon_size, 6)
             set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                             "Selected Greyscale Filter's Threshold : _____")
             set_gtk_property!(thresholdMarkersValueLabel, :label,
@@ -290,11 +313,8 @@ end
 
 signal_connect(collectionOkButton, "button-press-event") do widget, event
     global collection_name = get_gtk_property(nameCollectionEntry, :text, String)
-    path_download_dataset =
-        open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
-                    action=GtkFileChooserAction.SELECT_FOLDER)
     # Call JHistInt
-    ## JHistint.download_single_collection_SOPHYSM(collection_name, path_download_dataset)
+    JHistint.download_single_collection_SOPHYSM(collection_name, path_download_dataset)
     hide(chooseCollectionDialog)
 end
 
@@ -471,13 +491,14 @@ signal_connect(jspaceOutputCloseButton, "button-press-event") do widget, event
 end
 
 ## Start GUI
-workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
-                action=GtkFileChooserAction.SELECT_FOLDER)
+global workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
+               action= GtkFileChooserAction.SELECT_FOLDER)
 if(workspace_path != "")
     # set-visible for Gtk Crash
-    set_gtk_property!(mainWindow, :visible, true)
-    set_gtk_property!(mainWindow, :sensitive, true)
+    # Gtk.set_gtk_property!(mainWindow, :visible, true)
+    # Gtk.set_gtk_property!(mainWindow, :sensitive, true)
     showall(mainWindow)
+    set_gtk_property!(workspacePositionLabel, :label, "Workspace Position : \n $workspace_path")
 else
     hide(mainWindow)
 end

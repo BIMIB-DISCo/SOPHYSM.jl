@@ -6,14 +6,14 @@
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - Choose TCGA Collection</property>
     <property name="icon-name">dialog-question</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="chooseCollectionBox">
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox">
+          <object class="GtkButtonBox" id="chooseCollectionButtonBox">
             <property name="can-focus">False</property>
             <property name="layout-style">end</property>
             <child>
@@ -22,6 +22,10 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">10</property>
+                <property name="margin-bottom">10</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -35,6 +39,10 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">10</property>
+                <property name="margin-bottom">10</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -50,7 +58,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="chooseCollectionInputBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="orientation">vertical</property>
@@ -58,7 +66,12 @@
               <object class="GtkLabel" id="labelCollection">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">10</property>
+                <property name="margin-bottom">10</property>
                 <property name="label" translatable="yes">Please enter the data collection you wish to download :
+
 TCGA-BRCA = Breast Invasive Carcinoma (Breast)
 TCGA-OV = Ovarian Serous Cystadenocarcinoma (Ovary)
 TCGA-LUAD = Lung Adenocarcinoma (Bronchus and Lung)
@@ -125,18 +138,18 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - ERROR</property>
     <property name="icon-name">dialog-error</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <property name="message-type">error</property>
     <property name="text" translatable="yes">Error: Invalid Project Name</property>
     <property name="use-markup">True</property>
     <property name="secondary-text" translatable="yes">Unable to create folder with an invalid name. Select a different Project Name ...</property>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="invalidNameProjectBox">
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox">
+          <object class="GtkButtonBox" id="invalidNameProjectButtonBox">
             <property name="can-focus">False</property>
             <property name="homogeneous">True</property>
             <property name="layout-style">expand</property>
@@ -175,14 +188,18 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
   <object class="GtkDialog" id="jspaceOutputDialog">
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - J-Space Simulation Output</property>
-    <property name="type-hint">dialog</property>
+    <property name="default-width">1200</property>
+    <property name="default-height">400</property>
+    <property name="type-hint">normal</property>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="jspaceBox">
+        <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox">
+          <object class="GtkButtonBox" id="jspaceButtonBox">
+            <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="layout-style">end</property>
             <child>
@@ -194,6 +211,10 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">10</property>
+                <property name="margin-bottom">10</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -209,24 +230,24 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="jspaceFuncBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="jspaceButtonBo">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkButton" id="conf10PlotButton">
-                    <property name="label" translatable="yes">Show Plot of State of the Lattice at t = 10 </property>
+                    <property name="label" translatable="yes">Show State of the Lattice at T = 10</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -236,14 +257,14 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                 </child>
                 <child>
                   <object class="GtkButton" id="conf20PlotButton">
-                    <property name="label" translatable="yes">Show Plot of State of the Lattice at t = 20</property>
+                    <property name="label" translatable="yes">Show State of the Lattice at T = 20</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -253,14 +274,14 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                 </child>
                 <child>
                   <object class="GtkButton" id="confFinalPlotButton">
-                    <property name="label" translatable="yes">Show Plot of State of the Lattice at Final t</property>
+                    <property name="label" translatable="yes">Show State of the Lattice at Final T</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -276,8 +297,8 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -293,8 +314,8 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -304,13 +325,13 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                 </child>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <object class="GtkSeparator">
+              <object class="GtkSeparator" id="jspaceOutputSeparator">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
               </object>
@@ -321,7 +342,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="jspaceOutputBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
@@ -333,7 +354,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                     <property name="margin-end">10</property>
                     <property name="margin-top">10</property>
                     <property name="margin-bottom">10</property>
-                    <property name="label" translatable="yes">Selected Plot : __________________________________</property>
+                    <property name="label" translatable="yes">Selected Plot : _______________________________</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -345,11 +366,7 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                   <object class="GtkImage" id="outputPlotImage">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="margin-start">10</property>
-                    <property name="margin-end">10</property>
-                    <property name="xpad">0</property>
-                    <property name="ypad">0</property>
-                    <property name="stock">gtk-dialog-question</property>
+                    <property name="icon-name">image-x-generic-symbolic</property>
                     <property name="icon_size">6</property>
                   </object>
                   <packing>
@@ -365,12 +382,9 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                 <property name="position">2</property>
               </packing>
             </child>
-            <child>
-              <placeholder/>
-            </child>
           </object>
           <packing>
-            <property name="expand">False</property>
+            <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
@@ -379,12 +393,14 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
     </child>
   </object>
   <object class="GtkApplicationWindow" id="mainWindow">
-    <property name="visible">True</property>
-    <property name="sensitive">False</property>
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - SOlid tumors PHYlogenetic Spatial Modeller</property>
+    <property name="window-position">center</property>
     <property name="default-width">1200</property>
-    <property name="default-height">400</property>
+    <property name="default-height">100</property>
+    <property name="type-hint">splashscreen</property>
+    <property name="accept-focus">False</property>
+    <property name="focus-on-map">False</property>
     <child>
       <object class="GtkBox" id="boxLayout">
         <property name="visible">True</property>
@@ -396,13 +412,12 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkMenuItem" id="sophysmMenu">
+              <object class="GtkMenuItem" id="sophysmMenuItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">SOPHYSM</property>
-                <property name="use-underline">True</property>
                 <child type="submenu">
-                  <object class="GtkMenu">
+                  <object class="GtkMenu" id="sophysmMenu">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
@@ -442,19 +457,17 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem" id="fileMenu">
+              <object class="GtkMenuItem" id="fileMenuItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">File</property>
-                <property name="use-underline">True</property>
                 <child type="submenu">
-                  <object class="GtkMenu">
+                  <object class="GtkMenu" id="fileMenu">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
                       <object class="GtkMenuItem" id="loadImageMenuItem">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Load Histological Image</property>
                         <property name="use-underline">True</property>
@@ -465,13 +478,12 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem">
+              <object class="GtkMenuItem" id="dbMenuItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Data Sources</property>
-                <property name="use-underline">True</property>
                 <child type="submenu">
-                  <object class="GtkMenu">
+                  <object class="GtkMenu" id="dbMenu">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
@@ -497,17 +509,17 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
+            <property name="fill">False</property>
             <property name="position">0</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="WindowBox">
+          <object class="GtkBox" id="windowBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="spacing">4</property>
             <child>
-              <object class="GtkBox" id="ProjectBox">
+              <object class="GtkBox" id="projectBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
@@ -517,8 +529,10 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                   <object class="GtkLabel" id="titleLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="xpad">10</property>
-                    <property name="ypad">10</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                     <property name="label" translatable="yes">SOPHYSM 
 SOlid tumors PHYlogenetic Spatial Modeller
 
@@ -531,7 +545,6 @@ allowing the extraction of spatial and morphological
 information from microscopic images, 
 thereby providing a better understanding 
 of tumor architecture and cellular interactions in space.</property>
-                    <property name="xalign">0.5</property>
                     <attributes>
                       <attribute name="foreground" value="#000000000000"/>
                     </attributes>
@@ -543,7 +556,7 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSeparator">
+                  <object class="GtkSeparator" id="projectBoxSeparator_1">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>
@@ -554,12 +567,14 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="descriptionLabel">
+                  <object class="GtkLabel" id="workspacePositionLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="xpad">0</property>
-                    <property name="ypad">10</property>
-                    <property name="label" translatable="yes">Project Name : ______________________</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
+                    <property name="label" translatable="yes">Workspace Position : ______________________</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -568,7 +583,7 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSeparator">
+                  <object class="GtkSeparator" id="projectBoxSeparator_2">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>
@@ -576,6 +591,33 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="descriptionLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
+                    <property name="label" translatable="yes">Project Name : ____________________________</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSeparator" id="projectBoxSeparator_3">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">5</property>
                   </packing>
                 </child>
                 <child>
@@ -587,14 +629,14 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                     <property name="always-show-image">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">4</property>
+                    <property name="position">7</property>
                   </packing>
                 </child>
                 <child>
@@ -606,13 +648,13 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">5</property>
+                    <property name="position">8</property>
                   </packing>
                 </child>
                 <child>
@@ -624,13 +666,13 @@ of tumor architecture and cellular interactions in space.</property>
                     <property name="receives-default">True</property>
                     <property name="margin-start">10</property>
                     <property name="margin-end">10</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">6</property>
+                    <property name="position">9</property>
                   </packing>
                 </child>
               </object>
@@ -641,7 +683,7 @@ of tumor architecture and cellular interactions in space.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkSeparator">
+              <object class="GtkSeparator" id="windowBoxSeparator">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
               </object>
@@ -652,7 +694,7 @@ of tumor architecture and cellular interactions in space.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="ResultBox">
+              <object class="GtkBox" id="resultBox">
                 <property name="height-request">22</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -689,7 +731,7 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSeparator">
+                  <object class="GtkSeparator" id="resultBoxSeparator">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>
@@ -700,15 +742,23 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <!-- n-columns=3 n-rows=3 -->
-                  <object class="GtkGrid" id="ImageBox">
+                  <!-- n-columns=2 n-rows=2 -->
+                  <object class="GtkGrid" id="imageBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="row-homogeneous">True</property>
+                    <property name="column-homogeneous">True</property>
                     <child>
                       <object class="GtkImage" id="selectedImage">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="stock">gtk-dialog-question</property>
+                        <property name="margin-start">10</property>
+                        <property name="margin-end">10</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">10</property>
+                        <property name="xpad">0</property>
+                        <property name="ypad">0</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
                         <property name="icon_size">6</property>
                       </object>
                       <packing>
@@ -720,89 +770,54 @@ of tumor architecture and cellular interactions in space.</property>
                       <object class="GtkImage" id="segmentedImage">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="stock">gtk-dialog-question</property>
+                        <property name="margin-start">10</property>
+                        <property name="margin-end">10</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">10</property>
+                        <property name="xpad">0</property>
+                        <property name="ypad">0</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
                         <property name="icon_size">6</property>
                       </object>
                       <packing>
-                        <property name="left-attach">2</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSeparator">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="orientation">vertical</property>
-                      </object>
-                      <packing>
                         <property name="left-attach">1</property>
                         <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSeparator">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="orientation">vertical</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSeparator">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="orientation">vertical</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSeparator">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSeparator">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">2</property>
-                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkImage" id="graphVertexImage">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="stock">gtk-dialog-question</property>
+                        <property name="margin-start">10</property>
+                        <property name="margin-end">10</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">10</property>
+                        <property name="xpad">0</property>
+                        <property name="ypad">0</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
                         <property name="icon_size">6</property>
                       </object>
                       <packing>
                         <property name="left-attach">0</property>
-                        <property name="top-attach">2</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkImage" id="graphEdgesImage">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="stock">gtk-dialog-question</property>
+                        <property name="margin-start">10</property>
+                        <property name="margin-end">10</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">10</property>
+                        <property name="xpad">0</property>
+                        <property name="ypad">0</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
                         <property name="icon_size">6</property>
                       </object>
                       <packing>
-                        <property name="left-attach">2</property>
-                        <property name="top-attach">2</property>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                   </object>
@@ -814,7 +829,7 @@ of tumor architecture and cellular interactions in space.</property>
                 </child>
               </object>
               <packing>
-                <property name="expand">False</property>
+                <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">2</property>
               </packing>
@@ -838,7 +853,7 @@ of tumor architecture and cellular interactions in space.</property>
     <property name="default-height">60</property>
     <property name="destroy-with-parent">True</property>
     <property name="icon-name">document-new</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="newProjectDialogBox">
         <property name="width-request">-1</property>
@@ -926,18 +941,18 @@ of tumor architecture and cellular interactions in space.</property>
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - ERROR</property>
     <property name="icon-name">dialog-error</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <property name="message-type">error</property>
     <property name="text" translatable="yes">Error: Project Already Exist</property>
     <property name="use-markup">True</property>
     <property name="secondary-text" translatable="yes">An error occurred while attempting to create a folder that already exists. Select a different Project Name ...</property>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="projectAlreadyExistBox">
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox">
+          <object class="GtkButtonBox" id="projectAlreadyExistButtonBox">
             <property name="can-focus">False</property>
             <property name="homogeneous">True</property>
             <property name="layout-style">expand</property>
@@ -971,18 +986,18 @@ of tumor architecture and cellular interactions in space.</property>
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - WARNING</property>
     <property name="icon-name">dialog-warning</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <property name="message-type">error</property>
-    <property name="text" translatable="yes">Warning: Slide Analysis Already Exist</property>
+    <property name="text" translatable="yes">Warning: Slide Analysis Already Exist in Workspace</property>
     <property name="use-markup">True</property>
-    <property name="secondary-text" translatable="yes">An error occurred while attempting to create a folder that already exists. Do you intend to proceed and delete the previous segmentation and simulation results related to the image?</property>
+    <property name="secondary-text" translatable="yes">An error occurred while attempting to create a folder that already exists in the current workspace. Do you intend to proceed and delete the previous segmentation and simulation results related to the image?</property>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="slideAlreadyExistBox">
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox">
+          <object class="GtkButtonBox" id="slideAlreadyExistButtonBox">
             <property name="can-focus">False</property>
             <property name="homogeneous">True</property>
             <property name="layout-style">expand</property>
@@ -1035,7 +1050,7 @@ of tumor architecture and cellular interactions in space.</property>
     <property name="default-width">400</property>
     <property name="default-height">100</property>
     <property name="icon-name">dialog-question</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="thresholdDialogBox">
         <property name="can-focus">False</property>
@@ -1165,18 +1180,18 @@ of tumor architecture and cellular interactions in space.</property>
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - ERROR</property>
     <property name="icon-name">dialog-warning</property>
-    <property name="type-hint">dialog</property>
+    <property name="type-hint">normal</property>
     <property name="message-type">error</property>
     <property name="text" translatable="yes">Error: Invalid Threshold </property>
     <property name="use-markup">True</property>
     <property name="secondary-text" translatable="yes">An error occurred while attempting to set manual thresholds. Type different Threshold values ...</property>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="thresholdErrorBox">
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox">
+          <object class="GtkButtonBox" id="thresholdErrorButtonBox">
             <property name="can-focus">False</property>
             <property name="homogeneous">True</property>
             <property name="layout-style">expand</property>
