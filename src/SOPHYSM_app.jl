@@ -25,6 +25,7 @@ loadProjectMenuItem = SOPHYSM_app["loadProjectMenuItem"]
 closeProjectMenuItem = SOPHYSM_app["closeProjectMenuItem"]
 quitMenuItem = SOPHYSM_app["quitMenuItem"]
 loadImageMenuItem = SOPHYSM_app["loadImageMenuItem"]
+workspaceMenuItem = SOPHYSM_app["workspaceMenuItem"]
 downloadSingleCollectionMenuItem = SOPHYSM_app["downloadSingleCollectionMenuItem"]
 downloadAllCollectionMenuItem = SOPHYSM_app["downloadAllCollectionMenuItem"]
 ## ProjectBox
@@ -215,6 +216,14 @@ signal_connect(loadImageMenuItem, "button-press-event") do widget, event
    end
 end
 
+signal_connect(workspaceMenuItem, "button-press-event") do widget, event
+    global workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
+                   action= GtkFileChooserAction.SELECT_FOLDER)
+    if(workspace_path != "")
+        set_gtk_property!(workspacePositionLabel, :label, "Workspace Position : \n $workspace_path")
+    end
+end
+
 signal_connect(downloadSingleCollectionMenuItem, "button-press-event") do widget, event
     global path_download_dataset =
         open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
@@ -249,8 +258,25 @@ end
 
 signal_connect(errorSlideCancelButton, "button-press-event") do widget, event
     hide(slideAlreadyExistMessage)
-    set_gtk_property!(segmentationButton, :sensitive, false)
-    ### SHOW PREVIOUS ANALYSIS
+    set_gtk_property!(segmentationButton, :sensitive, true)
+    set_gtk_property!(simulationButton, :sensitive, true)
+    ## SHOW PREVIOUS ANALYSIS
+    if Sys.iswindows()
+        global filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
+    elseif Sys.isunix()
+        global filepath_slide_to_segment = path_slide_folder * "/" * slide_name
+    end
+    set_gtk_property!(selectedImage, :file, filepath_slide_to_segment)
+    set_gtk_property!(segmentedImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_seg-0.png"))
+    set_gtk_property!(graphVertexImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_graph_vertex.png"))
+    set_gtk_property!(graphEdgesImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_graph_edges.png"))
+
 end
 ## newProjectDialog elements
 signal_connect(newProjectDialog, "delete-event") do widget, event

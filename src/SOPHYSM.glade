@@ -473,6 +473,14 @@ TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)</property>
                         <property name="use-underline">True</property>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkMenuItem" id="workspaceMenuItem">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Change Workspace Directory</property>
+                        <property name="use-underline">True</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
