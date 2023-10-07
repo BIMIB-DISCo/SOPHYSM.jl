@@ -32,6 +32,7 @@ downloadAllCollectionMenuItem = SOPHYSM_app["downloadAllCollectionMenuItem"]
 workspacePositionLabel = SOPHYSM_app["workspacePositionLabel"]
 descriptionLabel = SOPHYSM_app["descriptionLabel"]
 segmentationButton = SOPHYSM_app["segmentationButton"]
+tessellationButton = SOPHYSM_app["tessellationButton"]
 simulationButton = SOPHYSM_app["simulationButton"]
 loadButton = SOPHYSM_app["loadButton"]
 ## ResultBox
@@ -39,14 +40,20 @@ selectedImage = SOPHYSM_app["selectedImage"]
 segmentedImage = SOPHYSM_app["segmentedImage"]
 graphVertexImage = SOPHYSM_app["graphVertexImage"]
 graphEdgesImage = SOPHYSM_app["graphEdgesImage"]
+tessCellImage = SOPHYSM_app["tessCellImage"]
+tessTotalImage = SOPHYSM_app["tessTotalImage"]
 thresholdGreyscaleValueLabel = SOPHYSM_app["thresholdGreyscaleValueLabel"]
 thresholdMarkersValueLabel = SOPHYSM_app["thresholdMarkersValueLabel"]
+thresholdMinValueLabel = SOPHYSM_app["thresholdMinValueLabel"]
+thresholdMaxValueLabel = SOPHYSM_app["thresholdMaxValueLabel"]
 ## thresholdDialog
 thresholdOkButton = SOPHYSM_app["thresholdOkButton"]
 thresholdCancelButton = SOPHYSM_app["thresholdCancelButton"]
 defaultSettingsButton = SOPHYSM_app["defaultSettingsButton"]
 thresholdGreyscaleEntry = SOPHYSM_app["thresholdGreyscaleEntry"]
 thresholdMarkersEntry = SOPHYSM_app["thresholdMarkersEntry"]
+thresholdMinEntry = SOPHYSM_app["thresholdMinEntry"]
+thresholdMaxEntry = SOPHYSM_app["thresholdMaxEntry"]
 # invalidThresholdMessage
 thresholdErrorCancelButton = SOPHYSM_app["thresholdErrorCancelButton"]
 ## newProjectDialog
@@ -83,6 +90,8 @@ project_name = ""
 slide_name = ""
 threshold_gray = ""
 threshold_marker = ""
+threshold_min = ""
+threshold_max = ""
 collection_name = ""
 path_download_dataset = ""
 
@@ -129,10 +138,18 @@ signal_connect(loadProjectMenuItem, "button-press-event") do widget, event
         set_gtk_property!(graphVertexImage, :icon_size, 6)
         set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
         set_gtk_property!(graphEdgesImage, :icon_size, 6)
+        set_gtk_property!(tessCellImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(tessCellImage, :icon_size, 6)
+        set_gtk_property!(tessTotalImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(tessTotalImage, :icon_size, 6)
         set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                         "Selected Greyscale Filter's Threshold : _____")
         set_gtk_property!(thresholdMarkersValueLabel, :label,
                         "Selected Marker's Distance Threshold : _____")
+        set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                        "Selected Minimum Threshold for Segmentation Area Detection : _______")
+        set_gtk_property!(thresholdMarkersValueLabel, :label,
+                        "Selected Maximum Threshold for Segmentation Area Detection : _______")
     end
 end
 
@@ -151,10 +168,18 @@ signal_connect(closeProjectMenuItem, "button-press-event") do widget, event
     set_gtk_property!(graphVertexImage, :icon_size, 6)
     set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
     set_gtk_property!(graphEdgesImage, :icon_size, 6)
+    set_gtk_property!(tessCellImage, :icon_name, "image-x-generic-symbolic")
+    set_gtk_property!(tessCellImage, :icon_size, 6)
+    set_gtk_property!(tessTotalImage, :icon_name, "image-x-generic-symbolic")
+    set_gtk_property!(tessTotalImage, :icon_size, 6)
     set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                     "Selected Greyscale Filter's Threshold : _____")
     set_gtk_property!(thresholdMarkersValueLabel, :label,
                     "Selected Marker's Distance Threshold : _____")
+    set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                    "Selected Minimum Threshold for Segmentation Area Detection : _______")
+    set_gtk_property!(thresholdMarkersValueLabel, :label,
+                    "Selected Maximum Threshold for Segmentation Area Detection : _______")
 end
 
 signal_connect(quitMenuItem, "button-press-event") do widget, event
@@ -185,6 +210,10 @@ signal_connect(loadImageMenuItem, "button-press-event") do widget, event
                        "Selected Greyscale Filter's Threshold : _____")
        set_gtk_property!(thresholdMarkersValueLabel, :label,
                        "Selected Marker's Distance Threshold : _____")
+       set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                       "Selected Minimum Threshold for Segmentation Area Detection : _______")
+       set_gtk_property!(thresholdMarkersValueLabel, :label,
+                       "Selected Maximum Threshold for Segmentation Area Detection : _______")
        # Build directory for loaded image
        if Sys.iswindows()
            res = split(filepath_slide, "\\")
@@ -252,6 +281,10 @@ signal_connect(errorSlideOkButton, "button-press-event") do widget, event
                     "Selected Greyscale Filter's Threshold : _____")
     set_gtk_property!(thresholdMarkersValueLabel, :label,
                     "Selected Marker's Distance Threshold : _____")
+    set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                    "Selected Minimum Threshold for Segmentation Area Detection : _______")
+    set_gtk_property!(thresholdMarkersValueLabel, :label,
+                    "Selected Maximum Threshold for Segmentation Area Detection : _______")
     cp(filepath_slide, filepath_slide_to_segment)
     hide(slideAlreadyExistMessage)
 end
@@ -308,10 +341,18 @@ signal_connect(newProjectOkButton, "button-press-event") do widget, event
             set_gtk_property!(graphVertexImage, :icon_size, 6)
             set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
             set_gtk_property!(graphEdgesImage, :icon_size, 6)
+            set_gtk_property!(tessCellImage, :icon_name, "image-x-generic-symbolic")
+            set_gtk_property!(tessCellImage, :icon_size, 6)
+            set_gtk_property!(tessTotalImage, :icon_name, "image-x-generic-symbolic")
+            set_gtk_property!(tessTotalImage, :icon_size, 6)
             set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                             "Selected Greyscale Filter's Threshold : _____")
             set_gtk_property!(thresholdMarkersValueLabel, :label,
                             "Selected Marker's Distance Threshold : _____")
+            set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                            "Selected Minimum Threshold for Segmentation Area Detection : _______")
+            set_gtk_property!(thresholdMarkersValueLabel, :label,
+                            "Selected Maximum Threshold for Segmentation Area Detection : _______")
         end
     end
 end
@@ -357,15 +398,24 @@ signal_connect(thresholdOkButton, "button-press-event") do widget, event
     # Setting parameter for Segmentation
     global threshold_gray = get_gtk_property(thresholdGreyscaleEntry, :text, String)
     global threshold_marker = get_gtk_property(thresholdMarkersEntry, :text, String)
-    if (threshold_gray == "" || threshold_marker == "")
+    global threshold_min = get_gtk_property(thresholdMinEntry, :text, String)
+    global threshold_max = get_gtk_property(thresholdMaxEntry, :text, String)
+    if (threshold_gray == "" || threshold_marker == "" || threshold_min == ""
+        || threshold_max == "")
         run(thresholdErrorMessage)
     else
         set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                         "Selected Greyscale Filter's Threshold : " * threshold_gray)
         set_gtk_property!(thresholdMarkersValueLabel, :label,
                         "Selected Marker's Distance Threshold : " * threshold_marker)
+        set_gtk_property!(thresholdMarkersValueLabel, :label,
+                        "Selected Minimum Threshold for Segmentation Area Detection : " * threshold_min)
+        set_gtk_property!(thresholdMarkersValueLabel, :label,
+                        "Selected Maximum Threshold for Segmentation Area Detection : " * threshold_max)
         global threshold_gray = parse(Float64, threshold_gray)
         global threshold_marker = parse(Float64, threshold_marker)
+        global threshold_min = parse(Float32, threshold_min)
+        global threshold_max = parse(Float32, threshold_max)
         hide(thresholdDialog)
         Gtk.set_gtk_property!(simulationButton, :sensitive, true)
     end
@@ -374,6 +424,8 @@ end
 signal_connect(defaultSettingsButton, "button-press-event") do widget, event
     set_gtk_property!(thresholdGreyscaleEntry, :text, "0.15")
     set_gtk_property!(thresholdMarkersEntry, :text, "-0.3")
+    set_gtk_property!(thresholdMinsEntry, :text, "300")
+    set_gtk_property!(thresholdMaxEntry, :text, "3000")
 end
 
 # invalidThresholdMessage element
@@ -398,6 +450,10 @@ signal_connect(loadButton, "button-press-event") do widget, event
                        "Selected Greyscale Filter's Threshold : _____")
        set_gtk_property!(thresholdMarkersValueLabel, :label,
                        "Selected Marker's Distance Threshold : _____")
+       set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                       "Selected Minimum Threshold for Segmentation Area Detection : _______")
+       set_gtk_property!(thresholdMarkersValueLabel, :label,
+                       "Selected Maximum Threshold for Segmentation Area Detection : _______")
        # Build directory for loaded image
        if Sys.iswindows()
            res = split(filepath_slide, "\\")
@@ -432,10 +488,12 @@ end
 signal_connect(segmentationButton, "button-press-event") do widget, event
     run(thresholdDialog)
     # Launch JHistint Segmentation
-    JHistint.start_segmentation_SOPHYSM(filepath_slide_to_segment,
+    JHistint.start_segmentation_SOPHYSM_graph(filepath_slide_to_segment,
                                         filepath_slide_to_segment,
                                         threshold_gray,
-                                        threshold_marker)
+                                        threshold_marker,
+                                        threshold_min,
+                                        threshold_max)
     set_gtk_property!(segmentedImage, :file,
                           replace(filepath_slide_to_segment,
                                   r"....$" => "_seg-0.png"))
@@ -445,6 +503,32 @@ signal_connect(segmentationButton, "button-press-event") do widget, event
     set_gtk_property!(graphEdgesImage, :file,
                           replace(filepath_slide_to_segment,
                                   r"....$" => "_graph_edges.png"))
+end
+
+signal_connect(tessellationButton, "button-press-event") do widget, event
+    run(thresholdDialog)
+    # Launch JHistint Segmentation
+    JHistint.start_segmentation_SOPHYSM_tessellation(filepath_slide_to_segment,
+                                        filepath_slide_to_segment,
+                                        threshold_gray,
+                                        threshold_marker,
+                                        threshold_min,
+                                        threshold_max)
+    set_gtk_property!(segmentedImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_seg-0.png"))
+    set_gtk_property!(graphVertexImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_graph_vertex.png"))
+    set_gtk_property!(graphEdgesImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_graph_edges.png"))
+    set_gtk_property!(tessCellImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_cell_tessellation.png"))
+    set_gtk_property!(tessTotalImage, :file,
+                          replace(filepath_slide_to_segment,
+                                  r"....$" => "_total_tessellation.png"))
 end
 
 signal_connect(simulationButton, "button-press-event") do widget, event

@@ -644,12 +644,32 @@ of tumor architecture and cellular interactions in space.</property>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">7</property>
+                    <property name="position">6</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="segmentationButton">
-                    <property name="label" translatable="yes">JHistint Segmentation</property>
+                    <property name="label" translatable="yes">JHistint Cell Segmentation
+	     Build Graph</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">10</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">7</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="tessellationButton">
+                    <property name="label" translatable="yes">JHistint Cell Segmentation
+	Build Tessellation</property>
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can-focus">True</property>
@@ -739,9 +759,15 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSeparator" id="resultBoxSeparator">
+                  <object class="GtkLabel" id="thresholdMinValueLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-start">5</property>
+                    <property name="margin-end">5</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="xpad">5</property>
+                    <property name="label" translatable="yes">Selected Minimum Threshold for Segmentation Area Detection : _______</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -750,7 +776,35 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <!-- n-columns=2 n-rows=2 -->
+                  <object class="GtkLabel" id="thresholdMaxValueLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-start">5</property>
+                    <property name="margin-end">5</property>
+                    <property name="margin-top">5</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="xpad">5</property>
+                    <property name="label" translatable="yes">Selected Maximum Threshold for Segmentation Area Detection : _______</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSeparator" id="resultBoxSeparator">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <!-- n-columns=2 n-rows=3 -->
                   <object class="GtkGrid" id="imageBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -828,11 +882,35 @@ of tumor architecture and cellular interactions in space.</property>
                         <property name="top-attach">1</property>
                       </packing>
                     </child>
+                    <child>
+                      <object class="GtkImage" id="tessCellImage">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
+                        <property name="icon_size">6</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkImage" id="tessTotalImage">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="icon-name">image-x-generic-symbolic</property>
+                        <property name="icon_size">6</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">2</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">3</property>
+                    <property name="position">5</property>
                   </packing>
                 </child>
               </object>
@@ -1103,7 +1181,7 @@ of tumor architecture and cellular interactions in space.</property>
           </packing>
         </child>
         <child>
-          <!-- n-columns=2 n-rows=2 -->
+          <!-- n-columns=2 n-rows=4 -->
           <object class="GtkGrid" id="thresholdGrid">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
@@ -1127,7 +1205,7 @@ of tumor architecture and cellular interactions in space.</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="hexpand">True</property>
-                <property name="placeholder-text" translatable="yes">Insert a value .... (Default = 0.15)</property>
+                <property name="placeholder-text" translatable="yes">Insert a value ... (Default = 0.15)</property>
                 <property name="input-purpose">number</property>
               </object>
               <packing>
@@ -1140,7 +1218,7 @@ of tumor architecture and cellular interactions in space.</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="hexpand">True</property>
-                <property name="placeholder-text" translatable="yes">Insert a value... (Default = -0.3)</property>
+                <property name="placeholder-text" translatable="yes">Insert a value ... (Default = -0.3)</property>
                 <property name="input-purpose">number</property>
               </object>
               <packing>
@@ -1158,6 +1236,54 @@ of tumor architecture and cellular interactions in space.</property>
               <packing>
                 <property name="left-attach">0</property>
                 <property name="top-attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="thresholdMinLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Minimum Threshold for Segmentation Area Detection : </property>
+                <property name="xalign">0.5</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="thresholdMaxLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Maximum Threshold for Segmentation Area Detection :</property>
+                <property name="xalign">0.5</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="thresholdMinEntry">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="placeholder-text" translatable="yes">Insert a value ... (Default = 300)</property>
+                <property name="input-purpose">number</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="thresholdMaxEntry">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="placeholder-text" translatable="yes">Insert a value ... (Default = 3000)</property>
+                <property name="input-purpose">number</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">3</property>
               </packing>
             </child>
           </object>
