@@ -129,6 +129,7 @@ signal_connect(loadProjectMenuItem, "button-press-event") do widget, event
         set_gtk_property!(loadButton, :sensitive, true)
         set_gtk_property!(loadImageMenuItem, :sensitive, true)
         set_gtk_property!(segmentationButton, :sensitive, false)
+        set_gtk_property!(tessellationButton, :sensitive, false)
         set_gtk_property!(simulationButton, :sensitive, false)
         set_gtk_property!(selectedImage, :icon_name, "image-x-generic-symbolic")
         set_gtk_property!(selectedImage, :icon_size, 6)
@@ -146,9 +147,9 @@ signal_connect(loadProjectMenuItem, "button-press-event") do widget, event
                         "Selected Greyscale Filter's Threshold : _____")
         set_gtk_property!(thresholdMarkersValueLabel, :label,
                         "Selected Marker's Distance Threshold : _____")
-        set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+        set_gtk_property!(thresholdMinValueLabel, :label,
                         "Selected Minimum Threshold for Segmentation Area Detection : _______")
-        set_gtk_property!(thresholdMarkersValueLabel, :label,
+        set_gtk_property!(thresholdMaxValueLabel, :label,
                         "Selected Maximum Threshold for Segmentation Area Detection : _______")
     end
 end
@@ -157,6 +158,7 @@ signal_connect(closeProjectMenuItem, "button-press-event") do widget, event
     set_gtk_property!(loadButton, :sensitive, false)
     set_gtk_property!(loadImageMenuItem, :sensitive, false)
     set_gtk_property!(segmentationButton, :sensitive, false)
+    set_gtk_property!(tessellationButton, :sensitive, false)
     set_gtk_property!(simulationButton, :sensitive, false)
     set_gtk_property!(descriptionLabel, :label,
                     "Project Name : ______________________")
@@ -176,9 +178,9 @@ signal_connect(closeProjectMenuItem, "button-press-event") do widget, event
                     "Selected Greyscale Filter's Threshold : _____")
     set_gtk_property!(thresholdMarkersValueLabel, :label,
                     "Selected Marker's Distance Threshold : _____")
-    set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+    set_gtk_property!(thresholdMinValueLabel, :label,
                     "Selected Minimum Threshold for Segmentation Area Detection : _______")
-    set_gtk_property!(thresholdMarkersValueLabel, :label,
+    set_gtk_property!(thresholdMaxValueLabel, :label,
                     "Selected Maximum Threshold for Segmentation Area Detection : _______")
 end
 
@@ -205,14 +207,15 @@ signal_connect(loadImageMenuItem, "button-press-event") do widget, event
    if filepath_slide != ""
        set_gtk_property!(selectedImage, :file, filepath_slide)
        set_gtk_property!(segmentationButton, :sensitive, true)
+       set_gtk_property!(tessellationButton, :sensitive, true)
        set_gtk_property!(simulationButton, :sensitive, false)
        set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                        "Selected Greyscale Filter's Threshold : _____")
        set_gtk_property!(thresholdMarkersValueLabel, :label,
                        "Selected Marker's Distance Threshold : _____")
-       set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+       set_gtk_property!(thresholdMinValueLabel, :label,
                        "Selected Minimum Threshold for Segmentation Area Detection : _______")
-       set_gtk_property!(thresholdMarkersValueLabel, :label,
+       set_gtk_property!(thresholdMaxValueLabel, :label,
                        "Selected Maximum Threshold for Segmentation Area Detection : _______")
        # Build directory for loaded image
        if Sys.iswindows()
@@ -281,9 +284,9 @@ signal_connect(errorSlideOkButton, "button-press-event") do widget, event
                     "Selected Greyscale Filter's Threshold : _____")
     set_gtk_property!(thresholdMarkersValueLabel, :label,
                     "Selected Marker's Distance Threshold : _____")
-    set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+    set_gtk_property!(thresholdMinValueLabel, :label,
                     "Selected Minimum Threshold for Segmentation Area Detection : _______")
-    set_gtk_property!(thresholdMarkersValueLabel, :label,
+    set_gtk_property!(thresholdMaxValueLabel, :label,
                     "Selected Maximum Threshold for Segmentation Area Detection : _______")
     cp(filepath_slide, filepath_slide_to_segment)
     hide(slideAlreadyExistMessage)
@@ -292,6 +295,7 @@ end
 signal_connect(errorSlideCancelButton, "button-press-event") do widget, event
     hide(slideAlreadyExistMessage)
     set_gtk_property!(segmentationButton, :sensitive, true)
+    set_gtk_property!(tessellationButton, :sensitive, true)
     set_gtk_property!(simulationButton, :sensitive, true)
     ## SHOW PREVIOUS ANALYSIS
     if Sys.iswindows()
@@ -332,6 +336,7 @@ signal_connect(newProjectOkButton, "button-press-event") do widget, event
             set_gtk_property!(loadButton, :sensitive, true)
             set_gtk_property!(loadImageMenuItem, :sensitive, true)
             set_gtk_property!(segmentationButton, :sensitive, false)
+            set_gtk_property!(tessellationButton, :sensitive, false)
             set_gtk_property!(simulationButton, :sensitive, false)
             set_gtk_property!(selectedImage, :icon_name, "image-x-generic-symbolic")
             set_gtk_property!(selectedImage, :icon_size, 6)
@@ -349,9 +354,9 @@ signal_connect(newProjectOkButton, "button-press-event") do widget, event
                             "Selected Greyscale Filter's Threshold : _____")
             set_gtk_property!(thresholdMarkersValueLabel, :label,
                             "Selected Marker's Distance Threshold : _____")
-            set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+            set_gtk_property!(thresholdMinValueLabel, :label,
                             "Selected Minimum Threshold for Segmentation Area Detection : _______")
-            set_gtk_property!(thresholdMarkersValueLabel, :label,
+            set_gtk_property!(thresholdMaxValueLabel, :label,
                             "Selected Maximum Threshold for Segmentation Area Detection : _______")
         end
     end
@@ -408,9 +413,9 @@ signal_connect(thresholdOkButton, "button-press-event") do widget, event
                         "Selected Greyscale Filter's Threshold : " * threshold_gray)
         set_gtk_property!(thresholdMarkersValueLabel, :label,
                         "Selected Marker's Distance Threshold : " * threshold_marker)
-        set_gtk_property!(thresholdMarkersValueLabel, :label,
+        set_gtk_property!(thresholdMinValueLabel, :label,
                         "Selected Minimum Threshold for Segmentation Area Detection : " * threshold_min)
-        set_gtk_property!(thresholdMarkersValueLabel, :label,
+        set_gtk_property!(thresholdMaxValueLabel, :label,
                         "Selected Maximum Threshold for Segmentation Area Detection : " * threshold_max)
         global threshold_gray = parse(Float64, threshold_gray)
         global threshold_marker = parse(Float64, threshold_marker)
@@ -424,7 +429,7 @@ end
 signal_connect(defaultSettingsButton, "button-press-event") do widget, event
     set_gtk_property!(thresholdGreyscaleEntry, :text, "0.15")
     set_gtk_property!(thresholdMarkersEntry, :text, "-0.3")
-    set_gtk_property!(thresholdMinsEntry, :text, "300")
+    set_gtk_property!(thresholdMinEntry, :text, "300")
     set_gtk_property!(thresholdMaxEntry, :text, "3000")
 end
 
@@ -445,14 +450,15 @@ signal_connect(loadButton, "button-press-event") do widget, event
    if filepath_slide != ""
        set_gtk_property!(selectedImage, :file, filepath_slide)
        set_gtk_property!(segmentationButton, :sensitive, true)
+       set_gtk_property!(tessellationButton, :sensitive, true)
        set_gtk_property!(simulationButton, :sensitive, false)
        set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                        "Selected Greyscale Filter's Threshold : _____")
        set_gtk_property!(thresholdMarkersValueLabel, :label,
                        "Selected Marker's Distance Threshold : _____")
-       set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+       set_gtk_property!(thresholdMinValueLabel, :label,
                        "Selected Minimum Threshold for Segmentation Area Detection : _______")
-       set_gtk_property!(thresholdMarkersValueLabel, :label,
+       set_gtk_property!(thresholdMaxValueLabel, :label,
                        "Selected Maximum Threshold for Segmentation Area Detection : _______")
        # Build directory for loaded image
        if Sys.iswindows()

@@ -723,10 +723,8 @@ of tumor architecture and cellular interactions in space.</property>
             </child>
             <child>
               <object class="GtkBox" id="resultBox">
-                <property name="height-request">22</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="margin-bottom">451</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkLabel" id="thresholdGreyscaleValueLabel">
@@ -804,113 +802,126 @@ of tumor architecture and cellular interactions in space.</property>
                   </packing>
                 </child>
                 <child>
-                  <!-- n-columns=2 n-rows=3 -->
-                  <object class="GtkGrid" id="imageBox">
+                  <object class="GtkScrolledWindow" id="scrolledWindow">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="row-homogeneous">True</property>
-                    <property name="column-homogeneous">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="shadow-type">in</property>
                     <child>
-                      <object class="GtkImage" id="selectedImage">
+                      <object class="GtkViewport" id="viewPort">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="margin-start">10</property>
-                        <property name="margin-end">10</property>
-                        <property name="margin-top">10</property>
-                        <property name="margin-bottom">10</property>
-                        <property name="xpad">0</property>
-                        <property name="ypad">0</property>
-                        <property name="icon-name">image-x-generic-symbolic</property>
-                        <property name="icon_size">6</property>
+                        <child>
+                          <!-- n-columns=2 n-rows=3 -->
+                          <object class="GtkGrid" id="imageBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="row-homogeneous">True</property>
+                            <property name="column-homogeneous">True</property>
+                            <child>
+                              <object class="GtkImage" id="selectedImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="margin-start">10</property>
+                                <property name="margin-end">10</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">10</property>
+                                <property name="xpad">0</property>
+                                <property name="ypad">0</property>
+                                <property name="icon-name">image-x-generic-symbolic</property>
+                                <property name="icon_size">6</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="segmentedImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="margin-start">10</property>
+                                <property name="margin-end">10</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">10</property>
+                                <property name="xpad">0</property>
+                                <property name="ypad">0</property>
+                                <property name="icon-name">image-x-generic-symbolic</property>
+                                <property name="icon_size">6</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="graphVertexImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="margin-start">10</property>
+                                <property name="margin-end">10</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">10</property>
+                                <property name="xpad">0</property>
+                                <property name="ypad">0</property>
+                                <property name="icon-name">image-x-generic-symbolic</property>
+                                <property name="icon_size">6</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="graphEdgesImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="margin-start">10</property>
+                                <property name="margin-end">10</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">10</property>
+                                <property name="xpad">0</property>
+                                <property name="ypad">0</property>
+                                <property name="icon-name">image-x-generic-symbolic</property>
+                                <property name="icon_size">6</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="tessCellImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="icon-name">image-x-generic-symbolic</property>
+                                <property name="icon_size">6</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="tessTotalImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="icon-name">image-x-generic-symbolic</property>
+                                <property name="icon_size">6</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">2</property>
+                              </packing>
+                            </child>
+                          </object>
+                        </child>
                       </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkImage" id="segmentedImage">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="margin-start">10</property>
-                        <property name="margin-end">10</property>
-                        <property name="margin-top">10</property>
-                        <property name="margin-bottom">10</property>
-                        <property name="xpad">0</property>
-                        <property name="ypad">0</property>
-                        <property name="icon-name">image-x-generic-symbolic</property>
-                        <property name="icon_size">6</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkImage" id="graphVertexImage">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="margin-start">10</property>
-                        <property name="margin-end">10</property>
-                        <property name="margin-top">10</property>
-                        <property name="margin-bottom">10</property>
-                        <property name="xpad">0</property>
-                        <property name="ypad">0</property>
-                        <property name="icon-name">image-x-generic-symbolic</property>
-                        <property name="icon_size">6</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkImage" id="graphEdgesImage">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="margin-start">10</property>
-                        <property name="margin-end">10</property>
-                        <property name="margin-top">10</property>
-                        <property name="margin-bottom">10</property>
-                        <property name="xpad">0</property>
-                        <property name="ypad">0</property>
-                        <property name="icon-name">image-x-generic-symbolic</property>
-                        <property name="icon_size">6</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkImage" id="tessCellImage">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="icon-name">image-x-generic-symbolic</property>
-                        <property name="icon_size">6</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkImage" id="tessTotalImage">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="icon-name">image-x-generic-symbolic</property>
-                        <property name="icon_size">6</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">2</property>
-                      </packing>
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
+                    <property name="expand">True</property>
                     <property name="fill">True</property>
-                    <property name="position">5</property>
+                    <property name="position">6</property>
                   </packing>
                 </child>
               </object>
@@ -1133,7 +1144,7 @@ of tumor architecture and cellular interactions in space.</property>
     <property name="can-focus">False</property>
     <property name="title" translatable="yes">SOPHYSM - Select Segmentation Parameter</property>
     <property name="resizable">False</property>
-    <property name="default-width">400</property>
+    <property name="default-width">550</property>
     <property name="default-height">100</property>
     <property name="icon-name">dialog-question</property>
     <property name="type-hint">normal</property>
