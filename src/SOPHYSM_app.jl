@@ -206,6 +206,16 @@ signal_connect(loadImageMenuItem, "button-press-event") do widget, event
                                    name = "All supported formats")))
    if filepath_slide != ""
        set_gtk_property!(selectedImage, :file, filepath_slide)
+       set_gtk_property!(segmentedImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(segmentedImage, :icon_size, 6)
+       set_gtk_property!(graphVertexImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(graphVertexImage, :icon_size, 6)
+       set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(graphEdgesImage, :icon_size, 6)
+       set_gtk_property!(tessCellImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(tessCellImage, :icon_size, 6)
+       set_gtk_property!(tessTotalImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(tessTotalImage, :icon_size, 6)
        set_gtk_property!(segmentationButton, :sensitive, true)
        set_gtk_property!(tessellationButton, :sensitive, true)
        set_gtk_property!(simulationButton, :sensitive, false)
@@ -253,6 +263,33 @@ signal_connect(workspaceMenuItem, "button-press-event") do widget, event
                    action= GtkFileChooserAction.SELECT_FOLDER)
     if(workspace_path != "")
         set_gtk_property!(workspacePositionLabel, :label, "Workspace Position : \n $workspace_path")
+        set_gtk_property!(selectedImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(selectedImage, :icon_size, 6)
+        set_gtk_property!(segmentedImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(segmentedImage, :icon_size, 6)
+        set_gtk_property!(graphVertexImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(graphVertexImage, :icon_size, 6)
+        set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(graphEdgesImage, :icon_size, 6)
+        set_gtk_property!(tessCellImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(tessCellImage, :icon_size, 6)
+        set_gtk_property!(tessTotalImage, :icon_name, "image-x-generic-symbolic")
+        set_gtk_property!(tessTotalImage, :icon_size, 6)
+        set_gtk_property!(loadButton, :sensitive, false)
+        set_gtk_property!(loadImageMenuItem, :sensitive, false)
+        set_gtk_property!(segmentationButton, :sensitive, false)
+        set_gtk_property!(tessellationButton, :sensitive, false)
+        set_gtk_property!(simulationButton, :sensitive, false)
+        set_gtk_property!(descriptionLabel, :label,
+                        "Project Name : ______________________")
+        set_gtk_property!(thresholdGreyscaleValueLabel, :label,
+                        "Selected Greyscale Filter's Threshold : _____")
+        set_gtk_property!(thresholdMarkersValueLabel, :label,
+                        "Selected Marker's Distance Threshold : _____")
+        set_gtk_property!(thresholdMinValueLabel, :label,
+                        "Selected Minimum Threshold for Segmentation Area Detection : _______")
+        set_gtk_property!(thresholdMaxValueLabel, :label,
+                        "Selected Maximum Threshold for Segmentation Area Detection : _______")
     end
 end
 
@@ -313,6 +350,10 @@ signal_connect(errorSlideCancelButton, "button-press-event") do widget, event
     set_gtk_property!(graphEdgesImage, :file,
                           replace(filepath_slide_to_segment,
                                   r"....$" => "_graph_edges.png"))
+    set_gtk_property!(tessCellImage, :icon_name, "")
+    set_gtk_property!(tessCellImage, :icon_size, 6)
+    set_gtk_property!(tessTotalImage, :icon_name, "")
+    set_gtk_property!(tessTotalImage, :icon_size, 6)
 
 end
 ## newProjectDialog elements
@@ -449,6 +490,16 @@ signal_connect(loadButton, "button-press-event") do widget, event
                                    name = "All supported formats")))
    if filepath_slide != ""
        set_gtk_property!(selectedImage, :file, filepath_slide)
+       set_gtk_property!(segmentedImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(segmentedImage, :icon_size, 6)
+       set_gtk_property!(graphVertexImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(graphVertexImage, :icon_size, 6)
+       set_gtk_property!(graphEdgesImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(graphEdgesImage, :icon_size, 6)
+       set_gtk_property!(tessCellImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(tessCellImage, :icon_size, 6)
+       set_gtk_property!(tessTotalImage, :icon_name, "image-x-generic-symbolic")
+       set_gtk_property!(tessTotalImage, :icon_size, 6)
        set_gtk_property!(segmentationButton, :sensitive, true)
        set_gtk_property!(tessellationButton, :sensitive, true)
        set_gtk_property!(simulationButton, :sensitive, false)
@@ -509,6 +560,10 @@ signal_connect(segmentationButton, "button-press-event") do widget, event
     set_gtk_property!(graphEdgesImage, :file,
                           replace(filepath_slide_to_segment,
                                   r"....$" => "_graph_edges.png"))
+    set_gtk_property!(tessCellImage, :icon_name, "")
+    set_gtk_property!(tessCellImage, :icon_size, 6)
+    set_gtk_property!(tessTotalImage, :icon_name, "")
+    set_gtk_property!(tessTotalImage, :icon_size, 6)
 end
 
 signal_connect(tessellationButton, "button-press-event") do widget, event
