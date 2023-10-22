@@ -1,0 +1,15 @@
+name = "SOPHYSM"
+uuid = "38d77cf3-75f2-4086-bf90-62dd71c7d938"
+authors = ["niccolo_mandelli <n.mandelli2@campus.unimib.it>"]
+repo = "https://github.com/niccolo99mandelli/SOPHYSM.jl.git"
+version = "0.1.0"
+
+[deps]
+Gtk = "4c0ca9eb-093a-5379-98c5-f87ac0bbbf44"
+JHistint = "f9cb9bd9-7498-4774-9389-dea22f18ae4d"
+J_Space = "fd1b0027-9d6f-49b5-97ba-2af5672b046a"
+
+[compat]
+Gtk = "1.3"
+JHistint = "0.1"
+J_Space = "0.1"
