@@ -16,7 +16,8 @@ export start_GUI
 
 function start_GUI()
     ### Data from SOPHYSM.glade
-    SOPHYSM_app = GtkBuilder(filename = "SOPHYSM.glade")
+    filepath_glade = joinpath(@__DIR__, "..", "src", "SOPHYSM.glade")
+    SOPHYSM_app = GtkBuilder(filename = filepath_glade)
     mainWindow = SOPHYSM_app["mainWindow"]
     thresholdDialog = SOPHYSM_app["thresholdDialog"]
     newProjectDialog = SOPHYSM_app["newProjectDialog"]
