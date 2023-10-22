@@ -3,11 +3,12 @@ SOPHYSM is a software for spatial phylogenetic modeling of solid tumors. It inte
 
 ## Resources
 - The image-processing pipeline and segmentation algorithm is provided by the Julia package `JHistint.jl` available at the following GitHub repository: [JHistint Repository](https://github.com/niccolo99mandelli/JHistint.jl.git).  
-- The simulation of the spatial growth and the genomic evolution of the cell population and the experiment of sequencing the genome of the sampled cells is provided by the Julia package `J-Space.jl` available at the following GitHub repository : [J-Space Repository](https://github.com/niccolo99mandelli/J-Space.jl.git).  
+- The simulation of the spatial growth and the genomic evolution of the cell population and the experiment of sequencing the genome of the sampled cells is provided by the Julia package `J-Space.jl` available at the following GitHub repository at the `spatial-input` branch: [J-Space Repository](https://github.com/BIMIB-DISCo/J-Space.jl).  
 
 ## Usage
 The software provides a graphical user interface (GUI) in Julia is designed to facilitate the management of projects related to histological analysis and spatial cancer simulation. It offers a comprehensive set of features to streamline the handling of workspace and dedicated projects that store information and results associated with various case studies. The GUI provides a user-friendly interface to build workspace where you can create and manage projects, each dedicated to a specific case study. Projects serve as containers for storing data and results related to histological analysis and cancer spatial simulation.
 The interface provides functionalities to upload histological slides to be segmented. Users can define configuration parameters for histological analysis, allowing for tailored and precise image processing. Image segmentation is a core feature, enabling users to extract meaningful regions of interest from uploaded images as cell or nuclei. For further information consults: [Julia Images Documentation - Watershed algorithm](https://juliaimages.org/v0.21/imagesegmentation/).
+
 In order to optimize the output of the segmentation, users can define a set of configuration parameters:
 - `Grayscale-threshold`: Used to define the cutoff threshold for regions determined by the watershed algorithm.
 - `Marker-Distance threshold`: Used to determine the maximum distance for generating markers related to nuclei or cells.
