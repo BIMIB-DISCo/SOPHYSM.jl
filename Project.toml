@@ -11,5 +11,5 @@ J_Space = "fd1b0027-9d6f-49b5-97ba-2af5672b046a"
 
 [compat]
 Gtk = "1.3"
-JHistint = "0.1"
-J_Space = "0.1"
+JHistint = "0.1.5"
+J_Space = "0.1.0"
