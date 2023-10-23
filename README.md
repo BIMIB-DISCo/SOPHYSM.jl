@@ -94,4 +94,21 @@ Once segmentation is complete, the simulation can be initiated to study the spat
     </tr>
  </table>
 
-## Installation
+## Installation & Run
+- Step 1 - Install `J-Space.jl` from `spatial-input` branch:
+```
+(@v1.8) pkg > add https://github.com/BIMIB-DISCo/J-Space.jl.git#spatial-input
+```
+- Step 2 - Install `JHistint.jl` from GitHub Repository:
+```
+(@v1.8) pkg > add https://github.com/niccolo99mandelli/JHistint.jl.git
+```
+- Step 3 - Install `SOPHYSM.jl` from this Repository:
+```
+(@v1.8) pkg > add https://github.com/niccolo99mandelli/SOPHYSM.jl.git
+julia > using SOPHYSM
+```
+- Step 4 - Run `SOPHYSM` app:
+```
+julia > SOPHYSM.start_GUI()
+```
