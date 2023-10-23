@@ -118,7 +118,7 @@ function start_GUI()
     end
 
     signal_connect(loadProjectMenuItem, "button-press-event") do widget, event
-        global path_project_folder =
+         path_project_folder =
             open_dialog("SOPHYSM - Select Project Folder",
                         action=GtkFileChooserAction.SELECT_FOLDER)
         if path_project_folder != ""
@@ -131,7 +131,7 @@ function start_GUI()
             for i in res
                 push!(data, i)
             end
-            global project_name = data[end]
+             project_name = data[end]
             set_gtk_property!(descriptionLabel, :label,
                             "Project Name : " * project_name)
             set_gtk_property!(loadButton, :sensitive, true)
@@ -204,7 +204,7 @@ function start_GUI()
     end
 
     signal_connect(loadImageMenuItem, "button-press-event") do widget, event
-        global filepath_slide =
+         filepath_slide =
             open_dialog("SOPHYSM - Select Histological Image",
                         GtkNullContainer(),
                         ("*.tif",
@@ -245,21 +245,21 @@ function start_GUI()
            for i in res
                push!(data, i)
            end
-           global slide_name = data[end]
+            slide_name = data[end]
            if Sys.iswindows()
-               global path_slide_folder = path_project_folder * "\\" * slide_name
+                path_slide_folder = path_project_folder * "\\" * slide_name
            elseif Sys.isunix()
-               global path_slide_folder = path_project_folder * "/" * slide_name
+                path_slide_folder = path_project_folder * "/" * slide_name
            end
-           global path_slide_folder = replace(path_slide_folder, r"....$" => "")
+            path_slide_folder = replace(path_slide_folder, r"....$" => "")
            if isdir(path_slide_folder)
                run(slideAlreadyExistMessage)
            else
                mkdir(path_slide_folder)
                if Sys.iswindows()
-                   global filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
+                    filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
                elseif Sys.isunix()
-                   global filepath_slide_to_segment = path_slide_folder * "/" * slide_name
+                    filepath_slide_to_segment = path_slide_folder * "/" * slide_name
                end
                cp(filepath_slide, filepath_slide_to_segment)
            end
@@ -267,7 +267,7 @@ function start_GUI()
     end
 
     signal_connect(workspaceMenuItem, "button-press-event") do widget, event
-        global workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
+         workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
                        action= GtkFileChooserAction.SELECT_FOLDER)
         if(workspace_path != "")
             set_gtk_property!(workspacePositionLabel, :label, "Workspace Position : \n $workspace_path")
@@ -302,14 +302,14 @@ function start_GUI()
     end
 
     signal_connect(downloadSingleCollectionMenuItem, "button-press-event") do widget, event
-        global path_download_dataset =
+         path_download_dataset =
             open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                         action=GtkFileChooserAction.SELECT_FOLDER)
         run(chooseCollectionDialog)
     end
 
     signal_connect(downloadAllCollectionMenuItem, "button-press-event") do widget, event
-        global path_download_dataset =
+         path_download_dataset =
             open_dialog("SOPHYSM - Select Folder for Downloading Dataset",
                         action=GtkFileChooserAction.SELECT_FOLDER)
         # Call JHistInt
@@ -321,9 +321,9 @@ function start_GUI()
         rm(path_slide_folder, force=true, recursive=true)
         mkdir(path_slide_folder)
         if Sys.iswindows()
-            global filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
+             filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
         elseif Sys.isunix()
-            global filepath_slide_to_segment = path_slide_folder * "/" * slide_name
+             filepath_slide_to_segment = path_slide_folder * "/" * slide_name
         end
         set_gtk_property!(thresholdGreyscaleValueLabel, :label,
                         "Selected Greyscale Filter's Threshold : _____")
@@ -344,9 +344,9 @@ function start_GUI()
         set_gtk_property!(simulationButton, :sensitive, true)
         ## SHOW PREVIOUS ANALYSIS
         if Sys.iswindows()
-            global filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
+             filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
         elseif Sys.isunix()
-            global filepath_slide_to_segment = path_slide_folder * "/" * slide_name
+             filepath_slide_to_segment = path_slide_folder * "/" * slide_name
         end
         set_gtk_property!(selectedImage, :file, filepath_slide_to_segment)
         set_gtk_property!(segmentedImage, :file,
@@ -370,8 +370,8 @@ function start_GUI()
     end
 
     signal_connect(newProjectOkButton, "button-press-event") do widget, event
-        global project_name = get_gtk_property(projectNameEntry, :text, String)
-        global path_project_folder = joinpath(workspace_path, project_name)
+         project_name = get_gtk_property(projectNameEntry, :text, String)
+         path_project_folder = joinpath(workspace_path, project_name)
         if project_name == ""
             run(invalidNameProjectMessage)
         else
@@ -433,7 +433,7 @@ function start_GUI()
     end
 
     signal_connect(collectionOkButton, "button-press-event") do widget, event
-        global collection_name = get_gtk_property(nameCollectionEntry, :text, String)
+         collection_name = get_gtk_property(nameCollectionEntry, :text, String)
         # Call JHistInt
         JHistint.download_single_collection_SOPHYSM(collection_name, path_download_dataset)
         hide(chooseCollectionDialog)
@@ -450,10 +450,10 @@ function start_GUI()
 
     signal_connect(thresholdOkButton, "button-press-event") do widget, event
         # Setting parameter for Segmentation
-        global threshold_gray = get_gtk_property(thresholdGreyscaleEntry, :text, String)
-        global threshold_marker = get_gtk_property(thresholdMarkersEntry, :text, String)
-        global threshold_min = get_gtk_property(thresholdMinEntry, :text, String)
-        global threshold_max = get_gtk_property(thresholdMaxEntry, :text, String)
+         threshold_gray = get_gtk_property(thresholdGreyscaleEntry, :text, String)
+         threshold_marker = get_gtk_property(thresholdMarkersEntry, :text, String)
+         threshold_min = get_gtk_property(thresholdMinEntry, :text, String)
+         threshold_max = get_gtk_property(thresholdMaxEntry, :text, String)
         if (threshold_gray == "" || threshold_marker == "" || threshold_min == ""
             || threshold_max == "")
             run(thresholdErrorMessage)
@@ -466,10 +466,10 @@ function start_GUI()
                             "Selected Minimum Threshold for Segmentation Area Detection : " * threshold_min)
             set_gtk_property!(thresholdMaxValueLabel, :label,
                             "Selected Maximum Threshold for Segmentation Area Detection : " * threshold_max)
-            global threshold_gray = parse(Float64, threshold_gray)
-            global threshold_marker = parse(Float64, threshold_marker)
-            global threshold_min = parse(Float32, threshold_min)
-            global threshold_max = parse(Float32, threshold_max)
+             threshold_gray = parse(Float64, threshold_gray)
+             threshold_marker = parse(Float64, threshold_marker)
+             threshold_min = parse(Float32, threshold_min)
+             threshold_max = parse(Float32, threshold_max)
             hide(thresholdDialog)
             Gtk.set_gtk_property!(simulationButton, :sensitive, true)
         end
@@ -488,7 +488,7 @@ function start_GUI()
     end
     ## ProjectBox elements
     signal_connect(loadButton, "button-press-event") do widget, event
-        global filepath_slide =
+         filepath_slide =
             open_dialog("SOPHYSM - Select Histological Image",
                         GtkNullContainer(),
                         ("*.tif",
@@ -529,21 +529,21 @@ function start_GUI()
            for i in res
                push!(data, i)
            end
-           global slide_name = data[end]
+            slide_name = data[end]
            if Sys.iswindows()
-               global path_slide_folder = path_project_folder * "\\" * slide_name
+                path_slide_folder = path_project_folder * "\\" * slide_name
            elseif Sys.isunix()
-               global path_slide_folder = path_project_folder * "/" * slide_name
+                path_slide_folder = path_project_folder * "/" * slide_name
            end
-           global path_slide_folder = replace(path_slide_folder, r"....$" => "")
+            path_slide_folder = replace(path_slide_folder, r"....$" => "")
            if isdir(path_slide_folder)
                run(slideAlreadyExistMessage)
            else
                mkdir(path_slide_folder)
                if Sys.iswindows()
-                   global filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
+                    filepath_slide_to_segment = path_slide_folder * "\\" * slide_name
                elseif Sys.isunix()
-                   global filepath_slide_to_segment = path_slide_folder * "/" * slide_name
+                    filepath_slide_to_segment = path_slide_folder * "/" * slide_name
                end
                cp(filepath_slide, filepath_slide_to_segment)
            end
@@ -601,26 +601,26 @@ function start_GUI()
     end
 
     signal_connect(simulationButton, "button-press-event") do widget, event
-        global filepath_file_JSPACE = replace(filepath_slide_to_segment,
+         filepath_file_JSPACE = replace(filepath_slide_to_segment,
                                        r"....$" => "_Files_JSpace")
         if !isdir(filepath_file_JSPACE)
             mkdir(filepath_file_JSPACE)
         end
-        global filepath_plot_JSPACE = replace(filepath_slide_to_segment,
+         filepath_plot_JSPACE = replace(filepath_slide_to_segment,
                                        r"....$" => "_Plots_JSpace")
         if !isdir(filepath_plot_JSPACE)
             mkdir(filepath_plot_JSPACE)
         end
-        global filepath_reference_JSPACE =
+         filepath_reference_JSPACE =
             replace(filepath_slide_to_segment,
                     r"....$" => "_reference.fasta")
-        global filepath_matrix =
+         filepath_matrix =
             replace(filepath_slide_to_segment,
                     r"....$" => ".txt")
-        global filepath_dataframe_labels =
+         filepath_dataframe_labels =
             replace(filepath_slide_to_segment,
                     r"....$" => "_dataframe_labels.csv")
-        global filepath_dataframe_edges =
+         filepath_dataframe_edges =
             replace(filepath_slide_to_segment,
                     r"....$" => "_dataframe_edges.csv")
         # Launch J-Space Simulation
@@ -670,7 +670,7 @@ function start_GUI()
     end
 
     ## Start GUI
-    global workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
+     workspace_path = open_dialog("SOPHYSM - Select Workspace Folder",
                    action= GtkFileChooserAction.SELECT_FOLDER)
     if(workspace_path != "")
         # set-visible for Gtk Crash
