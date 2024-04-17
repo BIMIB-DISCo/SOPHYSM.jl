@@ -3,19 +3,19 @@ module SOPHYSM
 using QML
 
 export start_GUI
+export start_settings
 
 function start_GUI()
-
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
-
-    fromfunction() = "From function call"
-    @qmlfunction fromfunction
 
     # All keyword arguments to load are added as context properties on the QML side
     loadqml(qmlfile, fromcontext="From context property")
+
     exec()
 
-    "GUI Closed"
+    println("GUI Closed")
 end
+
+start_GUI();
 
 end
