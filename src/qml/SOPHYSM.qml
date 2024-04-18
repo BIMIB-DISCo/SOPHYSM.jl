@@ -10,7 +10,7 @@ ApplicationWindow {
     height: 480
     minimumWidth: 640
     minimumHeight: 480
-    visible: true    
+    visible: true
     title: qsTr("SOPHYSM")
     id : mainWindow
 
@@ -18,14 +18,11 @@ ApplicationWindow {
         id: folderDialog
         title: "Please choose your new Workspace Folder"
         onAccepted: {
-            console.log("User has selected " + folderDialog.folder);
-            Qt.quit()
-            //Julia.setDir(folder)
+            console.log("User has selected " + folderDialog.selectedFolder);
+            Julia.setDir(selectedFolder)
         }
         onRejected: {
             console.log("Canceled");
-            Qt.quit()
-            //Julia.setDir(folder)
         }
     }
 
@@ -52,12 +49,12 @@ ApplicationWindow {
             onClicked: console.log("Item 3 selected")
         }
     }
-    
+
     // tabBar
     TabBar {
         id: bar
         width: parent.width
-        height: parent.height / 12        
+        height: parent.height / 12
         contentHeight: parent.height / 12
 
         TabButton {
@@ -138,9 +135,9 @@ ApplicationWindow {
             currentIndex: bar.currentIndex
 
             anchors {
-                top: bar.bottom                
+                top: bar.bottom
             }
-            
+
             // workspace Item
             SplitView {
                 id: splitView
@@ -153,25 +150,26 @@ ApplicationWindow {
                     implicitWidth: 2
                     color: SplitHandle.pressed ? "black"
                         : (SplitHandle.hovered ? Qt.lighter("grey", 1.1) : "grey")
-                }          
-                
+                }
+
                 // folder
                 Rectangle {
                     id: folder
-                    color: "lightgrey"
+                    color: "grey"
                     implicitWidth: 200
                     SplitView.minimumWidth: splitView.width / 4
                     SplitView.maximumWidth: splitView.width * 3 / 4
-                    
+
                     // current workspace
                     Column {
                         Label {
+                            padding: 3
                             text: "Current workspace:"
                             font.pixelSize: 16
                         }
-
                         Label {
-                            text: Julia.getDir()
+                            padding: 3
+                            text: workspace_directory
                             font.pixelSize: 12
                         }
                     }
