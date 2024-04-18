@@ -13,6 +13,45 @@ ApplicationWindow {
     visible: true    
     title: qsTr("SOPHYSM")
     id : mainWindow
+
+    FolderDialog {
+        id: folderDialog
+        title: "Please choose your new Workspace Folder"
+        onAccepted: {
+            console.log("User has selected " + folderDialog.folder);
+            Qt.quit()
+            //Julia.setDir(folder)
+        }
+        onRejected: {
+            console.log("Canceled");
+            Qt.quit()
+            //Julia.setDir(folder)
+        }
+    }
+
+    Menu {
+        id: dropdownMenu
+        width: 100
+
+        MenuItem {
+            text: "Change Directory"
+            onClicked: folderDialog.open()
+        }
+
+        MenuItem {
+            text: "test"
+            onClicked: {
+                console.log("test onClicked"),
+                Julia.test("test")
+            }
+
+        }
+
+        MenuItem {
+            text: "Item 3"
+            onClicked: console.log("Item 3 selected")
+        }
+    }
     
     // tabBar
     TabBar {
@@ -55,6 +94,8 @@ ApplicationWindow {
             ToolTip.visible: hovered
             ToolTip.text: qsTr("Open GitHub documentation")
 
+            onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")
+
             icon.source: "img/help.png"
             width: bar.height / 1.5
             height: bar.height / 1.5
@@ -74,12 +115,12 @@ ApplicationWindow {
             ToolTip.delay: 500
             ToolTip.timeout: 5000
             ToolTip.visible: hovered
-            ToolTip.text: qsTr("Open settings window")
+            ToolTip.text: qsTr("Settings")
+
+            onClicked: dropdownMenu.popup()
 
             icon.source: "img/settings.png"
-            onClicked: {
-                testD.open()
-            }
+
             width: bar.height / 1.5
             height: bar.height / 1.5
             y: bar.height / 6
@@ -101,17 +142,28 @@ ApplicationWindow {
             }
             
             // workspace Item
-            Item {
-                id: workspaceTab
+            SplitView {
+                id: splitView
                 width: parent.width
-                height: parent.height                
+                height: parent.height
+
+                // handle to resize the window
+                handle: Rectangle {
+                    id: handleDelegate
+                    implicitWidth: 2
+                    color: SplitHandle.pressed ? "black"
+                        : (SplitHandle.hovered ? Qt.lighter("grey", 1.1) : "grey")
+                }          
                 
+                // folder
                 Rectangle {
                     id: folder
                     color: "lightgrey"
-                    width: stackLayout.width / 4
-                    height: stackLayout.height
-
+                    implicitWidth: 200
+                    SplitView.minimumWidth: splitView.width / 4
+                    SplitView.maximumWidth: splitView.width * 3 / 4
+                    
+                    // current workspace
                     Column {
                         Label {
                             text: "Current workspace:"
@@ -119,8 +171,8 @@ ApplicationWindow {
                         }
 
                         Label {
-                            text: workspaceName
-                            font.pixelSize: 16
+                            text: Julia.getDir()
+                            font.pixelSize: 12
                         }
                     }
                 }
