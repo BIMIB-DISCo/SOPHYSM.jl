@@ -2,37 +2,39 @@ module SOPHYSM
 
 using QML
 using Observables
+using Base.Filesystem
+using JSON
 
-export start_GUI, getDir, setDir!
+### Included modules
+include("Workspace.jl")
 
-# global dir = Observable(@__DIR__)
-global dir = @__DIR__
+export get_workspace_dir, set_workspace_dir
 
-function getDir()
-    return dir
-end
+export start_GUI
 
-function setDir!(uri)
-    dir = QString(uri)
-    println("new workspace directory selected: $dir")
-end
+const workspace_dir = Observable(get_workspace_dir())
 
 function start_GUI()
 
-    qmlfunction("getDir", getDir)
-    qmlfunction("setDir", setDir!)
-
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
-    # Setting application context
-    # propmap = QML.QQmlPropertyMap()
-    # propmap["workspace_directory"] = dir
+    # Propmap
+    propmap = JuliaPropertyMap()
+    propmap["workspace_dir"] = workspace_dir
+
+    on(workspace_dir) do x
+        set_workspace_dir(x)
+        println("WS changed to ", workspace_dir)
+    end
+
     # All keyword arguments to load are added as context properties on the QML side
-    loadqml(qmlfile, workspace_directory = dir)
+    loadqml(qmlfile, propmap = propmap)
 
     exec()
 
     println("GUI Closed")
 end
 
-end
+start_GUI()
+
+end # SOPHYSM module

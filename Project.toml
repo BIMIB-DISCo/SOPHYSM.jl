@@ -4,5 +4,6 @@ authors = ["Gioosu <g.formisano2@campus.unimib.it>"]
 version = "0.1.0"
 
 [deps]
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Observables = "510215fc-4207-5dde-b226-833fc4488ee2"
 QML = "2db162a6-7e43-52c3-8d84-290c1c42d82a"

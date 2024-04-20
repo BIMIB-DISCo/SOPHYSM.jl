@@ -19,7 +19,8 @@ ApplicationWindow {
         title: "Please choose your new Workspace Folder"
         onAccepted: {
             console.log("User has selected " + folderDialog.selectedFolder);
-            Julia.setDir(selectedFolder)
+            // Parsing the selectedFolder with "file:///" removed
+            propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(8);
         }
         onRejected: {
             console.log("Canceled");
@@ -169,7 +170,7 @@ ApplicationWindow {
                         }
                         Label {
                             padding: 3
-                            text: workspace_directory
+                            text: propmap.workspace_dir
                             font.pixelSize: 12
                         }
                     }
