@@ -6,10 +6,11 @@ import QtQuick.Dialogs
 import org.julialang
 
 ApplicationWindow {
-    width: 640
-    height: 480
-    minimumWidth: 640
-    minimumHeight: 480
+    font.family: "Roboto"
+    width: 1000
+    height: 700
+    minimumWidth: 1000
+    minimumHeight: 700
     visible: true
     title: qsTr("SOPHYSM")
     id : mainWindow
@@ -18,7 +19,6 @@ ApplicationWindow {
         id: folderDialog
         title: "Please choose your new Workspace Folder"
         onAccepted: {
-            console.log("User has selected " + folderDialog.selectedFolder);
             // Parsing the selectedFolder with "file:///" removed
             propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(8);
         }
@@ -50,6 +50,75 @@ ApplicationWindow {
         }
     }
 
+    Popup {
+        id: downloadPopup
+        padding: 10
+        width: 760
+        height: 380
+        x: 50
+        y: 50
+
+        enter: Transition {
+        NumberAnimation { 
+            property: "scale"; 
+            from: 0.0; to: 1.0 
+            duration: 100}
+        }
+
+        ScrollView {
+            id: scrollView
+            // scrollbar is 15px large
+            width: 745
+            height: 365
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+
+            ColumnLayout {
+                Label {
+                    text: "Select the collections you want to download and press download:"
+                }
+
+                Column {
+                    spacing: 5
+                    CheckBox { text: qsTr("TCGA-BRCA = Breast Invasive Carcinoma (Breast)") }
+                    CheckBox { text: qsTr("TCGA-OV = Ovarian Serous Cystadenocarcinoma (Ovary)") }
+                    CheckBox { text: qsTr("TCGA-LUAD = Lung Adenocarcinoma (Bronchus and Lung)") }
+                    CheckBox { text: qsTr("TCGA-UCEC = Uterine Corpus Endometrial Carcinoma (Corpus uteri)") }
+                    CheckBox { text: qsTr("TCGA-GBM = Glioblastoma Multiforme (Brain)") }
+                    CheckBox { text: qsTr("TCGA-HSNC = Head and Neck Squamous Cell Carcinoma (Larynx, Lip, Tonsil, Gum, Other and unspecified parths of mouth)") }
+                    CheckBox { text: qsTr("TCGA-KIRC = Kidney Renal Clear Cell Carcinoma (Kidney)") }
+                    CheckBox { text: qsTr("TCGA-LGG = Brain Lower Grade Glioma (Brain)") }
+                    CheckBox { text: qsTr("TCGA-LUSC = Lung Squamous Cell Carcinoma (Bronchus and lung)") }
+                    CheckBox { text: qsTr("TCGA-TCHA = Thyroid Carcinoma (Thyroid gland)") }
+                    CheckBox { text: qsTr("TCGA-PRAD = Prostate Adenocarcinoma (Prostate gland)") }
+                    CheckBox { text: qsTr("TCGA-SKCM = Skin Cutaneous Melanoma (Skin)") }
+                    CheckBox { text: qsTr("TCGA-COAD = Colon Adenocarcinoma (Colon)") }
+                    CheckBox { text: qsTr("TCGA-STAD = Stomach Adenocarcinoma (Stomach)") }
+                    CheckBox { text: qsTr("TCGA-BLCA = Bladder Urothelial Carcinoma (Bladder)") }
+                    CheckBox { text: qsTr("TCGA-LIHC = Liver Hepatocellular Carcinoma (Liver and intrahepatic bile ducts)") }
+                    CheckBox { text: qsTr("TCGA-CESC = Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (Cervix uteri)") }
+                    CheckBox { text: qsTr("TCGA-KIRP = Kidney Renal Papillary Cell Carcinoma (Kidney)") }
+                    CheckBox { text: qsTr("TCGA-SARC = Sarcoma (Various)") }
+                    CheckBox { text: qsTr("TCGA-ESCA = Esophageal Carcinoma (Esophagus)") }
+                    CheckBox { text: qsTr("TCGA-PAAD = Pancreatic Adenocarcinoma (Pancreas)") }
+                    CheckBox { text: qsTr("TCGA-READ = Rectum Adenocarcinoma (Rectum)") }
+                    CheckBox { text: qsTr("TCGA-PCPG = Pheochromocytoma and Paraganglioma (Adrenal gland)") }
+                    CheckBox { text: qsTr("TCGA-TGCT = Testicular Germ Cell Tumors (Testis)") }
+                    CheckBox { text: qsTr("TCGA-THYM = Thymoma (Thymus)") }
+                    CheckBox { text: qsTr("TCGA-ACC = Adrenocortical Carcinoma - Adenomas and Adenocarcinomas (Adrenal gland)") }
+                    CheckBox { text: qsTr("TCGA-MESO = Mesothelioma (Heart, mediastinum and pleura)") }
+                    CheckBox { text: qsTr("TCGA-UVM = Uveal Melanoma (Eye and adnexa)") }
+                    CheckBox { text: qsTr("TCGA-KICH = Kidney Chromophobe (Kidney)") }
+                    CheckBox { text: qsTr("TCGA-UCS = Uterine Carcinosarcoma (Uterus, NOS)") }
+                    CheckBox { text: qsTr("TCGA-CHOL = Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)") }
+                    CheckBox { text: qsTr("TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)") }
+                }
+            }
+        }
+    }
+
+
     
     Column {
         id: verticalBar
@@ -58,9 +127,13 @@ ApplicationWindow {
         anchors {
             top: tabBar.bottom
         }
+
         // explorer
         Button {
             id: explorerButton
+            icon.source: "img/explorer.png"
+            width: parent.width
+            height: parent.width
 
             // on hover tooltip
             hoverEnabled: true
@@ -69,26 +142,42 @@ ApplicationWindow {
             ToolTip.visible: hovered
             ToolTip.text: qsTr("Open file Explorer")
 
-            icon.source: "img/explorer.png"
-            width: parent.width
-            height: parent.width
-
-            onClicked: {
-                
+            onClicked: {                
                 if(folder.visible == true)
                 {
                     folder.visible = false;
                     folder.width = 0;
                 }
                 else
-                {
                     folder.visible = true;
-                }
             }
         }
+        
+        // download
+        Button {
+            id: downloadButton
+            icon.source: "img/download.png"
+            width: parent.width
+            height: parent.width
+
+            // on hover tooltip
+            hoverEnabled: true
+            ToolTip.delay: 500
+            ToolTip.timeout: 5000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Download single collection or multiple collections")
+
+            onClicked: {
+                downloadPopup.open();
+            }
+        }
+
         // help button
         Button {
             id: helpButton
+            icon.source: "img/help.png"
+            width: parent.width
+            height: parent.width
 
             // on hover tooltip
             hoverEnabled: true
@@ -97,16 +186,15 @@ ApplicationWindow {
             ToolTip.visible: hovered
             ToolTip.text: qsTr("Open GitHub documentation")
 
-            onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")
-
-            icon.source: "img/help.png"
-            width: parent.width
-            height: parent.width
+            onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")            
         }
 
         // settings button
         Button {
             id: settingsButton
+            icon.source: "img/settings.png"
+            width: parent.width
+            height: parent.width
 
             // on hover tooltip
             hoverEnabled: true
@@ -116,11 +204,6 @@ ApplicationWindow {
             ToolTip.text: qsTr("Settings")
 
             onClicked: dropdownMenu.popup()
-
-            icon.source: "img/settings.png"
-
-            width: parent.width
-            height: parent.width
         }
     }
 
@@ -132,19 +215,40 @@ ApplicationWindow {
         x: 40
 
         TabButton {
-            text: qsTr("Segmentation")
             id: segmentationButton
+            text: qsTr("Segmentation")
             width: 100           
+
+            // on hover tooltip
+            hoverEnabled: true
+            ToolTip.delay: 500
+            ToolTip.timeout: 5000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Segmentation Panel")          
         }
         TabButton {
-            text: qsTr("Tessellation")
             id: tessellationButton
-            width: 100
+            text: qsTr("Tessellation")   
+            width: 100         
+
+            // on hover tooltip
+            hoverEnabled: true
+            ToolTip.delay: 500
+            ToolTip.timeout: 5000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Tessellation Panel")
         }
         TabButton {
-            text: qsTr("Simulation")
             id: simulationButton
-            width: 100
+            text: qsTr("Simulation")
+            width: 100       
+
+            // on hover tooltip
+            hoverEnabled: true
+            ToolTip.delay: 500
+            ToolTip.timeout: 5000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Simulation Panel")
         }
     }
 
@@ -161,15 +265,15 @@ ApplicationWindow {
             // handle to resize the window
             handle: Rectangle {
                 id: handleDelegate
-                implicitWidth: 2
-                color: SplitHandle.pressed ? "black"
-                    : (SplitHandle.hovered ? Qt.lighter("grey", 1.1) : "grey")
+                implicitWidth: 3
+                color: SplitHandle.pressed ? "#0984e3"
+                    : (SplitHandle.hovered ? Qt.lighter("lightblue", 1.1) : "#b2bec3")
             }
 
             // folder
             Rectangle {
                 id: folder
-                color: "grey"
+                color: "#b2bec3"
                 implicitWidth: 200
                 SplitView.minimumWidth: splitView.width / 5
                 SplitView.maximumWidth: splitView.width * 3 / 4
@@ -177,12 +281,14 @@ ApplicationWindow {
                 // current workspace
                 Column {
                     Label {
-                        padding: 3
+                        padding: 5
+                        color: "black"
                         text: "Current workspace:"
                         font.pixelSize: 16
                     }
                     Label {
-                        padding: 3
+                        padding: 5
+                        color: "black"
                         text: propmap.workspace_dir
                         font.pixelSize: 12
                     }

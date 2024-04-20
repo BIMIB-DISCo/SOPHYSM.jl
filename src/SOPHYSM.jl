@@ -17,7 +17,6 @@ const workspace_dir = Observable(get_workspace_dir())
 
 ### GUI logic
 function start_GUI()
-
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
     # Propmap
@@ -31,7 +30,7 @@ function start_GUI()
 
     # All keyword arguments to load are added as context properties on the QML side
     loadqml(qmlfile, propmap = propmap)
-
+    
     exec()
 
     println("GUI Closed")
@@ -39,4 +38,5 @@ end
 
 start_GUI()
 
-end # SOPHYSM module
+# SOPHYSM module
+end
