@@ -1,5 +1,6 @@
 module SOPHYSM
 
+### Used modules
 using QML
 using Observables
 using Base.Filesystem
@@ -8,12 +9,13 @@ using JSON
 ### Included modules
 include("Workspace.jl")
 
-export get_workspace_dir, set_workspace_dir
-
+### Exported functions
 export start_GUI
 
+### Constants
 const workspace_dir = Observable(get_workspace_dir())
 
+### GUI logic
 function start_GUI()
 
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")

@@ -1,3 +1,6 @@
+### Includes the logic to save and update the current workspace
+### the user is using.
+
 ### Exported functions
 export set_workspace_dir, get_workspace_dir
 
@@ -23,7 +26,7 @@ end
 
 # Function to load or set the workspace directory
 function get_workspace_dir()
-    settings_file = joinpath(@__DIR__,"src", "settings.json")
+    settings_file = joinpath(@__DIR__, "settings.json")
     default_workspace_dir = default_documents_folder()
 
     # If the settings file exists, load the workspace directory from there

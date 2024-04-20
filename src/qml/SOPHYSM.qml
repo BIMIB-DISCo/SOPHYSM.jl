@@ -29,7 +29,7 @@ ApplicationWindow {
 
     Menu {
         id: dropdownMenu
-        width: 100
+        width: 200
 
         MenuItem {
             text: "Change Directory"
@@ -39,8 +39,7 @@ ApplicationWindow {
         MenuItem {
             text: "test"
             onClicked: {
-                console.log("test onClicked"),
-                Julia.test("test")
+                console.log("test onClicked")
             }
 
         }
@@ -51,36 +50,42 @@ ApplicationWindow {
         }
     }
 
-    // tabBar
-    TabBar {
-        id: bar
-        width: parent.width
-        height: parent.height / 12
-        contentHeight: parent.height / 12
+    
+    Column {
+        id: verticalBar
+        width: 40
+        height: parent.height
+        anchors {
+            top: tabBar.bottom
+        }
+        // explorer
+        Button {
+            id: explorerButton
 
-        TabButton {
-            text: qsTr("Workspace")
-            id: workspaceButton
-            width: bar.width / 8
-        }
-        TabButton {
-            text: qsTr("Segmentation")
-            id: segmentationButton
-            width: bar.width / 8
-        }
-        TabButton {
-            text: qsTr("Tessellation")
-            id: tessellationButton
-            width: bar.width / 8
-        }
-        TabButton {
-            text: qsTr("Simulation")
-            id: simulationButton
-            width: bar.width / 8
-        }
-    }
+            // on hover tooltip
+            hoverEnabled: true
+            ToolTip.delay: 500
+            ToolTip.timeout: 5000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Open file Explorer")
 
-        // da destra
+            icon.source: "img/explorer.png"
+            width: parent.width
+            height: parent.width
+
+            onClicked: {
+                
+                if(folder.visible == true)
+                {
+                    folder.visible = false;
+                    folder.width = 0;
+                }
+                else
+                {
+                    folder.visible = true;
+                }
+            }
+        }
         // help button
         Button {
             id: helpButton
@@ -95,13 +100,8 @@ ApplicationWindow {
             onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")
 
             icon.source: "img/help.png"
-            width: bar.height / 1.5
-            height: bar.height / 1.5
-            y: bar.height / 6
-            anchors {
-                right: parent.right
-                rightMargin: 10
-            }
+            width: parent.width
+            height: parent.width
         }
 
         // settings button
@@ -119,80 +119,117 @@ ApplicationWindow {
 
             icon.source: "img/settings.png"
 
-            width: bar.height / 1.5
-            height: bar.height / 1.5
-            y: bar.height / 6
-            anchors {
-                right: helpButton.left
-                rightMargin: 10
-            }
-        }
-
-        //stackLayout
-        StackLayout {
-            id: stackLayout
             width: parent.width
-            height: parent.height * 11 / 12
-            currentIndex: bar.currentIndex
+            height: parent.width
+        }
+    }
 
+    // tabBar
+    TabBar {
+        id: tabBar
+        width: parent.width
+        contentHeight: 40
+        x: 40
+
+        TabButton {
+            text: qsTr("Segmentation")
+            id: segmentationButton
+            width: 100           
+        }
+        TabButton {
+            text: qsTr("Tessellation")
+            id: tessellationButton
+            width: 100
+        }
+        TabButton {
+            text: qsTr("Simulation")
+            id: simulationButton
+            width: 100
+        }
+    }
+
+        // workspace Item
+        SplitView {
+            id: splitView
+            width: parent.width
+            height: parent.height
             anchors {
-                top: bar.bottom
+                top: tabBar.bottom
+                left: verticalBar.right
             }
 
-            // workspace Item
-            SplitView {
-                id: splitView
-                width: parent.width
-                height: parent.height
+            // handle to resize the window
+            handle: Rectangle {
+                id: handleDelegate
+                implicitWidth: 2
+                color: SplitHandle.pressed ? "black"
+                    : (SplitHandle.hovered ? Qt.lighter("grey", 1.1) : "grey")
+            }
 
-                // handle to resize the window
-                handle: Rectangle {
-                    id: handleDelegate
-                    implicitWidth: 2
-                    color: SplitHandle.pressed ? "black"
-                        : (SplitHandle.hovered ? Qt.lighter("grey", 1.1) : "grey")
-                }
+            // folder
+            Rectangle {
+                id: folder
+                color: "grey"
+                implicitWidth: 200
+                SplitView.minimumWidth: splitView.width / 5
+                SplitView.maximumWidth: splitView.width * 3 / 4
 
-                // folder
-                Rectangle {
-                    id: folder
-                    color: "grey"
-                    implicitWidth: 200
-                    SplitView.minimumWidth: splitView.width / 4
-                    SplitView.maximumWidth: splitView.width * 3 / 4
-
-                    // current workspace
-                    Column {
-                        Label {
-                            padding: 3
-                            text: "Current workspace:"
-                            font.pixelSize: 16
-                        }
-                        Label {
-                            padding: 3
-                            text: propmap.workspace_dir
-                            font.pixelSize: 12
-                        }
+                // current workspace
+                Column {
+                    Label {
+                        padding: 3
+                        text: "Current workspace:"
+                        font.pixelSize: 16
+                    }
+                    Label {
+                        padding: 3
+                        text: propmap.workspace_dir
+                        font.pixelSize: 12
                     }
                 }
+            }
 
-                Rectangle {
-                    id: viewer
-                    width: stackLayout.width * 3 / 4
-                    height: stackLayout.height
+            Rectangle {
+                id: viewer
+                width: stackLayout.width * 3 / 4
+                height: stackLayout.height
 
-                    anchors.left: folder.right
+                anchors.left: folder.right
+
+                //stackLayout
+                StackLayout {
+                    id: stackLayout
+                    width: parent.width
+                    height: parent.height
+                    currentIndex: tabBar.currentIndex
+
+                    Item {
+                        Rectangle{
+                            color: "lime"
+                            anchors.fill: parent
+                        }
+                        id: segmentationTab
+                    }
+
+                    Item {
+
+                        Rectangle{
+                            color: "yellow"
+                            width: 30
+                            height: 30
+                        }
+                        id: tessellationTab
+                    }
+
+                    Item {
+                        Rectangle{
+                            color: "green"
+                            width: 30
+                            height: 30
+                        }
+                        id: simulationTab
+                    }
                 }
-
-            }
-            Item {
-                id: segmentationTab
-            }
-            Item {
-                id: tessellationTab
-            }
-            Item {
-                id: simulationTab
             }
         }
     }
