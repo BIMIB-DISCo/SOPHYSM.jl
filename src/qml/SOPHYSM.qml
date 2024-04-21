@@ -53,7 +53,7 @@ ApplicationWindow {
     Popup {
         id: downloadPopup
         padding: 10
-        width: 760
+        width: 900
         height: 380
         x: 50
         y: 50
@@ -68,7 +68,7 @@ ApplicationWindow {
         ScrollView {
             id: scrollView
             // scrollbar is 15px large
-            width: 745
+            width: 900
             height: 365
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
@@ -76,7 +76,8 @@ ApplicationWindow {
 
             ColumnLayout {
                 Label {
-                    text: "Select the collections you want to download and press download:"
+                    text: "Select the collections you want to download"
+                    width: parent.width
                 }
 
                 Column {
@@ -113,6 +114,33 @@ ApplicationWindow {
                     CheckBox { text: qsTr("TCGA-UCS = Uterine Carcinosarcoma (Uterus, NOS)") }
                     CheckBox { text: qsTr("TCGA-CHOL = Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)") }
                     CheckBox { text: qsTr("TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)") }
+                    Rectangle{
+                        height: 30
+                        color: "transparent"
+                        width: parent.width
+
+                       Button {
+                            id: downloadCollectionsButton
+                            text: "Download collections"
+                            anchors{
+                                bottomMargin: 5
+                                left: parent.left
+                                bottom: parent.bottom
+                            }
+                        }
+
+                        Button {
+                            id: closePopupButton
+                            text: "Cancel"
+                            anchors{
+                                bottomMargin: 5
+                                right: parent.right
+                                bottom: parent.bottom
+                            }
+                            //Close the popup
+                            onClicked: downloadPopup.close()
+                        }
+                    }
                 }
             }
         }
