@@ -15,6 +15,34 @@ ApplicationWindow {
     title: qsTr("SOPHYSM")
     id : mainWindow
 
+// Components
+
+   MessageDialog {
+       id: downloadMessageDialog
+       text: "Download the selected collections on " + propmap.workspace_dir + "?"
+       informativeText: "Download may take several time, continue anyway?"
+       buttons: MessageDialog.Yes | MessageDialog.Cancel
+       onButtonClicked: function (button, role) {
+            switch (button) {
+            case MessageDialog.Yes:
+                var collectionsToDownload = []
+                for (var i = 0; i < checkBoxColumn.children.length; i++) {
+                    var child = checkBoxColumn.children[i]
+                    if (child instanceof CheckBox && child.checked) {
+                        collectionsToDownload.push(child.objectName)
+                    }
+                }
+                console.log("collection selected", collectionsToDownload)
+                //TODO: Julia.downloadCollections()
+                this.close()
+                break;
+            case MessageDialog.Cancel:
+                this.close()
+            }
+        }
+    }
+
+    // Folder Dialog to Select a new Workspace
     FolderDialog {
         id: folderDialog
         title: "Please choose your new Workspace Folder"
@@ -27,6 +55,7 @@ ApplicationWindow {
         }
     }
 
+    //dropdown menu to display the application settings
     Menu {
         id: dropdownMenu
         width: 200
@@ -50,6 +79,8 @@ ApplicationWindow {
         }
     }
 
+
+    // Popup window for downloading histopathology collection from TCGA
     Popup {
         id: downloadPopup
         padding: 10
@@ -81,39 +112,169 @@ ApplicationWindow {
                 }
 
                 Column {
+                    id: checkBoxColumn
                     spacing: 5
-                    CheckBox { text: qsTr("TCGA-BRCA = Breast Invasive Carcinoma (Breast)") }
-                    CheckBox { text: qsTr("TCGA-OV = Ovarian Serous Cystadenocarcinoma (Ovary)") }
-                    CheckBox { text: qsTr("TCGA-LUAD = Lung Adenocarcinoma (Bronchus and Lung)") }
-                    CheckBox { text: qsTr("TCGA-UCEC = Uterine Corpus Endometrial Carcinoma (Corpus uteri)") }
-                    CheckBox { text: qsTr("TCGA-GBM = Glioblastoma Multiforme (Brain)") }
-                    CheckBox { text: qsTr("TCGA-HSNC = Head and Neck Squamous Cell Carcinoma (Larynx, Lip, Tonsil, Gum, Other and unspecified parths of mouth)") }
-                    CheckBox { text: qsTr("TCGA-KIRC = Kidney Renal Clear Cell Carcinoma (Kidney)") }
-                    CheckBox { text: qsTr("TCGA-LGG = Brain Lower Grade Glioma (Brain)") }
-                    CheckBox { text: qsTr("TCGA-LUSC = Lung Squamous Cell Carcinoma (Bronchus and lung)") }
-                    CheckBox { text: qsTr("TCGA-TCHA = Thyroid Carcinoma (Thyroid gland)") }
-                    CheckBox { text: qsTr("TCGA-PRAD = Prostate Adenocarcinoma (Prostate gland)") }
-                    CheckBox { text: qsTr("TCGA-SKCM = Skin Cutaneous Melanoma (Skin)") }
-                    CheckBox { text: qsTr("TCGA-COAD = Colon Adenocarcinoma (Colon)") }
-                    CheckBox { text: qsTr("TCGA-STAD = Stomach Adenocarcinoma (Stomach)") }
-                    CheckBox { text: qsTr("TCGA-BLCA = Bladder Urothelial Carcinoma (Bladder)") }
-                    CheckBox { text: qsTr("TCGA-LIHC = Liver Hepatocellular Carcinoma (Liver and intrahepatic bile ducts)") }
-                    CheckBox { text: qsTr("TCGA-CESC = Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (Cervix uteri)") }
-                    CheckBox { text: qsTr("TCGA-KIRP = Kidney Renal Papillary Cell Carcinoma (Kidney)") }
-                    CheckBox { text: qsTr("TCGA-SARC = Sarcoma (Various)") }
-                    CheckBox { text: qsTr("TCGA-ESCA = Esophageal Carcinoma (Esophagus)") }
-                    CheckBox { text: qsTr("TCGA-PAAD = Pancreatic Adenocarcinoma (Pancreas)") }
-                    CheckBox { text: qsTr("TCGA-READ = Rectum Adenocarcinoma (Rectum)") }
-                    CheckBox { text: qsTr("TCGA-PCPG = Pheochromocytoma and Paraganglioma (Adrenal gland)") }
-                    CheckBox { text: qsTr("TCGA-TGCT = Testicular Germ Cell Tumors (Testis)") }
-                    CheckBox { text: qsTr("TCGA-THYM = Thymoma (Thymus)") }
-                    CheckBox { text: qsTr("TCGA-ACC = Adrenocortical Carcinoma - Adenomas and Adenocarcinomas (Adrenal gland)") }
-                    CheckBox { text: qsTr("TCGA-MESO = Mesothelioma (Heart, mediastinum and pleura)") }
-                    CheckBox { text: qsTr("TCGA-UVM = Uveal Melanoma (Eye and adnexa)") }
-                    CheckBox { text: qsTr("TCGA-KICH = Kidney Chromophobe (Kidney)") }
-                    CheckBox { text: qsTr("TCGA-UCS = Uterine Carcinosarcoma (Uterus, NOS)") }
-                    CheckBox { text: qsTr("TCGA-CHOL = Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)") }
-                    CheckBox { text: qsTr("TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)") }
+                    CheckBox {
+                        id: brca
+                        objectName: "brca"
+                        text: qsTr("TCGA-BRCA = Breast Invasive Carcinoma (Breast)")
+                    }
+                    CheckBox {
+                        id: ov
+                        objectName: "ov"
+                        text: qsTr("TCGA-OV = Ovarian Serous Cystadenocarcinoma (Ovary)")
+                    }
+                    CheckBox {
+                        id: luad
+                        objectName: "luad"
+                        text: qsTr("TCGA-LUAD = Lung Adenocarcinoma (Bronchus and Lung)")
+                    }
+                    CheckBox {
+                        id: ucec
+                        objectName: "ucec"
+                        text: qsTr("TCGA-UCEC = Uterine Corpus Endometrial Carcinoma (Corpus uteri)")
+                    }
+                    CheckBox {
+                        id: gbm
+                        objectName: "gbm"
+                        text: qsTr("TCGA-GBM = Glioblastoma Multiforme (Brain)")
+                    }
+                    CheckBox {
+                        id: hsnc
+                        objectName: "hsnc"
+                        text: qsTr("TCGA-HSNC = Head and Neck Squamous Cell Carcinoma (Larynx, Lip, Tonsil, Gum, Other and unspecified parths of mouth)")
+                    }
+                    CheckBox {
+                        id: kirc
+                        objectName: "kirc"
+                        text: qsTr("TCGA-KIRC = Kidney Renal Clear Cell Carcinoma (Kidney)")
+                    }
+                    CheckBox {
+                        id: lgg
+                        objectName: "lgg"
+                        text: qsTr("TCGA-LGG = Brain Lower Grade Glioma (Brain)")
+                    }
+                    CheckBox {
+                        id: lusc
+                        objectName: "lusc"
+                        text: qsTr("TCGA-LUSC = Lung Squamous Cell Carcinoma (Bronchus and lung)")
+                    }
+                    CheckBox {
+                        id: tcha
+                        objectName: "tcha"
+                        text: qsTr("TCGA-TCHA = Thyroid Carcinoma (Thyroid gland)")
+                    }
+                    CheckBox {
+                        id: prad
+                        objectName: "prad"
+                        text: qsTr("TCGA-PRAD = Prostate Adenocarcinoma (Prostate gland)")
+                    }
+                    CheckBox {
+                        id: skcm
+                        objectName: "skcm"
+                        text: qsTr("TCGA-SKCM = Skin Cutaneous Melanoma (Skin)")
+                    }
+                    CheckBox {
+                        id: coad
+                        objectName: "coad"
+                        text: qsTr("TCGA-COAD = Colon Adenocarcinoma (Colon)")
+                    }
+                    CheckBox {
+                        id: stad
+                        objectName: "stad"
+                        text: qsTr("TCGA-STAD = Stomach Adenocarcinoma (Stomach)")
+                    }
+                    CheckBox {
+                        id: blca
+                        objectName: "blca"
+                        text: qsTr("TCGA-BLCA = Bladder Urothelial Carcinoma (Bladder)")
+                    }
+                    CheckBox {
+                        id: lihc
+                        objectName: "lihc"
+                        text: qsTr("TCGA-LIHC = Liver Hepatocellular Carcinoma (Liver and intrahepatic bile ducts)")
+                    }
+                    CheckBox {
+                        id: cesc
+                        objectName: "cesc"
+                        text: qsTr("TCGA-CESC = Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (Cervix uteri)")
+                    }
+                    CheckBox {
+                        id: kirp
+                        objectName: "kirp"
+                        text: qsTr("TCGA-KIRP = Kidney Renal Papillary Cell Carcinoma (Kidney)")
+                    }
+                    CheckBox {
+                        id: sarc
+                        objectName: "sarc"
+                        text: qsTr("TCGA-SARC = Sarcoma (Various)")
+                    }
+                    CheckBox {
+                        id: esca
+                        objectName: "esca"
+                        text: qsTr("TCGA-ESCA = Esophageal Carcinoma (Esophagus)")
+                    }
+                    CheckBox {
+                        id: paad
+                        objectName: "paad"
+                        text: qsTr("TCGA-PAAD = Pancreatic Adenocarcinoma (Pancreas)")
+                    }
+                    CheckBox {
+                        id: read
+                        objectName: "read"
+                        text: qsTr("TCGA-READ = Rectum Adenocarcinoma (Rectum)")
+                    }
+                    CheckBox {
+                        id: pcpg
+                        objectName: "pcpg"
+                        text: qsTr("TCGA-PCPG = Pheochromocytoma and Paraganglioma (Adrenal gland)")
+                    }
+                    CheckBox {
+                        id: tgct
+                        objectName: "tgct"
+                        text: qsTr("TCGA-TGCT = Testicular Germ Cell Tumors (Testis)")
+                    }
+                    CheckBox {
+                        id: thym
+                        objectName: "thym"
+                        text: qsTr("TCGA-THYM = Thymoma (Thymus)")
+                    }
+                    CheckBox {
+                        id: acc
+                        objectName: "acc"
+                        text: qsTr("TCGA-ACC = Adrenocortical Carcinoma - Adenomas and Adenocarcinomas (Adrenal gland)")
+                    }
+                    CheckBox {
+                        id: meso
+                        objectName: "meso"
+                        text: qsTr("TCGA-MESO = Mesothelioma (Heart, mediastinum and pleura)")
+                    }
+                    CheckBox {
+                        id: uvm
+                        objectName: "uvm"
+                        text: qsTr("TCGA-UVM = Uveal Melanoma (Eye and adnexa)")
+                    }
+                    CheckBox {
+                        id: kich
+                        objectName: "kich"
+                        text: qsTr("TCGA-KICH = Kidney Chromophobe (Kidney)")
+                    }
+                    CheckBox {
+                        id: ucs
+                        objectName: "ucs"
+                        text: qsTr("TCGA-UCS = Uterine Carcinosarcoma (Uterus, NOS)")
+                    }
+                    CheckBox {
+                        id: chol
+                        objectName: "chol"
+                        text: qsTr("TCGA-CHOL = Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)")
+                    }
+                    CheckBox {
+                        id: dlbc
+                        objectName: "dlbc"
+                        text: qsTr("TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)")
+                    }
+
                     Rectangle{
                         height: 30
                         color: "transparent"
@@ -127,6 +288,10 @@ ApplicationWindow {
                                 left: parent.left
                                 bottom: parent.bottom
                             }
+                             onClicked: {
+                                downloadMessageDialog.open()
+                            }
+
                         }
 
                         Button {
@@ -147,7 +312,7 @@ ApplicationWindow {
     }
 
 
-    
+// Application
     Column {
         id: verticalBar
         width: 40
