@@ -6,7 +6,6 @@ module SOPHYSM
 ### Packages
 using QML
 using Observables
-using Base.Filesystem
 using JSON
 
 ### Included modules
