@@ -16,7 +16,7 @@ include("Workspace.jl")
 export start_GUI
 
 ### Constants
-const workspace_dir = Observable(get_workspace_dir())
+const workspace_dir = Observable(Workspace.get_workspace_dir())
 
 ### Main Functions
 # some functions
@@ -40,7 +40,7 @@ function start_GUI()
 
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x
-        set_workspace_dir(x)
+        Workspace.set_workspace_dir(x)
         println("WS changed to ", workspace_dir)
     end
 
@@ -54,5 +54,4 @@ end
 
 start_GUI()
 
-# SOPHYSM module
-end
+end # SOPHYSM module

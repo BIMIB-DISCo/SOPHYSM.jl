@@ -312,14 +312,11 @@ ApplicationWindow {
     }
 
 
-// Application
+    // Application
     Column {
         id: verticalBar
         width: 40
         height: parent.height
-        anchors {
-            top: tabBar.bottom
-        }
 
         // explorer
         Button {
@@ -400,135 +397,157 @@ ApplicationWindow {
         }
     }
 
-    // tabBar
-    TabBar {
-        id: tabBar
+    // workspace Item
+    SplitView {
+        id: splitView
         width: parent.width
-        contentHeight: 40
-        x: 40
-
-        TabButton {
-            id: segmentationButton
-            text: qsTr("Segmentation")
-            width: 100           
-
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Segmentation Panel")          
+        height: parent.height
+        anchors {
+            left: verticalBar.right
         }
-        TabButton {
-            id: tessellationButton
-            text: qsTr("Tessellation")   
-            width: 100         
 
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Tessellation Panel")
+        // handle to resize the window
+        handle: Rectangle {
+            id: handleDelegate
+            implicitWidth: 3
+            color: SplitHandle.pressed ? "#0984e3"
+                : (SplitHandle.hovered ? Qt.lighter("lightblue", 1.1) : "#b2bec3")
         }
-        TabButton {
-            id: simulationButton
-            text: qsTr("Simulation")
-            width: 100       
 
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Simulation Panel")
-        }
-    }
+        // folder
+        Rectangle {
+            id: folder
+            color: "#b2bec3"
+            implicitWidth: 200
+            SplitView.minimumWidth: splitView.width / 5
+            SplitView.maximumWidth: splitView.width * 3 / 4
 
-        // workspace Item
-        SplitView {
-            id: splitView
-            width: parent.width
-            height: parent.height
-            anchors {
-                top: tabBar.bottom
-                left: verticalBar.right
-            }
-
-            // handle to resize the window
-            handle: Rectangle {
-                id: handleDelegate
-                implicitWidth: 3
-                color: SplitHandle.pressed ? "#0984e3"
-                    : (SplitHandle.hovered ? Qt.lighter("lightblue", 1.1) : "#b2bec3")
-            }
-
-            // folder
-            Rectangle {
-                id: folder
-                color: "#b2bec3"
-                implicitWidth: 200
-                SplitView.minimumWidth: splitView.width / 5
-                SplitView.maximumWidth: splitView.width * 3 / 4
-
-                // current workspace
-                Column {
-                    Label {
-                        padding: 5
-                        color: "black"
-                        text: "Current workspace:"
-                        font.pixelSize: 16
-                    }
-                    Label {
-                        padding: 5
-                        color: "black"
-                        text: propmap.workspace_dir
-                        font.pixelSize: 12
-                    }
+            // current workspace
+            Column {
+                Label {
+                    padding: 5
+                    color: "black"
+                    text: "Current workspace:"
+                    font.pixelSize: 16
                 }
-            }
-
-            Rectangle {
-                id: viewer
-                width: stackLayout.width * 3 / 4
-                height: stackLayout.height
-
-                anchors.left: folder.right
-
-                //stackLayout
-                StackLayout {
-                    id: stackLayout
-                    width: parent.width
-                    height: parent.height
-                    currentIndex: tabBar.currentIndex
-
-                    Item {
-                        Rectangle{
-                            color: "lime"
-                            anchors.fill: parent
-                        }
-                        id: segmentationTab
-                    }
-
-                    Item {
-
-                        Rectangle{
-                            color: "yellow"
-                            width: 30
-                            height: 30
-                        }
-                        id: tessellationTab
-                    }
-
-                    Item {
-                        Rectangle{
-                            color: "green"
-                            width: 30
-                            height: 30
-                        }
-                        id: simulationTab
-                    }
+                Label {
+                    padding: 5
+                    color: "black"
+                    text: propmap.workspace_dir
+                    font.pixelSize: 12
                 }
             }
         }
+
+        Rectangle {
+            id: viewer
+            width: stackLayout.width * 3 / 4
+            height: stackLayout.height
+
+            anchors.left: folder.right
+                // tabBar
+            TabBar {
+                id: tabBar
+                width: parent.width
+                contentHeight: 40
+
+                TabButton {
+                    id: viewButton
+                    text: qsTr("View")
+                    width: 100           
+
+                    // on hover tooltip
+                    hoverEnabled: true
+                    ToolTip.delay: 500
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("View Panel")          
+                }
+
+                TabButton {
+                    id: segmentationButton
+                    text: qsTr("Segmentation")
+                    width: 100           
+
+                    // on hover tooltip
+                    hoverEnabled: true
+                    ToolTip.delay: 500
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Segmentation Panel")          
+                }
+
+                TabButton {
+                    id: tessellationButton
+                    text: qsTr("Tessellation")   
+                    width: 100         
+
+                    // on hover tooltip
+                    hoverEnabled: true
+                    ToolTip.delay: 500
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Tessellation Panel")
+                }
+
+                TabButton {
+                    id: simulationButton
+                    text: qsTr("Simulation")
+                    width: 100       
+
+                    // on hover tooltip
+                    hoverEnabled: true
+                    ToolTip.delay: 500
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Simulation Panel")
+                }
+            }
+
+            //stackLayout
+            StackLayout {
+                id: stackLayout
+                width: parent.width
+                height: parent.height
+                currentIndex: tabBar.currentIndex
+                anchors {
+                    top: tabBar.bottom
+                }
+
+                Item {
+                    id: viewTab
+                }
+
+                // Segmentation window
+                Item {
+                    Rectangle{
+                        color: "lime"
+                        anchors.fill: parent
+                    }
+                    id: segmentationTab
+                }
+
+                // Tessellation window
+                Item {
+
+                    Rectangle{
+                        color: "yellow"
+                        width: 30
+                        height: 30
+                    }
+                    id: tessellationTab
+                }
+
+                // Simulation window
+                Item {
+                    Rectangle{
+                        color: "green"
+                        width: 30
+                        height: 30
+                    }
+                    id: simulationTab
+                }
+            }
+        }
     }
+}

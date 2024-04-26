@@ -1,5 +1,9 @@
 ### Includes the logic to save and update the current workspace
 ### the user is using.
+module Workspace
+
+### Packages
+using JSON
 
 ### Exported functions
 export set_workspace_dir, get_workspace_dir
@@ -40,3 +44,4 @@ function get_workspace_dir()
 
     return workspace_dir
 end
+end # module SOPHYSM.Workspace
