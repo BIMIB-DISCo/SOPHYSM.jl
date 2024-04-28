@@ -6,7 +6,7 @@ import QtQuick.Dialogs
 import org.julialang
 
 ApplicationWindow {
-    font.family: "Roboto"
+    font.family: "Georgia"
     width: 1000
     height: 700
     minimumWidth: 1000
@@ -15,14 +15,13 @@ ApplicationWindow {
     title: qsTr("SOPHYSM")
     id : mainWindow
 
-// Components
-
-   MessageDialog {
-       id: downloadMessageDialog
-       text: "Download the selected collections on " + propmap.workspace_dir + "?"
-       informativeText: "Download may take several time, continue anyway?"
-       buttons: MessageDialog.Yes | MessageDialog.Cancel
-       onButtonClicked: function (button, role) {
+    // Components
+    MessageDialog {
+        id: downloadMessageDialog
+        text: "Download the selected collections on " + propmap.workspace_dir + "?"
+        informativeText: "Download may take several time, continue anyway?"
+        buttons: MessageDialog.Yes | MessageDialog.Cancel
+        onButtonClicked: function (button, role) {
             switch (button) {
             case MessageDialog.Yes:
                 var collectionsToDownload = []
@@ -34,9 +33,11 @@ ApplicationWindow {
                 }
                 console.log("collection selected", collectionsToDownload)
                 //TODO: Julia.downloadCollections()
+                downloadPopup.close()
                 this.close()
                 break;
             case MessageDialog.Cancel:
+                downloadPopup.close()
                 this.close()
             }
         }
@@ -298,6 +299,7 @@ ApplicationWindow {
                             id: closePopupButton
                             text: "Cancel"
                             anchors{
+                                topMargin: 5
                                 bottomMargin: 5
                                 right: parent.right
                                 bottom: parent.bottom
@@ -445,16 +447,28 @@ ApplicationWindow {
             height: stackLayout.height
 
             anchors.left: folder.right
-                // tabBar
+
+            // tabBar
             TabBar {
                 id: tabBar
                 width: parent.width
-                contentHeight: 40
+                height: 40
 
                 TabButton {
                     id: viewButton
-                    text: qsTr("View")
-                    width: 100           
+                    width: 100
+                    height: 42
+
+                    anchors.bottom: parent.bottom
+
+                    contentItem: Text {
+                        text: qsTr("View")
+                        opacity: enabled ? 1.0 : 0.3
+                        color: "lightblue"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
 
                     // on hover tooltip
                     hoverEnabled: true
@@ -466,8 +480,19 @@ ApplicationWindow {
 
                 TabButton {
                     id: segmentationButton
-                    text: qsTr("Segmentation")
-                    width: 100           
+                    width: 100
+                    height: 42
+
+                    anchors.bottom: parent.bottom
+
+                    contentItem: Text {
+                        text: qsTr("Segmentation")
+                        opacity: enabled ? 1.0 : 0.3
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
 
                     // on hover tooltip
                     hoverEnabled: true
@@ -479,8 +504,18 @@ ApplicationWindow {
 
                 TabButton {
                     id: tessellationButton
-                    text: qsTr("Tessellation")   
-                    width: 100         
+                    width: 100 
+                    height: 42
+                    anchors.bottom: parent.bottom 
+
+                    contentItem: Text {
+                        text: qsTr("Tessellation")
+                        opacity: enabled ? 1.0 : 0.3
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
 
                     // on hover tooltip
                     hoverEnabled: true
@@ -492,8 +527,18 @@ ApplicationWindow {
 
                 TabButton {
                     id: simulationButton
-                    text: qsTr("Simulation")
-                    width: 100       
+                    width: 100
+                    height: 42
+                    anchors.bottom: parent.bottom
+
+                    contentItem: Text {
+                        text: qsTr("Simulation")
+                        opacity: enabled ? 1.0 : 0.3
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
 
                     // on hover tooltip
                     hoverEnabled: true
@@ -510,6 +555,35 @@ ApplicationWindow {
                 width: parent.width
                 height: parent.height
                 currentIndex: tabBar.currentIndex
+                onCurrentIndexChanged: {
+                    switch (currentIndex) {
+                        case 0:
+                            viewButton.contentItem.color = "lightblue";
+                            segmentationButton.contentItem.color = "white";
+                            tessellationButton.contentItem.color = "white";
+                            simulationButton.contentItem.color = "white";
+                            break;
+                        case 1:
+                            viewButton.contentItem.color = "white";
+                            segmentationButton.contentItem.color = "lightblue";
+                            tessellationButton.contentItem.color = "white";
+                            simulationButton.contentItem.color = "white";
+                            break;
+                        case 2:
+                            viewButton.contentItem.color = "white";
+                            segmentationButton.contentItem.color = "white";
+                            tessellationButton.contentItem.color = "lightblue";
+                            simulationButton.contentItem.color = "white";
+                            break;
+                        case 3:
+                            viewButton.contentItem.color = "white";
+                            segmentationButton.contentItem.color = "white";
+                            tessellationButton.contentItem.color = "white";
+                            simulationButton.contentItem.color = "lightblue";
+                            break;
+                    }
+                }
+                
                 anchors {
                     top: tabBar.bottom
                 }
