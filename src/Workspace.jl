@@ -24,8 +24,7 @@ elseif Sys.iswindows()
     const DATA_DIR = CONFIG_DIR
     
 elseif Sys.isapple()
-    # Preferences is macOS equivalent for Linux .config folder
-    const CONFIG_DIR = joinpath(homedir(), "Library", "Application Support", "BIMIB-DISCo.SOPHYSM")
+    const CONFIG_DIR = joinpath(homedir(), ".config", "SOPHYSM")
     const DATA_DIR = CONFIG_DIR
 
 # For all the other operating systems the configuration files will be saved in

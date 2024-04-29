@@ -18,12 +18,6 @@ export start_GUI
 const workspace_dir = Observable(Workspace.get_workspace_dir())
 
 ### Main Functions
-# some functions
-
-function pushCollection(collectionName::AbstractString)
-    collectionName = QString(collectionName)
-    push!(collections_to_download, collectionName)
-end
 
 ### GUI logic
 function start_GUI()
