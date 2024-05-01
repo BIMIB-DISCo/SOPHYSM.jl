@@ -7,6 +7,7 @@ module SOPHYSM
 using QML
 using Observables
 using JSON
+using JHistint
 
 ### Included modules
 include("Workspace.jl")
@@ -24,12 +25,12 @@ function start_GUI()
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
     ### QML Functions
+    qmlfunction("download_single_collection", download_single_collection)
     # qml function that needs to be exported
 
     # Propmap
     propmap = JuliaPropertyMap()
     propmap["workspace_dir"] = workspace_dir
-    # TODO: propmap["collections_to_download"] = collections_to_download
 
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x

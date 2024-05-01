@@ -28,11 +28,11 @@ ApplicationWindow {
                 for (var i = 0; i < checkBoxColumn.children.length; i++) {
                     var child = checkBoxColumn.children[i]
                     if (child instanceof CheckBox && child.checked) {
+                        Julia.download_single_collection(child.objectName, propmap.workspace_dir)
                         collectionsToDownload.push(child.objectName)
                     }
                 }
                 console.log("collection selected", collectionsToDownload)
-                //TODO: Julia.downloadCollections()
                 downloadPopup.close()
                 this.close()
                 break;
@@ -48,8 +48,8 @@ ApplicationWindow {
         id: folderDialog
         title: "Please choose your new Workspace Folder"
         onAccepted: {
-            // Parsing the selectedFolder with "file:///" removed
-            propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(8);
+            // Parsing the selectedFolder with "file://" removed
+            propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(7);
         }
         onRejected: {
             console.log("Canceled");
