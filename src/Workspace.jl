@@ -78,4 +78,10 @@ function get_workspace_dir()
     return workspace_dir
 end
 
+function set_environment()
+    if !isfile(joinpath(CONFIG_DIR, "SOPHYSM_settings.json"))
+        set_workspace_dir(default_workspace_folder())
+    end
+end
+
 end # module SOPHYSM.Workspace
