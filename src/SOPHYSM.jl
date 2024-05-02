@@ -28,7 +28,7 @@ function start_GUI()
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
     ### QML Functions
-    qmlfunction("download_single_collection", download_single_collection)
+    qmlfunction("download_single_slide_from_collection", download_single_slide_from_collection)
 
     # Propmap
     propmap = JuliaPropertyMap()
