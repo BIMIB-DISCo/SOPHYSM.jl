@@ -44,6 +44,9 @@ if !isdir(DATA_DIR)
 end
 
 function default_workspace_folder()
+    if !isdir(joinpath(DATA_DIR, "SOPHYSM-Workspace"))
+        mkdir(joinpath(DATA_DIR, "SOPHYSM-Workspace"))
+    end
     return joinpath(DATA_DIR, "SOPHYSM-Workspace")
 end
 
@@ -79,6 +82,12 @@ function get_workspace_dir()
 end
 
 function set_environment()
+    if !isdir(CONFIG_DIR) 
+        mkdir(CONFIG_DIR)
+    end    
+    if !isdir(DATA_DIR) 
+        mkdir(DATA_DIR)
+    end
     if !isfile(joinpath(CONFIG_DIR, "SOPHYSM_settings.json"))
         set_workspace_dir(default_workspace_folder())
     end
