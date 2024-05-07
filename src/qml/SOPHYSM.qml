@@ -29,6 +29,7 @@ ApplicationWindow {
                 for (var i = 0; i < checkBoxColumn.children.length; i++) {
                     var child = checkBoxColumn.children[i]
                     if (child instanceof CheckBox && child.checked) {
+                        console.log("starting download...", child.objectName, propmap.workspace_dir)
                         Julia.download_single_slide_from_collection(child.objectName, propmap.workspace_dir)
                         collectionsToDownload.push(child.objectName)
                     }
