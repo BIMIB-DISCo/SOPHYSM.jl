@@ -2,29 +2,41 @@ module Model
 
 using Flux
 
-# Two 3x3 unpadded convolutional layers followed by ReLu activations
-function conv_3x3(in_ch::Int, out_ch::Int)
+# a downsampling step
+struct UNetDownBlock
+    conv::Chain
+    pool::MaxPool
+end
+
+# An upsampling step
+struct UNetUpBlock
+    upconv::Chain
+    conv::Chain
+end
+
+# Two 3x3 unpadded convolutional layers followed by ReLU activations
+function down_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
-        Conv((3, 3), in_ch => out_ch, relu),
-        Conv((3, 3), out_ch => out_ch, relu)
+        Conv((3, 3), in_chs => out_chs, relu),
+        Conv((3, 3), out_chs => out_chs, relu)
+    )
+end
+
+# Two 3x3 padded convolutional layers followed by ReLU activations
+function up_conv_3x3(in_chs::Int, out_chs::Int)
+    Chain(
+        Conv((3, 3), in_chs => out_chs, relu; pad = SamePad()),
+        Conv((3, 3), out_chs => out_chs, relu; pad = SamePad())
     )
 end
 
 # Crop and Concatenate the feature map
 function copy_and_crop(x, bridge)
-    # Calculate the difference in dimensions
     dx = size(bridge, 1) - size(x, 1)
     dy = size(bridge, 2) - size(x, 2)
 
-    # Ensure that dx and dy are non-negative
-    if dx < 0 || dy < 0
-        error("The dimension of the bridge feature map is smaller than that of x, cropping not feasible.")
-    end
+    cropped_bridge = @views bridge[div(dx, 2) + 1:end - div(dx, 2), div(dy, 2) + 1:end - div(dy, 2), :, :]
 
-    # Perform centered cropping of bridge
-    cropped_bridge = @views bridge[div(dx,2) + 1 : end - div(dx,2), div(dy,2) + 1 : end - div(dy,2), :, :]
-
-    # Concatenate along the channel axis (third dimension)
     return cat(x, cropped_bridge, dims = 3)
 end
 
@@ -34,45 +46,64 @@ function max_pool_2x2()
 end
 
 # A 2x2 up-convolutional layer
-function up_conv_2x2(in_ch::Int, out_ch::Int)
-    ConvTranspose((2, 2), in_ch => out_ch)
-end
-
-# A 1x1 convolutional layer
-function conv_1x1(in_ch::Int, out_ch::Int)
+function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
-        Conv((1, 1), in_ch => out_ch),
+        ConvTranspose((2, 2), in_chs => out_chs)
     )
 end
 
-# U-Net
-struct unet
-    downsampling
-    upsampling
+# A 1x1 convolutional layer to finalize the output
+function conv_1x1(in_chs::Int, out_chs::Int)
+    Chain(
+        Conv((1, 1), in_chs => out_chs)
+    )
 end
 
-# U-Net constructor
-function build_unet()
-    downsampling = Chain(
-        conv_3x3(1, 64),
-        max_pool_2x2(),
-        conv_3x3(64, 128),
-        max_pool_2x2(),
-        conv_3x3(128, 256),
-        max_pool_2x2(),
-        conv_3x3(256, 512),
-        max_pool_2x2(),
-        conv_3x3(512, 1024)
+# Constructor for downsampling block
+function UNetDownBlock(in_chs::Int, out_chs::Int)
+    conv = down_conv_3x3(in_chs, out_chs)
+    pool = max_pool_2x2()
+
+    UNetDownBlock(conv, pool)
+end
+
+# Constructor for upsampling block
+function UNetUpBlock(in_chs::Int, out_chs::Int)
+    upconv = up_conv_2x2(in_chs, out_chs)
+    conv = up_conv_3x3(out_chs, out_chs)
+
+    UNetUpBlock(upconv, conv)
+end
+
+# U-Net architecture
+struct UNet
+    downsample::Chain
+    bottleneck::Chain
+    upsample::Chain
+    out_layer::Chain
+end
+
+# Constructor for U-Net
+function unet()
+    downsample = Chain(
+        UNetDownBlock(1, 64),
+        UNetDownBlock(64, 128),
+        UNetDownBlock(128, 256),
+        UNetDownBlock(256, 512)
     )
 
-    upsampling = Chain(
-       up_conv_2x2(1024, 512),
-       up_conv_2x2(512, 256),
-       up_conv_2x2(256, 128),
-       up_conv_2x2(128, 64)
+    bottleneck = conv_3x3(512, 1024)
+
+    upsample = Chain(
+        UNetUpBlock(1024, 512),
+        UNetUpBlock(512, 256),
+        UNetUpBlock(256, 128),
+        UNetUpBlock(128, 64)
     )
 
-    unet(downsampling, upsampling)
+    out_layer = conv_1x1(64, 2)
+
+    UNet(downsample, bottleneck, upsample, out_layer)
 end
 
 end # module
