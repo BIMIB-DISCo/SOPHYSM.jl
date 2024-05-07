@@ -37,6 +37,7 @@ function start_GUI()
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x
         Workspace.set_workspace_dir(x)
+        workspace_dir = Observable(Workspace.get_workspace_dir())
         println("WS changed to ", workspace_dir)
     end
 

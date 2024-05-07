@@ -52,6 +52,10 @@ end
 
 function set_workspace_dir(new_workspace_dir::AbstractString)
     settings_file = joinpath(CONFIG_DIR, "SOPHYSM_settings.json")
+
+    if Sys.iswindows() && new_workspace_dir[1] == '/'
+        new_workspace_dir = new_workspace_dir[2:end]
+    end
     settings = Dict("workspace_dir" => new_workspace_dir)
 
     # create settings_file if doesn't exist
