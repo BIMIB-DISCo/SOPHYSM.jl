@@ -2,7 +2,15 @@ module Model
 
 using Flux
 
-# a downsampling step
+# U-Net architecture
+struct UNet
+    downsample::Chain
+    bottleneck::Chain
+    upsample::Chain
+    out_layer::Chain
+end
+
+# A downsampling step
 struct UNetDownBlock
     conv::Chain
     pool::MaxPool
@@ -75,16 +83,8 @@ function UNetUpBlock(in_chs::Int, out_chs::Int)
     UNetUpBlock(upconv, conv)
 end
 
-# U-Net architecture
-struct UNet
-    downsample::Chain
-    bottleneck::Chain
-    upsample::Chain
-    out_layer::Chain
-end
-
 # Constructor for U-Net
-function unet()
+function UNet()
     downsample = Chain(
         UNetDownBlock(1, 64),
         UNetDownBlock(64, 128),
@@ -104,6 +104,43 @@ function unet()
     out_layer = conv_1x1(64, 2)
 
     UNet(downsample, bottleneck, upsample, out_layer)
+end
+
+# Network application to an image
+function (model::UNet)(x::AbstractArray)
+    x1 = model.downsample.layers[1](x)
+    x2 = model.downsample.layers[2](x1)
+    x3 = model.downsample.layers[3](x2)
+    x4 = model.downsample.layers[4](x3)
+
+    x_bottleneck = model.bottleneck(x4)
+
+    x_up1 = model.upsample.layers[1](x_bottleneck, x4)
+    x_up2 = model.upsample.layers[2](x_up1, x3)
+    x_up3 = model.upsample.layers[3](x_up2, x2)
+    x_up4 = model.upsample.layers[4](x_up3, x1)
+
+    return model.out_layer(x_up4)
+end
+
+function Base.show(io::IO, model::UNet)
+    println(io, "UNet Structure:")
+
+    println(io, "Downsampling Path:")
+    for layer in model.downsample.layers
+        println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
+    end
+
+    println(io, "\nBottleneck:")
+    println(io, "   ConvBlock: $(size(model.bottleneck[1].weight))")
+
+    println(io, "\nUpsampling Path:")
+    for layer in model.upsample.layers
+        println(io, "   UpConvBlock: $(size(layer.upconv[1].weight))")
+    end
+
+    println(io, "\nOutput Layer:")
+    println(io, "   ConvBlock: $(size(model.out_layer[1].weight))")
 end
 
 end # module
