@@ -34,7 +34,7 @@ else
     const DATA_DIR = joinpath(homedir(), "SOPHYSM")
 end
 
-# initialize the standard directories on first launch of the app on the system
+# Initialize standard directories on first launch of the application
 if !isdir(CONFIG_DIR) 
     mkdir(CONFIG_DIR)
 end
@@ -43,6 +43,13 @@ if !isdir(DATA_DIR)
     mkdir(DATA_DIR)
 end
 
+"""
+    default_workspace_folder()
+
+Sets the directory for the user workspace.
+
+This function sets the directory for the user workspace and updates the configuration file accordingly.
+"""
 function default_workspace_folder()
     if !isdir(joinpath(DATA_DIR, "SOPHYSM-Workspace"))
         mkdir(joinpath(DATA_DIR, "SOPHYSM-Workspace"))
@@ -50,6 +57,16 @@ function default_workspace_folder()
     return joinpath(DATA_DIR, "SOPHYSM-Workspace")
 end
 
+"""
+    set_workspace_dir(new_workspace_dir::AbstractString)
+
+Sets the directory for the user workspace.
+
+# Arguments
+- `new_workspace_dir::AbstractString`: New directory path for the user workspace.
+
+This function sets the directory for the user workspace and updates the configuration file accordingly.
+"""
 function set_workspace_dir(new_workspace_dir::AbstractString)
     settings_file = joinpath(CONFIG_DIR, "SOPHYSM_settings.json")
 
@@ -68,7 +85,14 @@ function set_workspace_dir(new_workspace_dir::AbstractString)
     end
 end
 
-# Function to load or set the workspace directory
+"""
+    get_workspace_dir()
+
+Retrieves the current directory of the user workspace.
+
+This function retrieves the current directory of the user workspace from the configuration file.
+If the workspace directory is not specified or saved in the configuration file, a default directory is used.
+"""
 function get_workspace_dir()
     settings_file = joinpath(CONFIG_DIR, "SOPHYSM_settings.json")
     default_workspace_dir = default_workspace_folder() 
@@ -85,6 +109,11 @@ function get_workspace_dir()
     return workspace_dir
 end
 
+"""
+    set_environment()
+
+Ensures the existence of necessary directories and initializes the workspace directory if not already set.
+"""
 function set_environment()
     if !isdir(CONFIG_DIR) 
         mkdir(CONFIG_DIR)
