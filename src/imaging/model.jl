@@ -165,7 +165,7 @@ function UNet()
         UNetDownBlock(256, 512)
     )
 
-    bottleneck = conv_3x3(512, 1024)
+    bottleneck = down_conv_3x3(512, 1024)
 
     upsample = Chain(
         UNetUpBlock(1024, 512),
@@ -184,18 +184,22 @@ Applies the entire U-Net model to process an input image through various layers
 to produce a segmented output.
 =#
 function (model::UNet)(x::AbstractArray)
+    # Downsampling path
     x1 = model.downsample.layers[1](x)
     x2 = model.downsample.layers[2](x1)
     x3 = model.downsample.layers[3](x2)
     x4 = model.downsample.layers[4](x3)
 
+    # bottleneck
     x_bottleneck = model.bottleneck(x4)
 
-    x_up1 = model.upsample.layers[1](x_bottleneck, x4)
-    x_up2 = model.upsample.layers[2](x_up1, x3)
-    x_up3 = model.upsample.layers[3](x_up2, x2)
-    x_up4 = model.upsample.layers[4](x_up3, x1)
+    # Upsampling path
+    x_up1 = model.upsample.layers[1](copy_and_crop(x_bottleneck, x4))
+    x_up2 = model.upsample.layers[2](copy_and_crop(x_up1, x3))
+    x_up3 = model.upsample.layers[3](copy_and_crop(x_up2, x2))
+    x_up4 = model.upsample.layers[4](copy_and_crop(x_up3, x1))
 
+    # Output layer
     return model.out_layer(x_up4)
 end
 
