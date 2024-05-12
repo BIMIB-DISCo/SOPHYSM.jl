@@ -2,7 +2,18 @@ module Model
 
 using Flux
 
-# U-Net architecture
+#=
+Defines the complete U-Net architecture comprising separate components for
+different phases of the network.
+
+- The downsampling path reduces spatial dimensions and increases feature
+channels.
+- The bottleneck is the deepest part where feature abstraction is maximum.
+- The upsampling path increases spatial dimensions and merges features from
+downsampling path.
+- The final output layer maps the deep features to the desired number of output
+classes or channels.
+=#
 struct UNet
     downsample::Chain
     bottleneck::Chain
@@ -10,19 +21,40 @@ struct UNet
     out_layer::Chain
 end
 
-# A downsampling step
+#=
+Represents a single block in the downsampling path containing convolutional
+and pooling layers.
+
+- Sequential convolutional layers for feature extraction.
+- Max pooling layer to reduce spatial dimensions by taking the maximum value in
+a local neighborhood.
+=#
 struct UNetDownBlock
     conv::Chain
     pool::MaxPool
 end
 
-# An upsampling step
+#=
+Represents a block in the upsampling path that uses transposed convolutions to
+increase spatial dimensions.
+
+- Transposed convolutional layer to upscale the feature map.
+- Regular convolutional layers to refine features after upsampling.
+=#
 struct UNetUpBlock
     upconv::Chain
     conv::Chain
 end
 
-# Two 3x3 unpadded convolutional layers followed by ReLU activations
+#=
+Constructs two consecutive 3x3 convolutional layers without padding, reducing
+the spatial size by 2 pixels.
+
+ReLU activation is used to introduce non-linearity into the model.
+
+- First convolution reduces dimension and applies ReLU.
+- Second convolution further processes the feature map.
+=#
 function down_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu),
@@ -30,7 +62,15 @@ function down_conv_3x3(in_chs::Int, out_chs::Int)
     )
 end
 
-# Two 3x3 padded convolutional layers followed by ReLU activations
+#=
+Similar to `down_conv_3x3`, but includes padding to maintain the same spatial
+dimensions of the input.
+
+Used in the upsampling path layers where dimensional reduction is not desired.
+
+- First convolution applies padding to prevent size reduction.
+- Second convolution refines features.
+=#
 function up_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu; pad = SamePad()),
@@ -38,36 +78,66 @@ function up_conv_3x3(in_chs::Int, out_chs::Int)
     )
 end
 
-# Crop and Concatenate the feature map
+#=
+Adjusts the size of the 'bridge' feature map (from downsampling path) to
+match 'x' using slicing and concatenates them along the third dimension, which
+represents the channels.
+
+This step is crucial for merging features from downsampling andupsampling
+paths.
+=#
 function copy_and_crop(x, bridge)
     dx = size(bridge, 1) - size(x, 1)
     dy = size(bridge, 2) - size(x, 2)
 
-    cropped_bridge = @views bridge[div(dx, 2) + 1:end - div(dx, 2), div(dy, 2) + 1:end - div(dy, 2), :, :]
+# Crop `bridge` to the same size as `x` and concatenates them.
+    cropped_bridge = @views bridge[
+                                div(dx, 2) + 1:end - div(dx, 2),
+                                div(dy, 2) + 1:end - div(dy, 2),
+                                :,
+                                :
+                            ]
 
     return cat(x, cropped_bridge, dims = 3)
 end
 
-# A 2x2 max pooling operation with stride 2
+#=
+Implements a 2x2 max pooling layer with a stride of 2 to reduce the spatial
+dimensions of the feature map by half.
+=#
 function max_pool_2x2()
     MaxPool((2, 2), stride = 2)
 end
 
-# A 2x2 up-convolutional layer
+#=
+Defines a transposed convolutional layer that increases the spatial dimensions
+of the feature maps.
+
+Used in upsampling to recover the original dimensions of the image.
+
+- Transposed convolution increases the size of the feature map.
+=#
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
         ConvTranspose((2, 2), in_chs => out_chs)
     )
 end
 
-# A 1x1 convolutional layer to finalize the output
+#=
+A 1x1 convolutional layer reduces the number of feature channels to the desired
+output channels.
+
+Used as the final layer to map features to segmentation classes or predictions.
+
+- The 1x1 convolution adjusts the number of channels.
+=#
 function conv_1x1(in_chs::Int, out_chs::Int)
     Chain(
         Conv((1, 1), in_chs => out_chs)
     )
 end
 
-# Constructor for downsampling block
+# Constructor function to create a downsampling block with specified channels.
 function UNetDownBlock(in_chs::Int, out_chs::Int)
     conv = down_conv_3x3(in_chs, out_chs)
     pool = max_pool_2x2()
@@ -75,7 +145,7 @@ function UNetDownBlock(in_chs::Int, out_chs::Int)
     UNetDownBlock(conv, pool)
 end
 
-# Constructor for upsampling block
+# Constructor function to create an upsampling block with specified channels.
 function UNetUpBlock(in_chs::Int, out_chs::Int)
     upconv = up_conv_2x2(in_chs, out_chs)
     conv = up_conv_3x3(out_chs, out_chs)
@@ -83,7 +153,10 @@ function UNetUpBlock(in_chs::Int, out_chs::Int)
     UNetUpBlock(upconv, conv)
 end
 
-# Constructor for U-Net
+#=
+Constructor for U-Net which initializes the downsampling, bottleneck,
+upsampling and output layers.
+=#
 function UNet()
     downsample = Chain(
         UNetDownBlock(1, 64),
@@ -106,7 +179,10 @@ function UNet()
     UNet(downsample, bottleneck, upsample, out_layer)
 end
 
-# Network application to an image
+#=
+Applies the entire U-Net model to process an input image through various layers
+to produce a segmented output.
+=#
 function (model::UNet)(x::AbstractArray)
     x1 = model.downsample.layers[1](x)
     x2 = model.downsample.layers[2](x1)
@@ -123,6 +199,10 @@ function (model::UNet)(x::AbstractArray)
     return model.out_layer(x_up4)
 end
 
+#=
+Customizes the display of the U-Net model's structure, showing the dimensions
+of convolutional layers at each stage.
+=#
 function Base.show(io::IO, model::UNet)
     println(io, "UNet Structure:")
 
