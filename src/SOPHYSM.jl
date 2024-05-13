@@ -11,6 +11,7 @@ using JHistint
 
 ### Included modules
 include("Workspace.jl")
+include("SOPHYSMLogger.jl")
 
 ### Exported functions
 export start_GUI
@@ -22,6 +23,9 @@ workspace_dir = Observable(Workspace.get_workspace_dir())
 
 ### GUI logic
 function start_GUI()
+    SOPHYSM_open_logger()
+    SOPHYSM_log_message("@info", "Start GUI")
+
     workspace_dir = Observable(Workspace.get_workspace_dir())
     Workspace.set_environment()
 
@@ -29,6 +33,7 @@ function start_GUI()
 
     ### QML Functions
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
+    qmlfunction("log_message", SOPHYSM_log_message)
 
     # Propmap
     propmap = JuliaPropertyMap()
@@ -38,17 +43,16 @@ function start_GUI()
     on(workspace_dir) do x
         Workspace.set_workspace_dir(x)
         workspace_dir = Observable(Workspace.get_workspace_dir())
-        println("WS changed to ", workspace_dir)
+        log_message("@info", "WS Changed to $workspace_dir")
     end
 
     # All keyword arguments to load are added as context properties on the QML side
     loadqml(qmlfile, propmap = propmap)
     
-    exec()
+    exec_async()
 
-    println("GUI Closed")
+    SOPHYSM_log_message("@info", "Close GUI")
+    SOPHYSM_close_logger()
 end
-
-start_GUI()
 
 end # SOPHYSM module
