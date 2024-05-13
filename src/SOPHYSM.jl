@@ -23,8 +23,8 @@ workspace_dir = Observable(Workspace.get_workspace_dir())
 
 ### GUI logic
 function start_GUI()
-    SOPHYSM_open_logger()
-    SOPHYSM_log_message("@info", "Start GUI")
+    s_open_logger()
+    s_log_message("@info", "Start GUI")
 
     workspace_dir = Observable(Workspace.get_workspace_dir())
     Workspace.set_environment()
@@ -33,7 +33,7 @@ function start_GUI()
 
     ### QML Functions
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
-    qmlfunction("log_message", SOPHYSM_log_message)
+    qmlfunction("log_message", S_log_message)
 
     # Propmap
     propmap = JuliaPropertyMap()
@@ -43,7 +43,7 @@ function start_GUI()
     on(workspace_dir) do x
         Workspace.set_workspace_dir(x)
         workspace_dir = Observable(Workspace.get_workspace_dir())
-        log_message("@info", "WS Changed to $workspace_dir")
+        s_log_message("@info", "WS Changed to $workspace_dir")
     end
 
     # All keyword arguments to load are added as context properties on the QML side
@@ -51,8 +51,8 @@ function start_GUI()
     
     exec_async()
 
-    SOPHYSM_log_message("@info", "Close GUI")
-    SOPHYSM_close_logger()
+    s_log_message("@info", "Close GUI")
+    s_close_logger()
 end
 
 end # SOPHYSM module
