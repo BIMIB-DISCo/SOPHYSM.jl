@@ -54,11 +54,32 @@ ApplicationWindow {
             propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(7);
         }
         onRejected: {
-            console.log("Canceled");
+            Julia.log_message("@info", "Canceled new Workspace Folder selection");
         }
     }
 
-    //dropdown menu to display the application settings
+    // File Dialog to Select an Image
+    FileDialog {
+    id: imageDialog
+    title: "Please choose an image"
+
+    onAccepted: {
+            var path = imageDialog.selectedFile.toString().slice(7);
+            var newPath = imageDialog.selectedFile.toString().slice(7, -4) + "png";
+            Julia.log_message("@info", path)
+            Julia.log_message("@info", newPath)
+            Julia.create_png(path, newPath);
+            imageSelected.source = newPath;
+            this.close();
+        }
+
+    onRejected: {
+        Julia.log_message("@info", "Canceled Image selection");
+        this.close();
+    }
+    }
+
+    // Dropdown menu to display the application settings
     Menu {
         id: dropdownMenu
         width: 200
@@ -101,7 +122,7 @@ ApplicationWindow {
 
         ScrollView {
             id: scrollView
-            // scrollbar is 15px large
+            // Scrollbar is 15px large
             width: 900
             height: 365
             clip: true
@@ -322,14 +343,14 @@ ApplicationWindow {
         width: 40
         height: parent.height
 
-        // explorer
+        // Explorer
         Button {
             id: explorerButton
             icon.source: "img/explorer.png"
             width: parent.width
             height: parent.width
 
-            // on hover tooltip
+            // On hover tooltip
             hoverEnabled: true
             ToolTip.delay: 500
             ToolTip.timeout: 5000
@@ -592,6 +613,37 @@ ApplicationWindow {
 
                 Item {
                     id: viewTab
+                    Image
+                    {
+                        id: imageSelected
+                        source: "img/emptyImage.png"
+                        width: 500
+                        height: 300
+                    }
+
+                    // Image Selection button
+                    Button {
+                        id: imageSelectionButton
+                        text: "Select Image"
+
+                        width: 120
+                        height: 30
+
+                        anchors {
+                            top: imageSelected.bottom
+                            topMargin: 10
+                        }
+                        // On hover tooltip
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Open an Image")
+
+                        onClicked: {
+                            imageDialog.open()
+                        }
+                    }
                 }
 
                 // Segmentation window

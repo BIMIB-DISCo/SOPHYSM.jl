@@ -5,8 +5,11 @@ version = "0.1.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 JHistint = "f9cb9bd9-7498-4774-9389-dea22f18ae4d"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Observables = "510215fc-4207-5dde-b226-833fc4488ee2"
+PNGFiles = "f57f5aa1-a3ce-4bc8-8ab9-96f992907883"
 QML = "2db162a6-7e43-52c3-8d84-290c1c42d82a"
+TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"

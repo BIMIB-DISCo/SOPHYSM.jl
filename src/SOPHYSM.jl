@@ -34,6 +34,8 @@ function start_GUI()
     ### QML Functions
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
     qmlfunction("log_message", s_log_message)
+    qmlfunction("create_png", Workspace.create_png)
+
 
     # Propmap
     propmap = JuliaPropertyMap()

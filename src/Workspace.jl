@@ -3,9 +3,12 @@ module Workspace
 
 ### Packages
 using JSON
+using TiffImages
+using PNGFiles
+using FileIO
 
 ### Exported functions
-export set_workspace_dir, get_workspace_dir
+export set_workspace_dir, get_workspace_dir, create_png
 
 ### Exported constants
 export CONFIG_DIR, DATA_DIR
@@ -124,6 +127,16 @@ function set_environment()
     if !isfile(joinpath(CONFIG_DIR, "SOPHYSM_settings.json"))
         set_workspace_dir(default_workspace_folder())
     end
+end
+
+"""
+    create_png(path::AbstractString)
+
+    Craete a .png from the .tif image
+"""
+function create_png(path::AbstractString, newPath::AbstractString)
+    tif = load(path)
+    save(newPath, tif)
 end
 
 end # module SOPHYSM.Workspace
