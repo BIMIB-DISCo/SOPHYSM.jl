@@ -33,7 +33,7 @@ function start_GUI()
 
     ### QML Functions
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
-    qmlfunction("log_message", S_log_message)
+    qmlfunction("log_message", s_log_message)
 
     # Propmap
     propmap = JuliaPropertyMap()
