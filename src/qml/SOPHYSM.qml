@@ -64,12 +64,9 @@ ApplicationWindow {
     title: "Please choose an image"
 
     onAccepted: {
-            var path = imageDialog.selectedFile.toString().slice(7);
-            var newPath = imageDialog.selectedFile.toString().slice(7, -4) + "png";
+            var path = imageDialog.selectedFile.toString().slice(8);
             Julia.log_message("@info", path)
-            Julia.log_message("@info", newPath)
-            Julia.create_png(path, newPath);
-            imageSelected.source = newPath;
+            Julia.display_img(jdisp, path);
             this.close();
         }
 
@@ -613,10 +610,9 @@ ApplicationWindow {
 
                 Item {
                     id: viewTab
-                    Image
-                    {
-                        id: imageSelected
-                        source: "img/emptyImage.png"
+
+                    JuliaDisplay {
+                        id: jdisp
                         width: 500
                         height: 300
                     }
@@ -630,7 +626,7 @@ ApplicationWindow {
                         height: 30
 
                         anchors {
-                            top: imageSelected.bottom
+                            top: jdisp.bottom
                             topMargin: 10
                         }
                         // On hover tooltip

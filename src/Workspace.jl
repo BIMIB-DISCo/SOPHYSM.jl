@@ -3,12 +3,12 @@ module Workspace
 
 ### Packages
 using JSON
-using TiffImages
-using PNGFiles
-using FileIO
+using Images
+using QML
+using ImageMagick
 
 ### Exported functions
-export set_workspace_dir, get_workspace_dir, create_png
+export set_workspace_dir, get_workspace_dir, display_img
 
 ### Exported constants
 export CONFIG_DIR, DATA_DIR
@@ -130,13 +130,13 @@ function set_environment()
 end
 
 """
-    create_png(path::AbstractString)
+    display(d:JuliaDisplay, path::AbstractString)
 
-    Craete a .png from the .tif image
+    display selected image
 """
-function create_png(path::AbstractString, newPath::AbstractString)
-    tif = load(path)
-    save(newPath, tif)
+function display_img(d::JuliaDisplay, path::AbstractString)
+    img = ImageMagick.load(path; view = true)
+    display(d, img)
 end
 
 end # module SOPHYSM.Workspace
