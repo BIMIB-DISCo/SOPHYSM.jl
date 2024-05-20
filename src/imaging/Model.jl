@@ -46,6 +46,11 @@ struct UNetUpBlock
     conv::Chain
 end
 
+function kaiming_init(out_chs, in_chs, filter)
+    std_dev = sqrt(2 / in_chs)
+    return randn(Float32, filter..., out_chs, in_chs) * std_dev
+end
+
 #=
 Constructs two consecutive 3x3 convolutional layers without padding, reducing
 the spatial size by 2 pixels.
@@ -57,9 +62,11 @@ ReLU activation is used to introduce non-linearity into the model.
 =#
 function down_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
-        Conv((3, 3), in_chs => out_chs, relu),
+        Conv((3, 3), in_chs => out_chs, relu;
+            init = kaiming_init(in_chs, out_chs, (3, 3))),
         BatchNorm(out_chs),
-        Conv((3, 3), out_chs => out_chs, relu),
+        Conv((3, 3), out_chs => out_chs, relu;
+            init = kaiming_init(in_chs, out_chs, (3, 3))),
         BatchNorm(out_chs)
     )
 end
@@ -75,9 +82,13 @@ Used in the upsampling path layers where dimensional reduction is not desired.
 =#
 function up_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
-        Conv((3, 3), in_chs => out_chs, relu; pad = SamePad()),
+        Conv((3, 3), in_chs => out_chs, relu;
+            pad = SamePad();
+            init = kaiming_init(in_chs, out_chs, (3, 3))),
         BatchNorm(out_chs),
-        Conv((3, 3), out_chs => out_chs, relu; pad = SamePad()),
+        Conv((3, 3), out_chs => out_chs, relu;
+            pad = SamePad();
+            init = kaiming_init(in_chs, out_chs, (3, 3))),
         BatchNorm(out_chs)
     )
 end
@@ -123,7 +134,8 @@ Used in upsampling to recover the original dimensions of the image.
 =#
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
-        ConvTranspose((2, 2), in_chs => out_chs),
+        ConvTranspose((2, 2), in_chs => out_chs;
+            init = kaiming_init(in_chs, out_chs, (2, 2))),
         BatchNorm(out_chs)
     )
 end
@@ -138,7 +150,8 @@ Used as the final layer to map features to segmentation classes or predictions.
 =#
 function conv_1x1(in_chs::Int, out_chs::Int)
     Chain(
-        Conv((1, 1), in_chs => out_chs)
+        Conv((1, 1), in_chs => out_chs;
+            init = kaiming_init(in_chs, out_chs, (1, 1)))
     )
 end
 
