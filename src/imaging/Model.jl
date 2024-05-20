@@ -58,7 +58,9 @@ ReLU activation is used to introduce non-linearity into the model.
 function down_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu),
-        Conv((3, 3), out_chs => out_chs, relu)
+        BatchNorm(out_chs),
+        Conv((3, 3), out_chs => out_chs, relu),
+        BatchNorm(out_chs)
     )
 end
 
@@ -74,7 +76,9 @@ Used in the upsampling path layers where dimensional reduction is not desired.
 function up_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu; pad = SamePad()),
-        Conv((3, 3), out_chs => out_chs, relu; pad = SamePad())
+        BatchNorm(out_chs),
+        Conv((3, 3), out_chs => out_chs, relu; pad = SamePad()),
+        BatchNorm(out_chs)
     )
 end
 
@@ -119,7 +123,8 @@ Used in upsampling to recover the original dimensions of the image.
 =#
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
-        ConvTranspose((2, 2), in_chs => out_chs)
+        ConvTranspose((2, 2), in_chs => out_chs),
+        BatchNorm(out_chs)
     )
 end
 
