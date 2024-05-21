@@ -74,7 +74,7 @@ function set_workspace_dir(new_workspace_dir::AbstractString)
     settings_file = joinpath(CONFIG_DIR, "SOPHYSM_settings.json")
 
     if Sys.iswindows() && new_workspace_dir[1] == '/'
-        new_workspace_dir = new_workspace_dir[2:end]
+        new_workspace_dir = new_workspace_dir[2: end]
     end
     settings = Dict("workspace_dir" => new_workspace_dir)
 
@@ -135,6 +135,9 @@ end
     display selected image
 """
 function display_img(d::JuliaDisplay, path::AbstractString)
+    if Sys.iswindows()
+        path = path[2: end]
+    end
     img = ImageMagick.load(path; view = true)
     display(d, img)
 end

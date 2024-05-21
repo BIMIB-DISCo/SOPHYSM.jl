@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Controls.Universal 2.15
 import QtQuick.Dialogs
 
 import org.julialang
@@ -14,6 +15,8 @@ ApplicationWindow {
     visible: true
     title: qsTr("SOPHYSM")
     id : mainWindow
+
+    Universal.theme: Universal.Dark
 
     // Components
     MessageDialog {
@@ -64,7 +67,7 @@ ApplicationWindow {
     title: "Please choose an image"
 
     onAccepted: {
-            var path = imageDialog.selectedFile.toString().slice(8);
+            var path = imageDialog.selectedFile.toString().slice(7);
             Julia.log_message("@info", path)
             Julia.display_img(jdisp, path);
             this.close();
@@ -83,20 +86,20 @@ ApplicationWindow {
 
         MenuItem {
             text: "Change Directory"
-            onClicked: folderDialog.open()
+            onClicked: folderDialog.open();
         }
 
         MenuItem {
-            text: "test"
+            text: "Switch Theme"
             onClicked: {
-                console.log("test onClicked")
+                console.log("todo");
             }
 
         }
 
         MenuItem {
             text: "Item 3"
-            onClicked: console.log("Item 3 selected")
+            onClicked: console.log("Item 3 selected");
         }
     }
 
@@ -304,6 +307,8 @@ ApplicationWindow {
                        Button {
                             id: downloadCollectionsButton
                             text: "Download collections"
+
+                            Universal.background: Universal.Orange
                             anchors{
                                 bottomMargin: 5
                                 left: parent.left
@@ -422,10 +427,11 @@ ApplicationWindow {
     // workspace Item
     SplitView {
         id: splitView
-        width: parent.width
-        height: parent.height
         anchors {
             left: verticalBar.right
+            right: parent.right
+            bottom: parent.bottom
+            top: parent.top
         }
 
         // handle to resize the window
@@ -463,8 +469,8 @@ ApplicationWindow {
 
         Rectangle {
             id: viewer
-            width: stackLayout.width * 3 / 4
-            height: stackLayout.height
+            width: parent.width
+            height: parent.height
 
             anchors.left: folder.right
 
@@ -477,7 +483,7 @@ ApplicationWindow {
                 TabButton {
                     id: viewButton
                     width: 100
-                    height: 42
+                    height: 40
 
                     anchors.bottom: parent.bottom
 
@@ -501,7 +507,7 @@ ApplicationWindow {
                 TabButton {
                     id: segmentationButton
                     width: 100
-                    height: 42
+                    height: 40
 
                     anchors.bottom: parent.bottom
 
@@ -525,7 +531,7 @@ ApplicationWindow {
                 TabButton {
                     id: tessellationButton
                     width: 100 
-                    height: 42
+                    height: 40
                     anchors.bottom: parent.bottom 
 
                     contentItem: Text {
@@ -548,7 +554,7 @@ ApplicationWindow {
                 TabButton {
                     id: simulationButton
                     width: 100
-                    height: 42
+                    height: 40
                     anchors.bottom: parent.bottom
 
                     contentItem: Text {
@@ -574,6 +580,9 @@ ApplicationWindow {
                 id: stackLayout
                 width: parent.width
                 height: parent.height
+                anchors {
+                    bottom: viewer.bottom
+                }
                 currentIndex: tabBar.currentIndex
                 onCurrentIndexChanged: {
                     switch (currentIndex) {
@@ -610,36 +619,58 @@ ApplicationWindow {
 
                 Item {
                     id: viewTab
+                    Rectangle {
+                        id: viewTabContainer
+                        anchors.fill: parent
+                        color: "darkslategray"
 
-                    JuliaDisplay {
-                        id: jdisp
-                        width: 500
-                        height: 300
-                    }
+                        Rectangle {
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                right: parent.right
+                                bottom: imageSelectionButton.top
+                                margins: 30
+                            }
+                            width: parent.width
+                            height: parent.height
+                
+                            id: jdispcontainer
+                            color: "gray"
 
-                    // Image Selection button
-                    Button {
-                        id: imageSelectionButton
-                        text: "Select Image"
-
-                        width: 120
-                        height: 30
-
-                        anchors {
-                            top: jdisp.bottom
-                            topMargin: 10
+                            JuliaDisplay {
+                                id: jdisp
+                                width: parent.width
+                                height: parent.height
+                            }
                         }
-                        // On hover tooltip
-                        hoverEnabled: true
-                        ToolTip.delay: 500
-                        ToolTip.timeout: 5000
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Open an Image")
 
-                        onClicked: {
-                            imageDialog.open()
+                        // Image Selection button
+                        Button {
+                            id: imageSelectionButton
+                            text: "Select Image"
+                            
+                            width: 120
+                            height: 30
+
+                            anchors {
+                                bottom: viewTabContainer.bottom
+                                bottomMargin: 30
+                                left: viewTabContainer.left
+                                leftMargin: 30
+                            }
+                            // On hover tooltip
+                            hoverEnabled: true
+                            ToolTip.delay: 500
+                            ToolTip.timeout: 5000
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Open an Image")
+
+                            onClicked: {
+                                imageDialog.open()
+                            }
                         }
-                    }
+                    }                    
                 }
 
                 // Segmentation window
