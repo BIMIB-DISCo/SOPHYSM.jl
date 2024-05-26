@@ -5,12 +5,12 @@ Defines the complete U-Net architecture comprising separate components for
 different phases of the network.
 
 - The downsampling path reduces spatial dimensions and increases feature
-channels.
+  channels.
 - The bottleneck is the deepest part where feature abstraction is maximum.
 - The upsampling path increases spatial dimensions and merges features from
-downsampling path.
+  downsampling path.
 - The final output layer maps the deep features to the desired number of output
-classes or channels.
+  classes or channels.
 =#
 struct UNet
     downsample::Chain
@@ -25,7 +25,7 @@ and pooling layers.
 
 - Sequential convolutional layers for feature extraction.
 - Max pooling layer to reduce spatial dimensions by taking the maximum value in
-a local neighborhood.
+  a local neighborhood.
 =#
 struct UNetDownBlock
     conv::Chain
@@ -45,6 +45,12 @@ struct UNetUpBlock
 end
 
 #=
+Initializes the weights for convolutional layers using the Kaiming
+initialization method.
+
+This method sets the weights based on a normal distribution with a standard
+deviation of sqrt(2 / number of input channels), which helps maintain the
+variance of activations through the layers.
 =#
 function kaiming_init(out_chs, in_chs, filter)
     std_dev = sqrt(2 / in_chs)
@@ -85,12 +91,12 @@ Used in the upsampling path layers where dimensional reduction is not desired.
 function up_conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu;
-            pad = SamePad();
+            pad = SamePad(),
             init = kaiming_init(in_chs, out_chs, (3, 3))
         ),
         BatchNorm(out_chs),
         Conv((3, 3), out_chs => out_chs, relu;
-            pad = SamePad();
+            pad = SamePad(),
             init = kaiming_init(in_chs, out_chs, (3, 3))
         ),
         BatchNorm(out_chs)
@@ -102,14 +108,14 @@ Adjusts the size of the 'bridge' feature map (from downsampling path) to
 match 'x' using slicing and concatenates them along the third dimension, which
 represents the channels.
 
-This step is crucial for merging features from downsampling andupsampling
+This step is crucial for merging features from downsampling and upsampling
 paths.
 =#
 function copy_and_crop(x, bridge)
     dx = size(bridge, 1) - size(x, 1)
     dy = size(bridge, 2) - size(x, 2)
 
-# Crop `bridge` to the same size as `x` and concatenates them.
+    # Crop `bridge` to the same size as `x` and concatenate them.
     cropped_bridge = @views bridge[
                                 div(dx, 2) + 1:end - div(dx, 2),
                                 div(dy, 2) + 1:end - div(dy, 2),
@@ -139,7 +145,7 @@ Used in upsampling to recover the original dimensions of the image.
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
         ConvTranspose((2, 2), in_chs => out_chs;
-                     init = kaiming_init(in_chs, out_chs, (2, 2))
+            init = kaiming_init(in_chs, out_chs, (2, 2))
         ),
         BatchNorm(out_chs)
     )
@@ -165,7 +171,6 @@ end
 function UNetDownBlock(in_chs::Int, out_chs::Int)
     conv = down_conv_3x3(in_chs, out_chs)
     pool = max_pool_2x2()
-
     UNetDownBlock(conv, pool)
 end
 
@@ -173,7 +178,6 @@ end
 function UNetUpBlock(in_chs::Int, out_chs::Int)
     upconv = up_conv_2x2(in_chs, out_chs)
     conv = up_conv_3x3(out_chs, out_chs)
-
     UNetUpBlock(upconv, conv)
 end
 
@@ -214,7 +218,7 @@ function (model::UNet)(x::AbstractArray)
     x3 = model.downsample.layers[3](x2)
     x4 = model.downsample.layers[4](x3)
 
-    # bottleneck
+    # Bottleneck
     x_bottleneck = model.bottleneck(x4)
 
     # Upsampling path
