@@ -61,8 +61,6 @@ end
 Constructs two consecutive 3x3 convolutional layers without padding, reducing
 the spatial size by 2 pixels.
 
-ReLU activation is used to introduce non-linearity into the model.
-
 - First convolution reduces dimension and applies ReLU.
 - Second convolution further processes the feature map.
 =#
@@ -193,7 +191,10 @@ function UNet()
         UNetDownBlock(256, 512)
     )
 
-    bottleneck = down_conv_3x3(512, 1024)
+    bottleneck = Chain{
+        down_conv_3x3(512, 1024),
+        Dropout(0.5)
+    }
 
     upsample = Chain(
         UNetUpBlock(1024, 512),
