@@ -11,10 +11,12 @@ using Augmentor
 
     - `base`: Path to the base directory where the images and masks are stored.
     - `stub`: Prefix of the filenames for the image and mask.
-    - `rsize`: Tuple specifying the dimensions to resize the images and masks to.
+    - `rsize`: Tuple specifying the dimensions to resize the images and masks
+      to.
 
-    Constructs the full paths for the image and mask files, loads them, resizes them, 
-    converts them to a channel view, reshapes them, and returns the processed image and mask.
+    Constructs the full paths for the image and mask files, loads them, resizes
+    them, converts them to a channel view, reshapes them, and returns the
+    processed image and mask.
 =#
 function load_image(base::String, stub::String; rsize = (256, 256))
     im_path = joinpath(base, stub * "_im.tif")
@@ -73,12 +75,14 @@ end
 #=
     load_batch(base::String; n=10, rsize=(256, 256), augmenter=nothing)
 
-    Loads a batch of `n` images and masks randomly sampled from the `base` directory.
+    Loads a batch of `n` images and masks randomly sampled from the `base`
+    directory.
     Applies augmentation if `augmenter` is provided.
 
     - `base`: Path to the base directory where the images and masks are stored.
     - `n`: Number of images and masks to load in the batch. Default is 10.
-    - `rsize`: Tuple specifying the dimensions to resize the images and masks to. Default is (256, 256).
+    - `rsize`: Tuple specifying the dimensions to resize the images and masks
+      to. Default is (256, 256).
     - `augmenter`: The augmentation pipeline. Default is `nothing`.
 
     Returns the batch of images and masks as arrays of Float32.
@@ -110,19 +114,26 @@ function load_batch(base::String; n=10, rsize=(256, 256), augmenter=nothing)
 end
 
 #=
-    create_dataloader(base::String, batch_size::Int; rsize=(256, 256), augmenter=nothing)
+    create_dataloader(base::String, batch_size::Int;
+                        rsize=(256, 256),
+                        augmenter=nothing
+    )
 
     Creates a DataLoader to iterate over the data in batches.
 
     - `base`: Path to the base directory where the images and masks are stored.
     - `batch_size`: Number of images and masks to load in each batch.
-    - `rsize`: Tuple specifying the dimensions to resize the images and masks to. Default is (256, 256).
+    - `rsize`: Tuple specifying the dimensions to resize the images and masks
+      to. Default is (256, 256).
     - `augmenter`: The augmentation pipeline. Default is `nothing`.
 
-    Defines a data generator function that loads a batch of data using `load_batch`
+    Defines a data generator function that loads a batch of data using
+    `load_batch`
     and returns a DataLoader that shuffles the data for each epoch.
 =#
-function create_dataloader(base::String, batch_size::Int; rsize = (256, 256), augmenter = nothing)
+function create_dataloader(base::String, batch_size::Int;
+                            rsize = (256, 256),
+                            augmenter = nothing)
     function data_gen()
         load_batch(base, n=batch_size, rsize=rsize, augmenter=augmenter)
     end
