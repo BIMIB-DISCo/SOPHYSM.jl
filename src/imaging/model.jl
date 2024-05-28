@@ -12,7 +12,7 @@ different phases of the network.
 - The final output layer maps the deep features to the desired number of output
   classes or channels.
 =#
-struct UNet
+struct U_Net
     downsample::Chain
     bottleneck::Chain
     upsample::Chain
@@ -183,7 +183,7 @@ end
 Constructor for U-Net which initializes the downsampling, bottleneck,
 upsampling and output layers.
 =#
-function UNet()
+function U_Net()
     downsample = Chain(
         UNetDownBlock(1, 64),
         UNetDownBlock(64, 128),
@@ -205,14 +205,14 @@ function UNet()
 
     out_layer = conv_1x1(64, 2)
 
-    UNet(downsample, bottleneck, upsample, out_layer)
+    U_Net(downsample, bottleneck, upsample, out_layer)
 end
 
 #=
 Applies the entire U-Net model to process an input image through various layers
 to produce a segmented output.
 =#
-function (model::UNet)(x::AbstractArray)
+function (model::U_Net)(x::AbstractArray)
     # Downsampling path
     x1 = model.downsample.layers[1](x)
     x2 = model.downsample.layers[2](x1)
@@ -236,8 +236,8 @@ end
 Customizes the display of the U-Net model's structure, showing the dimensions
 of convolutional layers at each stage.
 =#
-function Base.show(io::IO, model::UNet)
-    println(io, "UNet Structure:")
+function Base.show(io::IO, model::U_Net)
+    println(io, "U_Net Structure:")
 
     println(io, "Downsampling Path:")
     for layer in model.downsample.layers
