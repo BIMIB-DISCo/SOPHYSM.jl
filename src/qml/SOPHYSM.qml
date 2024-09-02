@@ -7,7 +7,7 @@ import QtQuick.Dialogs
 import org.julialang
 
 ApplicationWindow {
-    font.family: "Georgia"
+    font.family: "Arial"
     width: 1000
     height: 700
     minimumWidth: 1000
@@ -622,7 +622,7 @@ ApplicationWindow {
                     Rectangle {
                         id: viewTabContainer
                         anchors.fill: parent
-                        color: "darkslategray"
+                        color: "black"
 
                         Rectangle {
                             anchors {
@@ -636,7 +636,7 @@ ApplicationWindow {
                             height: parent.height
                 
                             id: jdispcontainer
-                            color: "gray"
+                            color: "black"
 
                             JuliaDisplay {
                                 id: jdisp
