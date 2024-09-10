@@ -10,6 +10,7 @@ using JSON
 
 ### Included modules
 include("Workspace.jl")
+include("imaging/SOPHYSM_Net.jl")
 
 ### Exported functions
 export start_GUI

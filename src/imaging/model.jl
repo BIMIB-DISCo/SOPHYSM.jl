@@ -1,3 +1,5 @@
+export UNet
+
 """
     UNet
 
@@ -61,7 +63,7 @@ end
 function kaiming_init(out_chs, in_chs, filter)
     std_dev = sqrt(2 / in_chs)
 
-    return randn(Float32, filter..., out_chs, in_chs) * std_dev
+    return (dims...) -> randn(Float32, filter..., out_chs, in_chs) * std_dev
 end
 
 """
@@ -211,9 +213,9 @@ end
     Constructor for U-Net which initializes the downsampling, bottleneck,
     upsampling, and output layers.
 """
-function UNet()
+function UNet(channels::Int = 1, labels::Int = 2)
     downsample = Chain(
-        UNetDownBlock(1, 64),
+        UNetDownBlock(channels, 64),
         UNetDownBlock(64, 128),
         UNetDownBlock(128, 256),
         UNetDownBlock(256, 512)
@@ -231,7 +233,7 @@ function UNet()
         UNetUpBlock(128, 64)
     )
 
-    out_layer = conv_1x1(64, 2)
+    out_layer = conv_1x1(64, labels)
 
     UNet(downsample, bottleneck, upsample, out_layer)
 end
@@ -248,23 +250,43 @@ end
     - Produces the final output through the output layer.
 """
 function (model::UNet)(x::AbstractArray)
+    # Verifica le dimensioni iniziali
+    println("Input size: ", size(x))
+    
     # Downsampling path
-    x1 = model.downsample.layers[1](x)
-    x2 = model.downsample.layers[2](x1)
-    x3 = model.downsample.layers[3](x2)
-    x4 = model.downsample.layers[4](x3)
+    x1 = model.downsample.layers[1].conv(x)
+    println("After downsample layer 1: ", size(x1))
+    
+    x2 = model.downsample.layers[2].conv(x1)
+    println("After downsample layer 2: ", size(x2))
+
+    x3 = model.downsample.layers[3].conv(x2)
+    println("After downsample layer 3: ", size(x3))
+
+    x4 = model.downsample.layers[4].conv(x3)
+    println("After downsample layer 4: ", size(x4))
 
     # Bottleneck
     x_bottleneck = model.bottleneck(x4)
+    println("After bottleneck: ", size(x_bottleneck))
 
     # Upsampling path
-    x_up1 = model.upsample.layers[1](copy_and_crop(x_bottleneck, x4))
-    x_up2 = model.upsample.layers[2](copy_and_crop(x_up1, x3))
-    x_up3 = model.upsample.layers[3](copy_and_crop(x_up2, x2))
-    x_up4 = model.upsample.layers[4](copy_and_crop(x_up3, x1))
+    x_up1 = model.upsample.layers[1].upconv(copy_and_crop(x_bottleneck, x4))
+    println("After upsample layer 1: ", size(x_up1))
+    
+    x_up2 = model.upsample.layers[2].upconv(copy_and_crop(x_up1, x3))
+    println("After upsample layer 2: ", size(x_up2))
+
+    x_up3 = model.upsample.layers[3].upconv(copy_and_crop(x_up2, x2))
+    println("After upsample layer 3: ", size(x_up3))
+
+    x_up4 = model.upsample.layers[4].upconv(copy_and_crop(x_up3, x1))
+    println("After upsample layer 4: ", size(x_up4))
 
     # Output layer
-    return model.out_layer(x_up4)
+    output = model.out_layer(x_up4)
+    println("Output size: ", size(output))
+    return output
 end
 
 """
@@ -284,17 +306,30 @@ function Base.show(io::IO, model::UNet)
 
     println(io, "Downsampling Path:")
     for layer in model.downsample.layers
-        println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
+        # Per accedere ai pesi degli strati convoluzionali
+        if typeof(layer.conv[1]) <: Flux.Conv
+            println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
+        end
     end
 
     println(io, "\nBottleneck:")
-    println(io, "   ConvBlock: $(size(model.bottleneck[1].weight))")
+    # Per accedere ai pesi del bottleneck
+    for layer in model.bottleneck.layers
+        if typeof(layer) <: Flux.Conv
+            println(io, "   ConvBlock: $(size(layer.weight))")
+        end
+    end
 
     println(io, "\nUpsampling Path:")
     for layer in model.upsample.layers
-        println(io, "   UpConvBlock: $(size(layer.upconv[1].weight))")
+        # Per accedere ai pesi delle convoluzioni trasposte
+        if typeof(layer.upconv[1]) <: Flux.ConvTranspose
+            println(io, "   UpConvBlock: $(size(layer.upconv[1].weight))")
+        end
     end
 
     println(io, "\nOutput Layer:")
-    println(io, "   ConvBlock: $(size(model.out_layer[1].weight))")
+    if typeof(model.out_layer[1]) <: Flux.Conv
+        println(io, "   ConvBlock: $(size(model.out_layer[1].weight))")
+    end
 end
