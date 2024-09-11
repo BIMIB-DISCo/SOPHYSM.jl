@@ -1,5 +1,3 @@
-export UNet
-
 """
     UNet
 
@@ -37,6 +35,20 @@ struct UNetDownBlock
 end
 
 """
+    UNetBottleneck
+
+    Represents the bottleneck block in the U-Net architecture.
+
+    - Applies convolutional layers.
+    - Focuses on maximum feature abstraction at the deepest point of the
+      network.
+    - Bridges the downsampling and upsampling paths.
+"""
+struct UNetBottleneckBlock
+    conv::Chain
+end
+
+"""
     UNetUpBlock
 
     Represents a block in the upsampling path that uses transposed convolutions
@@ -67,7 +79,7 @@ function kaiming_init(out_chs, in_chs, filter)
 end
 
 """
-    down_conv_3x3(in_chs::Int, out_chs::Int)
+    conv_3x3(in_chs::Int, out_chs::Int)
 
     Constructs two consecutive 3x3 convolutional layers without padding,
     reducing the spatial size by 2 pixels.
@@ -75,14 +87,14 @@ end
     - First convolution reduces dimension and applies ReLU.
     - Second convolution further processes the feature map.
 """
-function down_conv_3x3(in_chs::Int, out_chs::Int)
+function conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu;
             init = kaiming_init(in_chs, out_chs, (3, 3))
         ),
         BatchNorm(out_chs),
         Conv((3, 3), out_chs => out_chs, relu;
-            init = kaiming_init(in_chs, out_chs, (3, 3))
+            init = kaiming_init(out_chs, out_chs, (3, 3))
         ),
         BatchNorm(out_chs)
     )
@@ -108,7 +120,7 @@ function up_conv_3x3(in_chs::Int, out_chs::Int)
         BatchNorm(out_chs),
         Conv((3, 3), out_chs => out_chs, relu;
             pad = SamePad(),
-            init = kaiming_init(in_chs, out_chs, (3, 3))
+            init = kaiming_init(out_chs, out_chs, (3, 3))
         ),
         BatchNorm(out_chs)
     )
@@ -191,9 +203,21 @@ end
     Constructor function to create a downsampling block with specified channels.
 """
 function UNetDownBlock(in_chs::Int, out_chs::Int)
-    conv = down_conv_3x3(in_chs, out_chs)
+    conv = conv_3x3(in_chs, out_chs)
     pool = max_pool_2x2()
+
     UNetDownBlock(conv, pool)
+end
+
+"""
+    UNetBottleneckBlock(in_chs::Int, out_chs::Int)
+
+    Constructor function to create a downsampling block with specified channels.
+"""
+function UNetBottleneckBlock(in_chs::Int, out_chs::Int)
+    conv = conv_3x3(in_chs, out_chs)
+
+    UNetBottleneckBlock(conv)
 end
 
 """
@@ -204,6 +228,7 @@ end
 function UNetUpBlock(in_chs::Int, out_chs::Int)
     upconv = up_conv_2x2(in_chs, out_chs)
     conv = up_conv_3x3(out_chs, out_chs)
+
     UNetUpBlock(upconv, conv)
 end
 
@@ -211,7 +236,7 @@ end
     UNet()
 
     Constructor for U-Net which initializes the downsampling, bottleneck,
-    upsampling, and output layers.
+    upsampling and output layers.
 """
 function UNet(channels::Int = 1, labels::Int = 2)
     downsample = Chain(
@@ -222,8 +247,7 @@ function UNet(channels::Int = 1, labels::Int = 2)
     )
 
     bottleneck = Chain(
-        down_conv_3x3(512, 1024),
-        Dropout(0.5)
+        UNetBottleneckBlock(512, 1024)
     )
 
     upsample = Chain(
@@ -250,24 +274,23 @@ end
     - Produces the final output through the output layer.
 """
 function (model::UNet)(x::AbstractArray)
-    # Verifica le dimensioni iniziali
     println("Input size: ", size(x))
     
     # Downsampling path
-    x1 = model.downsample.layers[1].conv(x)
+    x1 = model.downsample.layers[1].pool(model.downsample.layers[1].conv(x))
     println("After downsample layer 1: ", size(x1))
     
-    x2 = model.downsample.layers[2].conv(x1)
+    x2 = model.downsample.layers[2].pool(model.downsample.layers[2].conv(x1))
     println("After downsample layer 2: ", size(x2))
 
-    x3 = model.downsample.layers[3].conv(x2)
+    x3 = model.downsample.layers[3].pool(model.downsample.layers[3].conv(x2))
     println("After downsample layer 3: ", size(x3))
 
-    x4 = model.downsample.layers[4].conv(x3)
+    x4 = model.downsample.layers[4].pool(model.downsample.layers[4].conv(x3))
     println("After downsample layer 4: ", size(x4))
 
     # Bottleneck
-    x_bottleneck = model.bottleneck(x4)
+    x_bottleneck = model.bottleneck.layers[1].conv(x4)
     println("After bottleneck: ", size(x_bottleneck))
 
     # Upsampling path
@@ -286,7 +309,8 @@ function (model::UNet)(x::AbstractArray)
     # Output layer
     output = model.out_layer(x_up4)
     println("Output size: ", size(output))
-    return output
+    
+    output
 end
 
 """
@@ -299,30 +323,28 @@ end
     - `model`: The U-Net model instance.
 
     Prints the dimensions of the convolutional layers in the downsampling path,
-    the bottleneck, the upsampling path, and the output layer.
+    the bottleneck, the upsampling path and the output layer.
 """
 function Base.show(io::IO, model::UNet)
     println(io, "UNet Structure:")
+    println()
 
     println(io, "Downsampling Path:")
     for layer in model.downsample.layers
-        # Per accedere ai pesi degli strati convoluzionali
         if typeof(layer.conv[1]) <: Flux.Conv
             println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
         end
     end
 
     println(io, "\nBottleneck:")
-    # Per accedere ai pesi del bottleneck
     for layer in model.bottleneck.layers
-        if typeof(layer) <: Flux.Conv
-            println(io, "   ConvBlock: $(size(layer.weight))")
+        if typeof(layer.conv[1]) <: Flux.Conv
+            println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
         end
     end
 
     println(io, "\nUpsampling Path:")
     for layer in model.upsample.layers
-        # Per accedere ai pesi delle convoluzioni trasposte
         if typeof(layer.upconv[1]) <: Flux.ConvTranspose
             println(io, "   UpConvBlock: $(size(layer.upconv[1].weight))")
         end

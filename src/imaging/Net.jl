@@ -1,4 +1,4 @@
-module SOPHYSM_Net
+module Net
 
 using Augmentor
 using Flux

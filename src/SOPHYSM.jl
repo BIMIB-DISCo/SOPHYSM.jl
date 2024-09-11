@@ -10,7 +10,7 @@ using JSON
 
 ### Included modules
 include("Workspace.jl")
-include("imaging/SOPHYSM_Net.jl")
+include("imaging/Net.jl")
 
 ### Exported functions
 export start_GUI
@@ -45,7 +45,5 @@ function start_GUI()
 
     println("GUI Closed")
 end
-
-start_GUI()
 
 end # SOPHYSM module
