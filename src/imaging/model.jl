@@ -16,7 +16,7 @@ struct UNet
     downsample::Chain
     bottleneck::Chain
     upsample::Chain
-    out_layer::Chain
+    output::Chain
 end
 
 """
@@ -59,6 +59,18 @@ end
 """
 struct UNetUpBlock
     upconv::Chain
+    conv::Chain
+end
+
+"""
+    UNetOutputBlock
+
+    Represents the output block of the U-Net.
+    
+    - A 1x1 convolution to map the deep feature maps to the desired number of
+      output channels.
+"""
+struct UNetOutputBlock
     conv::Chain
 end
 
@@ -208,6 +220,17 @@ function UNetUpBlock(in_chs::Int, out_chs::Int)
 end
 
 """
+    UNetOutputBlock(in_chs::Int, out_chs::Int)
+
+    Constructor function to create an output block with a 1x1 convolution layer.
+"""
+function UNetOutputBlock(in_chs::Int, out_chs::Int)
+    conv = conv_1x1(in_chs, out_chs)
+
+    UNetOutputBlock(conv)
+end
+
+"""
     UNet()
 
     Constructor for U-Net which initializes the downsampling, bottleneck,
@@ -232,9 +255,11 @@ function UNet(channels::Int = 1, labels::Int = 2)
         UNetUpBlock(128, 64)
     )
 
-    out_layer = conv_1x1(64, labels)
+    output = Chain(
+        UNetOutputBlock(64, labels)
+    )
 
-    UNet(downsample, bottleneck, upsample, out_layer)
+    UNet(downsample, bottleneck, upsample, output)
 end
 
 """
@@ -253,7 +278,7 @@ function (model::UNet)(x::AbstractArray)
     
     # Downsampling path
     x1 = model.downsample.layers[1].pool(model.downsample.layers[1].conv(x))
-    println("After downsample layer 1: ", size(x1))
+    println("\nAfter downsample layer 1: ", size(x1))
     
     x2 = model.downsample.layers[2].pool(model.downsample.layers[2].conv(x1))
     println("After downsample layer 2: ", size(x2))
@@ -266,11 +291,11 @@ function (model::UNet)(x::AbstractArray)
 
     # Bottleneck
     x_bottleneck = model.bottleneck.layers[1].conv(x4)
-    println("After bottleneck: ", size(x_bottleneck))
+    println("\nAfter bottleneck: ", size(x_bottleneck))
 
     # Upsampling path
     x_up1 = model.upsample.layers[1].conv(model.upsample.layers[1].upconv(x_bottleneck))
-    println("After upsample layer 1: ", size(x_up1))
+    println("\nAfter upsample layer 1: ", size(x_up1))
     
     x_up2 = model.upsample.layers[2].conv(model.upsample.layers[2].upconv(x_up1))
     println("After upsample layer 2: ", size(x_up2))
@@ -282,9 +307,10 @@ function (model::UNet)(x::AbstractArray)
     println("After upsample layer 4: ", size(x_up4))
 
     # Output layer
-    output = model.out_layer(x_up4)
-    println("Output size: ", size(output))
+    output = model.output[1].conv(x_up4)
+    println("\nOutput size: ", size(output))
     
+    println()
     output
 end
 
@@ -302,12 +328,13 @@ end
 """
 function Base.show(io::IO, model::UNet)
     println(io, "UNet Structure:")
-    println()
 
     # Downsampling Path
-    println(io, "Downsampling Path:")
+    println(io, "\nDownsampling Path:")
+
     for (i, layer) in enumerate(model.downsample.layers)
         println(io, "   Layer $i:")
+
         if typeof(layer) <: UNetDownBlock
             println(io, "      ConvBlock 1: $(size(layer.conv[1].weight))")
             println(io, "      ConvBlock 2: $(size(layer.conv[3].weight))")
@@ -319,8 +346,10 @@ function Base.show(io::IO, model::UNet)
 
     # Bottleneck
     println(io, "\nBottleneck:")
+
     for (i, layer) in enumerate(model.bottleneck.layers)
         println(io, "   Layer $i:")
+
         if typeof(layer) <: UNetBottleneckBlock
             println(io, "      ConvBlock: $(size(layer.conv[1].weight))")
         else
@@ -330,8 +359,10 @@ function Base.show(io::IO, model::UNet)
 
     # Upsampling Path
     println(io, "\nUpsampling Path:")
+
     for (i, layer) in enumerate(model.upsample.layers)
         println(io, "   Layer $i:")
+
         if typeof(layer) <: UNetUpBlock
             println(io, "      UpConvBlock: $(size(layer.upconv[1].weight))")
             println(io, "      ConvBlock: $(size(layer.conv[1].weight))")
@@ -342,9 +373,14 @@ function Base.show(io::IO, model::UNet)
 
     # Output Layer
     println(io, "\nOutput Layer:")
-    if typeof(model.out_layer[1]) <: Flux.Conv
-        println(io, "   ConvBlock: $(size(model.out_layer[1].weight))")
-    else
-        println(io, "   Unknown layer type")
+
+    for (i, layer) in enumerate(model.output.layers)
+        println(io, "   Layer $i:")
+
+        if typeof(layer) <: UNetOutputBlock
+            println(io, "      ConvBlock 1: $(size(layer.conv[1].weight))")
+        else
+            println(io, "      Unknown layer type")
+        end
     end
 end
