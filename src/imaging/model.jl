@@ -101,32 +101,6 @@ function conv_3x3(in_chs::Int, out_chs::Int)
 end
 
 """
-    up_conv_3x3(in_chs::Int, out_chs::Int)
-
-    Similar to `down_conv_3x3`, but includes padding to maintain the same
-    spatial dimensions of the input.
-
-    - Used in the upsampling path layers where dimensional reduction is not
-      desired.
-    - First convolution applies padding to prevent size reduction.
-    - Second convolution refines features.
-"""
-function up_conv_3x3(in_chs::Int, out_chs::Int)
-    Chain(
-        Conv((3, 3), in_chs => out_chs, relu;
-            pad = SamePad(),
-            init = kaiming_init(in_chs, out_chs, (3, 3))
-        ),
-        BatchNorm(out_chs),
-        Conv((3, 3), out_chs => out_chs, relu;
-            pad = SamePad(),
-            init = kaiming_init(out_chs, out_chs, (3, 3))
-        ),
-        BatchNorm(out_chs)
-    )
-end
-
-"""
     copy_and_crop(x, bridge)
 
     Adjusts the size of the 'bridge' feature map (from downsampling path) to
@@ -172,8 +146,9 @@ end
 """
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
-        ConvTranspose((2, 2), in_chs => out_chs;
-            init = kaiming_init(in_chs, out_chs, (2, 2))
+        ConvTranspose((2, 2), out_chs => in_chs, relu;
+            stride = 2,
+            init = kaiming_init(out_chs, in_chs, (2, 2))
         ),
         BatchNorm(out_chs)
     )
@@ -227,7 +202,7 @@ end
 """
 function UNetUpBlock(in_chs::Int, out_chs::Int)
     upconv = up_conv_2x2(in_chs, out_chs)
-    conv = up_conv_3x3(out_chs, out_chs)
+    conv = conv_3x3(out_chs, out_chs)
 
     UNetUpBlock(upconv, conv)
 end
@@ -294,16 +269,16 @@ function (model::UNet)(x::AbstractArray)
     println("After bottleneck: ", size(x_bottleneck))
 
     # Upsampling path
-    x_up1 = model.upsample.layers[1].upconv(copy_and_crop(x_bottleneck, x4))
+    x_up1 = model.upsample.layers[1].conv(model.upsample.layers[1].upconv(x_bottleneck))
     println("After upsample layer 1: ", size(x_up1))
     
-    x_up2 = model.upsample.layers[2].upconv(copy_and_crop(x_up1, x3))
+    x_up2 = model.upsample.layers[2].conv(model.upsample.layers[2].upconv(x_up1))
     println("After upsample layer 2: ", size(x_up2))
 
-    x_up3 = model.upsample.layers[3].upconv(copy_and_crop(x_up2, x2))
+    x_up3 = model.upsample.layers[3].conv(model.upsample.layers[3].upconv(x_up2))
     println("After upsample layer 3: ", size(x_up3))
 
-    x_up4 = model.upsample.layers[4].upconv(copy_and_crop(x_up3, x1))
+    x_up4 = model.upsample.layers[4].conv(model.upsample.layers[4].upconv(x_up3))
     println("After upsample layer 4: ", size(x_up4))
 
     # Output layer
@@ -329,29 +304,47 @@ function Base.show(io::IO, model::UNet)
     println(io, "UNet Structure:")
     println()
 
+    # Downsampling Path
     println(io, "Downsampling Path:")
-    for layer in model.downsample.layers
-        if typeof(layer.conv[1]) <: Flux.Conv
-            println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
+    for (i, layer) in enumerate(model.downsample.layers)
+        println(io, "   Layer $i:")
+        if typeof(layer) <: UNetDownBlock
+            println(io, "      ConvBlock 1: $(size(layer.conv[1].weight))")
+            println(io, "      ConvBlock 2: $(size(layer.conv[3].weight))")
+            println(io, "      Max Pooling: 2x2")
+        else
+            println(io, "      Unknown layer type")
         end
     end
 
+    # Bottleneck
     println(io, "\nBottleneck:")
-    for layer in model.bottleneck.layers
-        if typeof(layer.conv[1]) <: Flux.Conv
-            println(io, "   ConvBlock: $(size(layer.conv[1].weight))")
+    for (i, layer) in enumerate(model.bottleneck.layers)
+        println(io, "   Layer $i:")
+        if typeof(layer) <: UNetBottleneckBlock
+            println(io, "      ConvBlock: $(size(layer.conv[1].weight))")
+        else
+            println(io, "      Unknown layer type")
         end
     end
 
+    # Upsampling Path
     println(io, "\nUpsampling Path:")
-    for layer in model.upsample.layers
-        if typeof(layer.upconv[1]) <: Flux.ConvTranspose
-            println(io, "   UpConvBlock: $(size(layer.upconv[1].weight))")
+    for (i, layer) in enumerate(model.upsample.layers)
+        println(io, "   Layer $i:")
+        if typeof(layer) <: UNetUpBlock
+            println(io, "      UpConvBlock: $(size(layer.upconv[1].weight))")
+            println(io, "      ConvBlock: $(size(layer.conv[1].weight))")
+        else
+            println(io, "      Unknown layer type")
         end
     end
 
+    # Output Layer
     println(io, "\nOutput Layer:")
     if typeof(model.out_layer[1]) <: Flux.Conv
         println(io, "   ConvBlock: $(size(model.out_layer[1].weight))")
+    else
+        println(io, "   Unknown layer type")
     end
 end
