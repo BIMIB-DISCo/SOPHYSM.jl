@@ -126,13 +126,12 @@ function copy_and_crop(x, bridge)
     dx = size(bridge, 1) - size(x, 1)
     dy = size(bridge, 2) - size(x, 2)
 
-    # Crop `bridge` to the same size as `x` and concatenate them.
     cropped_bridge = @views bridge[
-                                div(dx, 2) + 1:end - div(dx, 2),
-                                div(dy, 2) + 1:end - div(dy, 2),
-                                :,
-                                :
-                            ]
+        div(dx, 2) + 1:end - div(dx, 2) - (dx % 2),
+        div(dy, 2) + 1:end - div(dy, 2) - (dy % 2),
+        :,
+        :
+    ]
 
     return cat(x, cropped_bridge, dims = 3)
 end
@@ -214,7 +213,7 @@ end
 """
 function UNetUpBlock(in_chs::Int, out_chs::Int)
     upconv = up_conv_2x2(in_chs, out_chs)
-    conv = conv_3x3(out_chs, out_chs)
+    conv = conv_3x3(in_chs, out_chs)
 
     UNetUpBlock(upconv, conv)
 end
@@ -277,39 +276,63 @@ function (model::UNet)(x::AbstractArray)
     println("Input size: ", size(x))
     
     # Downsampling path
-    x1 = model.downsample.layers[1].pool(model.downsample.layers[1].conv(x))
-    println("\nAfter downsample layer 1: ", size(x1))
-    
-    x2 = model.downsample.layers[2].pool(model.downsample.layers[2].conv(x1))
-    println("After downsample layer 2: ", size(x2))
+    x1 = model.downsample.layers[1].conv(x)
+    println("\nAfter downsample layer 1 (conv): ", size(x1))
 
-    x3 = model.downsample.layers[3].pool(model.downsample.layers[3].conv(x2))
-    println("After downsample layer 3: ", size(x3))
+    x1_pool = model.downsample.layers[1].pool(x1)
+    println("After downsample layer 1 (max pool): ", size(x1_pool))
 
-    x4 = model.downsample.layers[4].pool(model.downsample.layers[4].conv(x3))
-    println("After downsample layer 4: ", size(x4))
+    x2 = model.downsample.layers[2].conv(x1_pool)
+    println("\nAfter downsample layer 2 (conv): ", size(x2))
+
+    x2_pool = model.downsample.layers[2].pool(x2)
+    println("After downsample layer 2 (max pool): ", size(x2_pool))
+
+    x3 = model.downsample.layers[3].conv(x2_pool)
+    println("\nAfter downsample layer 3 (conv): ", size(x3))
+
+    x3_pool = model.downsample.layers[3].pool(x3)
+    println("After downsample layer 3 (max pool): ", size(x3_pool))
+
+    x4 = model.downsample.layers[4].conv(x3_pool)
+    println("\nAfter downsample layer 4 (conv): ", size(x4))
+
+    x4_pool = model.downsample.layers[4].pool(x4)
+    println("After downsample layer 4 (max pool): ", size(x4_pool))
 
     # Bottleneck
-    x_bottleneck = model.bottleneck.layers[1].conv(x4)
+    x_bottleneck = model.bottleneck.layers[1].conv(x4_pool)
     println("\nAfter bottleneck: ", size(x_bottleneck))
 
     # Upsampling path
-    x_up1 = model.upsample.layers[1].conv(model.upsample.layers[1].upconv(x_bottleneck))
-    println("\nAfter upsample layer 1: ", size(x_up1))
-    
-    x_up2 = model.upsample.layers[2].conv(model.upsample.layers[2].upconv(x_up1))
-    println("After upsample layer 2: ", size(x_up2))
+    x_up1_conv = model.upsample.layers[1].upconv(x_bottleneck)
+    println("\nAfter upsample layer 1 (upconv): ", size(x_up1_conv))
 
-    x_up3 = model.upsample.layers[3].conv(model.upsample.layers[3].upconv(x_up2))
-    println("After upsample layer 3: ", size(x_up3))
+    x_up1 = model.upsample.layers[1].conv(copy_and_crop(x_up1_conv, x4))
+    println("After upsample layer 1 (conv): ", size(x_up1))
 
-    x_up4 = model.upsample.layers[4].conv(model.upsample.layers[4].upconv(x_up3))
-    println("After upsample layer 4: ", size(x_up4))
+    x_up2_conv = model.upsample.layers[2].upconv(x_up1)
+    println("\nAfter upsample layer 2 (upconv): ", size(x_up2_conv))
+
+    x_up2 = model.upsample.layers[2].conv(copy_and_crop(x_up2_conv, x3))
+    println("After upsample layer 2 (conv): ", size(x_up2))
+
+    x_up3_conv = model.upsample.layers[3].upconv(x_up2)
+    println("\nAfter upsample layer 3 (upconv): ", size(x_up3_conv))
+
+    x_up3 = model.upsample.layers[3].conv(copy_and_crop(x_up3_conv, x2))
+    println("After upsample layer 3 (conv): ", size(x_up3))
+
+    x_up4_conv = model.upsample.layers[4].upconv(x_up3)
+    println("\nAfter upsample layer 4 (upconv): ", size(x_up4_conv))
+
+    x_up4 = model.upsample.layers[4].conv(copy_and_crop(x_up4_conv, x1))
+    println("After upsample layer 4 (conv): ", size(x_up4))
 
     # Output layer
     output = model.output[1].conv(x_up4)
     println("\nOutput size: ", size(output))
-    
+
     println()
     output
 end
