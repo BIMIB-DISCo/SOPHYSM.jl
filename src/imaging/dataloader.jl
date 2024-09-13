@@ -1,3 +1,7 @@
+function binarize_mask(mask, threshold = 0.5)
+    return mask .> threshold
+end
+
 """
     load_image(base::String, stub::String; rsize = (256, 256))
 
@@ -12,21 +16,28 @@
     them, converts them to a channel view, reshapes them, and returns the
     processed image and mask.
 """
-function load_image(base::String, stub::String; rsize = (256, 256))
-    im_path = joinpath(base, stub * "_im.tif")
-    cr_path = joinpath(base, stub * "_cr.tif")
-
-    img = load(im_path)
-    mask = load(cr_path)
-
+function load_image(img_path::String, mask_path::String; rsize = (512, 512))
+    # Carica l'immagine
+    img = load(img_path)
     img = imresize(img, rsize...)
-    mask = imresize(mask, rsize...)
-
     img = channelview(img)
-    mask = channelview(mask)
+    img = reshape(img, (size(img, 1), rsize..., 1))
+    img = permutedims(img, (2, 3, 1, 4))
+    #img = Float32.(img) / 255.0  # Normalizza tra 0 e 1
 
-    img = reshape(img, rsize..., 1, 1)
-    mask = reshape(mask, rsize..., 1, 1)
+    # Carica la maschera
+    mask = load(mask_path)
+    mask = imresize(mask, rsize...)
+    mask = channelview(mask)[1, :, :]
+    mask = reshape(mask, (rsize..., 1, 1))
+    mask = binarize_mask(mask, 0.004)
+
+    # Controlla la dimensione dell'immagine e della maschera
+    println("Dimensione dell'immagine (WHCB): ", size(img))
+    println("Dimensione della maschera (WHCB): ", size(mask))
+
+    # Verifica i valori unici nella maschera binarizzata
+    println("Valori unici nella maschera binarizzata: ", unique(mask))
 
     return img, mask
 end
@@ -46,7 +57,6 @@ function create_augmenter()
 
     Augmentor.add!(augmenter, Augmentor.Rotate(15))
     Augmentor.add!(augmenter, Augmentor.Translation(10.0, 10.0))
-    Augmentor.add!(augmenter, Augmentor.ElasticTransform(10.0, 3, 3))
 
     return augmenter
 end
@@ -62,9 +72,31 @@ end
 
     Returns the augmented image and mask.
 """
-function augment_image(img, mask, augmenter)
+function create_mask_augmenter()
+    augmenter = Augmentor.Pipeline()
+    
+    Augmentor.add!(augmenter,
+                   Augmentor.Rotate(15, interpolation = Augmentor.NEAREST)
+                  )
+    Augmentor.add!(augmenter,
+                   Augmentor.Translation(10.0, 10.0, interpolation = Augmentor.NEAREST)
+                  )
+    
+    return augmenter
+end
+
+# Funzione per applicare l'augmentazione sincronizzata
+function augment_image(img, mask, augmenter, mask_augmenter)
+    # Genera un seed casuale
+    seed = rand(UInt)
+
+    # Imposta il seed su entrambi gli augmenter
+    Augmentor.seed!(augmenter, seed)
+    Augmentor.seed!(mask_augmenter, seed)
+
+    # Applica l'augmentazione
     img_aug = Augmentor.apply(augmenter, img)
-    mask_aug = Augmentor.apply(augmenter, mask)
+    mask_aug = Augmentor.apply(mask_augmenter, mask)
 
     return img_aug, mask_aug
 end
@@ -87,33 +119,35 @@ end
 
     Returns the batch of images and masks as arrays of Float32.
 """
-function load_batch(base::String;
-                    n = 10, rsize = (256, 256),
-                    augmenter = nothing)
-    all_files = readdir(base)
-    all_stubs = unique(filter(x -> endswith(x, "_im.tif"), all_files))
-    all_stubs = map(x -> replace(x, "_im.tif" => ""), all_stubs)
-    
-    selected_stubs = Random.sample(all_stubs, n, replace = false)
-    
+function load_batch(img_paths::Vector{String}, mask_paths::Vector{String};
+                    batch_size::Int = 10, rsize = (512, 512),
+                    augmenter = nothing, mask_augmenter = nothing)
+
+    n = length(img_paths)
+    indices = randperm(n)[1:batch_size]
+
     X = []
     Y = []
 
-    for stub in selected_stubs
-        img, mask = load_image(base, stub, rsize = rsize)
+    for idx in indices
+        img_path = img_paths[idx]
+        mask_path = mask_paths[idx]
 
-        if augmenter !== nothing
-            img, mask = augment_image(img, mask, augmenter)
+        img, mask = load_image(img_path, mask_path, rsize = rsize)
+
+        if augmenter !== nothing && mask_augmenter !== nothing
+            img, mask = augment_image(img, mask, augmenter, mask_augmenter)
         end
 
         push!(X, img)
         push!(Y, mask)
     end
-    
-    X = hcat(X...) |> Array{Float32}
-    Y = hcat(Y...) |> Array{Float32}
 
-    return X, Y
+    # Concatenazione lungo la dimensione del batch (4° dimensione)
+    X_batch = cat(X...; dims=4)  # WHCB
+    Y_batch = cat(Y...; dims=4)  # WHCB
+
+    return X_batch, Y_batch
 end
 
 """
@@ -138,7 +172,7 @@ function create_dataloader(base::String, batch_size::Int;
                             rsize = (256, 256),
                             augmenter = nothing)
     function data_gen()
-        load_batch(base, n = batch_size, rsize = rsize, augmenter = augmenter)
+        #load_batch(base, n = batch_size, rsize = rsize, augmenter = augmenter)
     end
 
     DataLoader(data_gen, batch_size=batch_size, shuffle = true)
