@@ -9,5 +9,6 @@ using Random
 
 include("dataloader.jl")
 include("model.jl")
+include("training.jl")
     
 end # module
