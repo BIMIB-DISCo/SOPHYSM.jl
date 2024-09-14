@@ -173,9 +173,7 @@ end
 function dataloader(img_paths::Vector{String},
                     mask_paths::Vector{String};
                     batch_size::Int = 10,
-                    rsize = (512, 512),
-                    augmenter = nothing,
-                    mask_augmenter = nothing)
+                    rsize = (512, 512))
 
     img_batches = []
     mask_batches = []
@@ -197,11 +195,6 @@ function dataloader(img_paths::Vector{String},
         mask_path = mask_paths[idx]
 
         img, mask = load_image(img_path, mask_path, rsize = rsize)
-
-        # Apply augmentations, if provided
-        if augmenter !== nothing && mask_augmenter !== nothing
-            img, mask = augment_image(img, mask, augmenter, mask_augmenter)
-        end
 
         push!(X, img)
         push!(Y, mask)
