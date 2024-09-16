@@ -61,7 +61,7 @@ function load_image(img_path::String, mask_path::String; rsize = (512, 512))
 end
 
 """
-    create_augmenter()
+    create_img_augmenter()
 
     Creates an augmentation pipeline for images.
 
@@ -72,7 +72,7 @@ end
     Returns:
     - The configured augmentation pipeline for images.
 """
-function create_augmenter()
+function create_img_augmenter()
     augmenter = Augmentor.Pipeline()
 
     Augmentor.add!(augmenter, Augmentor.Rotate(15))
@@ -128,15 +128,15 @@ end
     - `img_aug`: The augmented image.
     - `mask_aug`: The augmented mask.
 """
-function augment_image(img, mask, augmenter, mask_augmenter)
+function augment_image(img, mask, img_augmenter, mask_augmenter)
     seed = rand(UInt)  # Generate a random seed
 
     # Set the same seed for both augmenters to synchronize augmentations
-    Augmentor.seed!(augmenter, seed)
+    Augmentor.seed!(img_augmenter, seed)
     Augmentor.seed!(mask_augmenter, seed)
 
     # Apply augmentations
-    img_aug = Augmentor.apply(augmenter, img)
+    img_aug = Augmentor.apply(img_augmenter, img)
     mask_aug = Augmentor.apply(mask_augmenter, mask)
 
     return img_aug, mask_aug
@@ -173,17 +173,20 @@ end
 function dataloader(img_paths::Vector{String},
                     mask_paths::Vector{String};
                     batch_size::Int = 10,
-                    rsize = (512, 512))
+                    rsize = (512, 512),
+                    img_augmenter = nothing,
+                    mask_augmenter = nothing,
+                    augmentation_factor::Int = 0)
 
-    img_batches = []
-    mask_batches = []
+    dataset_size = length(img_paths)
+    println("Total dataset size: ", dataset_size)
+
+    img_batch = []
+    mask_batch = []
     X = []
     Y = []
     counter = 0
     i = 1
-
-    dataset_size = length(img_paths)
-    println("Total dataset size: ", dataset_size)
 
     indices = randperm(dataset_size)  # Shuffle the dataset
 
@@ -196,21 +199,41 @@ function dataloader(img_paths::Vector{String},
 
         img, mask = load_image(img_path, mask_path, rsize = rsize)
 
+        # Aggiungi l'immagine originale
         push!(X, img)
         push!(Y, mask)
 
-        # When batch is full, concatenate and store the batch
-        if counter % batch_size == 0 || counter == dataset_size
+        # Applica l'augmentazione se richiesta
+        if augmentation_factor > 0 && img_augmenter !== nothing && mask_augmenter !== nothing
+            for _ in 1 : augmentation_factor
+                img_aug, mask_aug = augment_image(img, mask, img_augmenter, mask_augmenter)
+
+                push!(X, img_aug)
+                push!(Y, mask_aug)
+            end
+        end
+
+        # Controlla se il batch è pieno
+        while length(X) >= batch_size
             println("Storing batch #", i)
             i += 1
 
-            img_batches = push!(img_batches, cat(X...; dims = 4))
-            mask_batches = push!(mask_batches, cat(Y...; dims = 4))
+            img_batch = push!(img_batch, cat(X[1 : batch_size]...; dims = 4))
+            mask_batch = push!(mask_batch, cat(Y[1 : batch_size]...; dims = 4))
 
-            empty!(X)  # Clear temporary image list
-            empty!(Y)  # Clear temporary mask list
+            # Rimuovi le immagini e maschere usate dal buffer
+            X = X[batch_size + 1 : end]
+            Y = Y[batch_size + 1 : end]
         end
     end
 
-    return (img_batches, mask_batches)
+    # Gestisce i dati rimanenti
+    if !isempty(X)
+        println("Storing final batch #", i)
+
+        img_batch = push!(img_batch, cat(X...; dims = 4))
+        mask_batch = push!(mask_batch, cat(Y...; dims = 4))
+    end
+
+    return img_batch, mask_batch
 end
