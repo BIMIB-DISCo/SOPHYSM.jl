@@ -97,7 +97,7 @@ function augmenter(img, mask)
     end
 
     # Masks
-    mask_array = Float32.(new_mask)
+    mask_array = binarize_mask(Float32.(new_mask), 0.004)
     mask_array = reshape(mask_array, size(mask_array, 1),
                          size(mask_array, 2), 1)
 
