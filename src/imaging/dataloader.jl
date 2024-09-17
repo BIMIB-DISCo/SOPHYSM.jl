@@ -1,239 +1,221 @@
 """
-    binarize_mask(mask, threshold = 0.5)
+    binarize_mask(mask, threshold=0.5)
 
-    Binarizes the input mask based on a specified threshold.
+Binarizes the input mask based on a specified threshold.
 
-    - `mask`: The input mask array.
-    - `threshold`: A threshold value. Pixels greater than this value are set to
-      1 (True), and pixels less than or equal to this value are set to 0
-      (False).
+- `mask`: The input mask array.
+- `threshold`: Threshold value. Pixels with values greater than this value are
+  set to `true`, otherwise to `false`.
 
-    Returns a binary mask with values 0 or 1.
+Returns a binary mask with `true` or `false` values.
 """
-function binarize_mask(mask, threshold = 0.5)
+function binarize_mask(mask, threshold=0.5)
     return mask .> threshold
 end
 
 """
-    load_image(img_path::String, mask_path::String; rsize = (512, 512))
+    load_image(img_path::String, mask_path::String; rsize=(512, 512))
 
-    Loads an image and its corresponding mask, resizing them to the specified
-    `rsize`.
+Loads an image and its corresponding mask, resizing them to the specified
+`rsize`.
 
-    - `img_path`: Path to the image file (usually in JPG format).
-    - `mask_path`: Path to the mask file (usually in BMP format).
-    - `rsize`: Tuple specifying the dimensions to resize the images and masks
-       to. Default is (512, 512).
+- `img_path`: Path to the image file (e.g., JPG, PNG).
+- `mask_path`: Path to the mask file (e.g., BMP, PNG).
+- `rsize`: Tuple specifying the dimensions for resizing.
+  Default is `(512, 512)`.
 
-    The function resizes the image and mask, converts them to channel view (for
-    image processing),
-    reshapes them to match the WHC format, and binarizes the mask using a
-    predefined threshold.
+The function resizes the image and mask, converts the mask to grayscale if
+necessary, and binarizes the mask using a predefined threshold.
 
-    Prints out the size of the image and mask, and checks for unique values in
-    the binarized mask.
-
-    Returns:
-    - `img`: The processed image with dimensions (width, height, channels).
-    - `mask`: The binarized mask with dimensions (width, height, 1).
+Returns:
+- `img`: The processed image.
+- `mask`: The binarized mask as a `Gray{Float32}` array.
 """
 function load_image(img_path::String, mask_path::String; rsize = (512, 512))
-    # Load and process the image
+    # Load and resize the image
     img = load(img_path)
     img = imresize(img, rsize...)
-    img = channelview(img)
-    img = reshape(img, (size(img, 1), rsize...))
-    img = permutedims(img, (2, 3, 1))
 
-    # Load and process the mask
+    # Load and resize the mask
     mask = load(mask_path)
     mask = imresize(mask, rsize...)
-    mask = channelview(mask)[1, :, :]
-    mask = reshape(mask, (rsize..., 1))
-    mask = binarize_mask(mask, 0.004)
 
-    # Check sizes and values
-    println("Image size: ", size(img))
-    println("Mask size: ", size(mask))
-    println("Unique values in binarized mask: ", unique(mask))
+    # Convert the mask to grayscale if necessary
+    if eltype(mask) <: Gray
+        mask_gray = mask
+    elseif eltype(mask) <: RGB
+        mask_gray = Gray.(mask)
+    else
+        error("Unsupported mask element type: $(eltype(mask))")
+    end
 
-    return img, mask
+    # Binarize the mask
+    mask_binary = binarize_mask(Float32.(mask_gray), 0.004)
+    mask_binary = Gray{Float32}.(mask_binary)
+
+    return img, mask_binary
 end
 
 """
-    create_img_augmenter()
+    augmenter(img, mask)
 
-    Creates an augmentation pipeline for images.
+Applies augmentations to both the image and the mask using an augmentation
+pipeline.
 
-    The pipeline includes:
-    - Rotation of up to ±15 degrees.
-    - Translation (shifting) of up to ±10 pixels in both x and y directions.
+- `img`: The input image to augment.
+- `mask`: The corresponding mask to augment.
 
-    Returns:
-    - The configured augmentation pipeline for images.
+The function defines an augmentation pipeline with various transformations,
+applying them to both the image and the mask.
+
+Returns:
+- `img_array`: The augmented image array.
+- `mask_array`: The augmented mask array.
 """
-function create_img_augmenter()
-    augmenter = Augmentor.Pipeline()
+function augmenter(img, mask)
+    # Define the augmentation pipeline
+    pipeline = Either(ElasticDistortion(3, 3, 0.2; sigma = 10), NoOp()) |>
+               Either(2 => Rotate([-90, 90, 180]), 1 => NoOp()) |>
+               Either(2 => ColorJitter(0.8:0.1:1.2, -0.2:0.1:0.2),
+                      1 => NoOp()) |>
+               Either(2 => GaussianBlur(3), 1 => NoOp())
 
-    Augmentor.add!(augmenter, Augmentor.Rotate(15))
-    Augmentor.add!(augmenter, Augmentor.Translation(10.0, 10.0))
+    # Apply the pipeline to the image and mask
+    new_img, new_mask = augment(img => mask, pipeline)
 
-    return augmenter
+    # Convert the augmented images to arrays suitable for the model
+    if eltype(new_img) <: Gray
+        img_array = Float32.(new_img)
+        img_array = reshape(img_array, size(img_array, 1),
+                            size(img_array, 2), 1)
+    elseif eltype(new_img) <: RGB
+        img_array = Float32.(channelview(new_img))
+        img_array = permutedims(img_array, (2, 3, 1))
+    else
+        error("Unsupported image element type after augmentation: ",
+              "$(eltype(new_img))")
+    end
+
+    # Masks
+    mask_array = Float32.(new_mask)
+    mask_array = reshape(mask_array, size(mask_array, 1),
+                         size(mask_array, 2), 1)
+
+    return img_array, mask_array
 end
 
 """
-    create_mask_augmenter()
+    dataloader(img_paths::Vector{String}, mask_paths::Vector{String};
+               batch_size::Int = 4, rsize = (512, 512),
+               augmentation_factor::Int = 0)
 
-    Creates an augmentation pipeline for masks.
+Loads images and masks in batches, with optional augmentations.
 
-    The pipeline includes:
-    - Rotation of up to ±15 degrees with nearest neighbor interpolation.
-    - Translation (shifting) of up to ±10 pixels with nearest neighbor
-      interpolation.
+- `img_paths`: Vector of image file paths.
+- `mask_paths`: Vector of mask file paths.
+- `batch_size`: Number of images and masks per batch. Default is `4`.
+- `rsize`: Tuple specifying the dimensions for resizing.
+  Default is `(512, 512)`.
+- `augmentation_factor`: Number of augmented versions to generate per image.
+  Default is `0` (no augmentation).
 
-    Nearest neighbor interpolation is used to ensure that mask values (0 and 1)
-    are preserved.
+The function loads images and masks, applies augmentations if requested,
+and collects images and masks into batches, concatenated along the fourth
+dimension (batch dimension).
 
-    Returns:
-    - The configured augmentation pipeline for masks.
-"""
-function create_mask_augmenter()
-    augmenter = Augmentor.Pipeline()
+Augmented data are shuffled along with the original data to ensure that
+augmented images do not all end up in the same batches.
 
-    Augmentor.add!(augmenter,
-                   Augmentor.Rotate(15, interpolation = Augmentor.NEAREST))
-
-    Augmentor.add!(augmenter,
-                   Augmentor.Translation(10.0,
-                                         10.0,
-                                         interpolation = Augmentor.NEAREST))
-
-    return augmenter
-end
-
-"""
-    augment_image(img, mask, augmenter, mask_augmenter)
-
-    Applies augmentations to both the image and mask using separate pipelines.
-
-    - `img`: The input image to be augmented.
-    - `mask`: The corresponding mask to be augmented.
-    - `augmenter`: The augmentation pipeline for the image.
-    - `mask_augmenter`: The augmentation pipeline for the mask.
-
-    Both pipelines are synchronized using a shared random seed to ensure that
-    the augmentations applied to the image and mask are aligned.
-
-    Returns:
-    - `img_aug`: The augmented image.
-    - `mask_aug`: The augmented mask.
-"""
-function augment_image(img, mask, img_augmenter, mask_augmenter)
-    seed = rand(UInt)  # Generate a random seed
-
-    # Set the same seed for both augmenters to synchronize augmentations
-    Augmentor.seed!(img_augmenter, seed)
-    Augmentor.seed!(mask_augmenter, seed)
-
-    # Apply augmentations
-    img_aug = Augmentor.apply(img_augmenter, img)
-    mask_aug = Augmentor.apply(mask_augmenter, mask)
-
-    return img_aug, mask_aug
-end
-
-"""
-    dataloader(img_paths::Vector{String},
-               mask_paths::Vector{String};
-               batch_size::Int = 10,
-               rsize = (512, 512),
-               augmenter = nothing,
-               mask_augmenter = nothing)
-
-    Loads images and masks in batches, with optional augmentations.
-
-    - `img_paths`: Vector of paths to the image files.
-    - `mask_paths`: Vector of paths to the mask files.
-    - `batch_size`: Number of images and masks per batch. Default is 10.
-    - `rsize`: Tuple specifying the dimensions to resize the images and masks
-       to. Default is (512, 512).
-    - `augmenter`: The augmentation pipeline for images. Default is `nothing`.
-    - `mask_augmenter`: The augmentation pipeline for masks. Default is
-      `nothing`.
-
-    The function loads the images and masks, applies augmentations if provided,
-    and collects
-    the images and masks into batches, which are concatenated along the 4th
-    dimension (batch dimension).
-
-    Returns:
-    - `img_batches`: A list of image batches.
-    - `mask_batches`: A list of mask batches.
+Returns:
+- `img_batches`: A list of image batches.
+- `mask_batches`: A list of mask batches.
 """
 function dataloader(img_paths::Vector{String},
                     mask_paths::Vector{String};
-                    batch_size::Int = 10,
+                    batch_size::Int = 4,
                     rsize = (512, 512),
-                    img_augmenter = nothing,
-                    mask_augmenter = nothing,
                     augmentation_factor::Int = 0)
+    println("Total dataset size: ", length(img_paths))
 
-    dataset_size = length(img_paths)
-    println("Total dataset size: ", dataset_size)
-
-    img_batch = []
-    mask_batch = []
     X = []
     Y = []
-    counter = 0
-    i = 1
 
-    indices = randperm(dataset_size)  # Shuffle the dataset
-
-    for idx in indices
-        counter += 1
-        println("\nProcessing image #", counter)
+    # Collect all images and masks (original and augmented)
+    for idx in 1:length(img_paths)
+        println("Processing image #", idx)
 
         img_path = img_paths[idx]
         mask_path = mask_paths[idx]
 
-        img, mask = load_image(img_path, mask_path, rsize = rsize)
+        img, mask = load_image(img_path, mask_path, rsize=rsize)
 
-        # Aggiungi l'immagine originale
-        push!(X, img)
-        push!(Y, mask)
+        # Convert images to arrays suitable for the model
+        if eltype(img) <: Gray
+            img_array = Float32.(img)
+            img_array = reshape(img_array, size(img_array, 1),
+                                size(img_array, 2), 1)
+        elseif eltype(img) <: RGB
+            img_array = Float32.(channelview(img))
+            img_array = permutedims(img_array, (2, 3, 1))
+        else
+            error("Unsupported image element type: ",
+                  "$(eltype(img))")
+        end
 
-        # Applica l'augmentazione se richiesta
-        if augmentation_factor > 0 && img_augmenter !== nothing && mask_augmenter !== nothing
-            for _ in 1 : augmentation_factor
-                img_aug, mask_aug = augment_image(img, mask, img_augmenter, mask_augmenter)
+        mask_array = Float32.(mask)
+        mask_array = reshape(mask_array, size(mask_array, 1),
+                             size(mask_array, 2), 1)
 
+        # Add the original image and mask
+        push!(X, img_array)
+        push!(Y, mask_array)
+
+        # Apply augmentations if requested
+        if augmentation_factor > 0
+            for _ in 1:augmentation_factor
+                img_aug, mask_aug = augmenter(img, mask)
                 push!(X, img_aug)
                 push!(Y, mask_aug)
             end
         end
-
-        # Controlla se il batch è pieno
-        while length(X) >= batch_size
-            println("Storing batch #", i)
-            i += 1
-
-            img_batch = push!(img_batch, cat(X[1 : batch_size]...; dims = 4))
-            mask_batch = push!(mask_batch, cat(Y[1 : batch_size]...; dims = 4))
-
-            # Rimuovi le immagini e maschere usate dal buffer
-            X = X[batch_size + 1 : end]
-            Y = Y[batch_size + 1 : end]
-        end
     end
 
-    # Gestisce i dati rimanenti
-    if !isempty(X)
-        println("Storing final batch #", i)
+    # Shuffle the data
+    total_samples = length(X)
+    indices = randperm(total_samples)
 
-        img_batch = push!(img_batch, cat(X...; dims = 4))
-        mask_batch = push!(mask_batch, cat(Y...; dims = 4))
+    X_shuffled = X[indices]
+    Y_shuffled = Y[indices]
+
+    # Create batches from the shuffled data
+    img_batches = []
+    mask_batches = []
+    batch_num = 1
+
+    while length(X_shuffled) >= batch_size
+        println("Saving batch #", batch_num)
+        batch_num += 1
+
+        img_batch = cat(X_shuffled[1:batch_size]...; dims = 4)
+        mask_batch = cat(Y_shuffled[1:batch_size]...; dims = 4)
+
+        push!(img_batches, img_batch)
+        push!(mask_batches, mask_batch)
+
+        X_shuffled = X_shuffled[batch_size + 1 : end]
+        Y_shuffled = Y_shuffled[batch_size + 1 : end]
     end
 
-    return img_batch, mask_batch
+    # Handle remaining data
+    if !isempty(X_shuffled)
+        println("Saving final batch #", batch_num)
+
+        img_batch = cat(X_shuffled...; dims = 4)
+        mask_batch = cat(Y_shuffled...; dims = 4)
+
+        push!(img_batches, img_batch)
+        push!(mask_batches, mask_batch)
+    end
+
+    return img_batches, mask_batches
 end
