@@ -9,7 +9,7 @@ using Flux.Losses: logitcrossentropy
 using Flux.Optimise: Momentum, update!
 using Images
 using ProgressMeter
-using Random: shuffle!
+using Random
 using Statistics: mean
 
 include("dataloader.jl")
