@@ -3,6 +3,7 @@ module Net
 using Augmentor
 using BSON: @save
 using FileIO
+using Flux
 using Flux: params
 using Images
 using ProgressMeter
