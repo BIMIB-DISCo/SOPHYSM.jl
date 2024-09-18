@@ -86,9 +86,6 @@ function train!(model, img_batches, mask_batches, weight_batches;
             mask_batch = Float32.(mask_batch)
             weight_batch = Float32.(weight_batch)
 
-            # Set model to training mode (important if using batch normalization)
-            Flux.train!(model)
-
             # Compute gradients
             gs = gradient(() -> begin
                 y_hat = model(img_batch)
@@ -114,7 +111,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
         if epoch_loss + min_delta < best_loss
             best_loss = epoch_loss
             epochs_without_improvement = 0
-            
+
             # Save the best model weights
             @save "best_model.bson" model
             println("Improvement found, model saved.")
