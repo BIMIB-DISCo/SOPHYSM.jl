@@ -125,13 +125,13 @@ function copy_and_crop(x, bridge)
     dy = size(bridge, 2) - size(x, 2)
 
     cropped_bridge = @views bridge[
-                                div(dx, 2) + 1:end - div(dx, 2) - (dx % 2),
-                                div(dy, 2) + 1:end - div(dy, 2) - (dy % 2),
+                                div(dx, 2) + 1 : end - div(dx, 2) - (dx % 2),
+                                div(dy, 2) + 1 : end - div(dy, 2) - (dy % 2),
                                 :,
                                 :
                             ]
 
-    # Concatenate along the channel dimension (3rd dimension)
+    # Concatenate along the channel dimension.
     return cat(x, cropped_bridge, dims = 3)
 end
 
@@ -247,7 +247,7 @@ upsampling and output layers.
 - `channels`: Number of input channels.
 - `labels`: Number of output labels/classes.
 """
-function UNet(channels::Int = 1, labels::Int = 2)
+function UNet(channels::Int = 3, labels::Int = 2)
     downsample = Chain(
         UNetDownBlock(channels, 64),
         UNetDownBlock(64, 128),

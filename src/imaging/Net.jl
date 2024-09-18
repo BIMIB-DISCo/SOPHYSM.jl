@@ -8,7 +8,6 @@ using Flux: params
 using Flux.Losses: logitcrossentropy
 using Flux.Optimise: Momentum, update!
 using Images
-using ProgressMeter
 using Random
 using Statistics: mean
 

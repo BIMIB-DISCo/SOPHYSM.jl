@@ -183,7 +183,7 @@ Returns:
 """
 function dataloader(img_paths::Vector{String},
                     mask_paths::Vector{String};
-                    batch_size::Int = 4,
+                    batch_size::Int = 1,
                     rsize = (512, 512),
                     augmentation_factor::Int = 0)
     println("Total dataset size: ", length(img_paths))

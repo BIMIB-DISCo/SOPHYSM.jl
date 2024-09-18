@@ -1,43 +1,81 @@
-""""
+"""
+    crop(logit, mask)
+
+Crops the `mask` to match the spatial dimensions of `logit`.
+
+- `logit`: The output of the network.
+- `mask`: The mask or weight map to be cropped.
+
+Returns:
+- The cropped `mask` with spatial dimensions matching `logit`.
+"""
+function crop(logit, mask)
+    # Calculate the margins to crop along height and width
+    dx = size(mask, 1) - size(logit, 1)
+    dy = size(mask, 2) - size(logit, 2)
+
+    # Crop the mask to match the spatial dimensions of logit
+    return mask[
+                div(dx, 2) + 1 : end - div(dx, 2) - (dx % 2),
+                div(dy, 2) + 1 : end - div(dy, 2) - (dy % 2),
+                :,
+                :
+            ]
+end
+
+"""
     weighted_cross_entropy_loss(y_hat, y, weight_map)
 
-Calculates the pixel-wise weighted cross-entropy using the weight map w(x).
+Calculates the pixel-wise weighted cross-entropy loss using the weight map.
 
 - `y_hat`: Output of the network (logits for each class).
 - `y`: Target mask (ground truth labels).
 - `weight_map`: Weight map for each pixel.
 
-Returns the scalar loss value.
+Returns:
+- The scalar loss value computed as the average weighted cross-entropy loss
+  over the batch.
 """
 function weighted_cross_entropy_loss(y_hat, y, weight_map)
+    # Crop y and weight_map to match y_hat dimensions
+    y = @views crop(y_hat, y)
+    weight_map = @views crop(y_hat, weight_map)
+
     # Ensure data types are consistent and in Float32
     y_hat = Float32.(y_hat)
     y = Float32.(y)
     weight_map = Float32.(weight_map)
 
-    # Remove singleton dimension along dimension 3 in y, if necessary
-    if size(y, 3) == 1
-        y = reshape(y, size(y, 1), size(y, 2), size(y, 4))  # y has shape (H, W, B)
+    # Apply softmax along the class dimension to obtain probabilities
+    y_hat_softmax = softmax(y_hat, dims = 3)
+
+    # Compute the log probabilities, adding a small epsilon to prevent log(0)
+    epsilon = 1e-7
+    log_probs = log.(y_hat_softmax .+ epsilon)
+
+    # Convert y into integer class labels starting from 0
+    y_int = round.(Int, y)
+
+    # Select the probabilities of the correct class
+    p_correct = zeros(size(y_hat_softmax, 1),
+                        size(y_hat_softmax, 2),
+                        1,
+                        size(y_hat_softmax, 4))
+
+    for i in 1 : size(y_hat_softmax, 1)
+        for j in 1 : size(y_hat_softmax, 2)
+            for b in 1 : size(y_hat_softmax, 4)
+                class = y_int[i, j, 1, b] + 1
+                p_correct[i, j, 1, b] = log_probs[i, j, class, b]
+            end
+        end
     end
-
-    # Convert y into integer labels starting from 1
-    y_int = round.(Int, y) .+ 1  # y_int has values 1 or 2
-
-    # Remove singleton dimension along dimension 3 in weight_map, if necessary
-    if size(weight_map, 3) == 1
-        weight_map = reshape(weight_map, size(weight_map, 1), size(weight_map, 2), size(weight_map, 4))
-    end
-
-    # Compute the cross-entropy loss using logitcrossentropy
-    # y_hat: shape (H, W, C, B)
-    # y_int: shape (H, W, B)
-    ce_loss = logitcrossentropy(y_hat, y_int; dims=3)  # ce_loss has shape (H, W, B)
 
     # Apply the weight map
-    weighted_loss = weight_map .* ce_loss  # Both have shape (H, W, B)
+    weighted_loss = -weight_map .* p_correct
 
     # Calculate the average loss over the batch
-    return mean(weighted_loss)
+    return sum(weighted_loss)
 end
 
 """
@@ -68,7 +106,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
     num_batches = length(img_batches)
 
     # Monitor progress
-    @showprogress for epoch in 1:epochs
+    for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
         epoch_loss = 0.0
 
