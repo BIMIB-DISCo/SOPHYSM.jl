@@ -6,11 +6,11 @@ using FileIO
 using Flux
 using Flux: params
 using Flux.Losses: logitcrossentropy
-using Flux.Optimise: Momentum
+using Flux.Optimise: Momentum, update!
 using Images
 using ProgressMeter
-using Random
-using Statistics
+using Random: shuffle!
+using Statistics: mean
 
 include("dataloader.jl")
 include("model.jl")
