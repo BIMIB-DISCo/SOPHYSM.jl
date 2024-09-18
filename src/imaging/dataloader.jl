@@ -1,5 +1,5 @@
 """
-    binarize_mask(mask, threshold=0.5)
+    binarize_mask(mask, threshold = 0.5)
 
 Binarizes the input mask based on a specified threshold.
 
@@ -9,22 +9,22 @@ Binarizes the input mask based on a specified threshold.
 
 Returns a binary mask with `true` or `false` values.
 """
-function binarize_mask(mask, threshold=0.5)
+function binarize_mask(mask, threshold = 0.5)
     return mask .> threshold
 end
 
 """
-    load_image(img_path::String, mask_path::String; rsize=(512, 512))
+    load_image(img_path::String, mask_path::String; rsize = (512, 512))
 
 Loads an image and its corresponding mask, resizing them to the specified
 `rsize`.
 
-- `img_path`: Path to the image file (e.g., JPG, PNG).
-- `mask_path`: Path to the mask file (e.g., BMP, PNG).
+- `img_path`: Path to the image file.
+- `mask_path`: Path to the mask file.
 - `rsize`: Tuple specifying the dimensions for resizing.
   Default is `(512, 512)`.
 
-The function resizes the image and mask, converts the mask to grayscale if
+The function resizes the image and mask, converts the mask to grayscale, if
 necessary, and binarizes the mask using a predefined threshold.
 
 Returns:
@@ -40,7 +40,7 @@ function load_image(img_path::String, mask_path::String; rsize = (512, 512))
     mask = load(mask_path)
     mask = imresize(mask, rsize...)
 
-    # Convert the mask to grayscale if necessary
+    # Convert the mask to grayscale, if necessary
     if eltype(mask) <: Gray
         mask_gray = mask
     elseif eltype(mask) <: RGB
@@ -119,7 +119,7 @@ Loads images and masks in batches, with optional augmentations.
 - `augmentation_factor`: Number of augmented versions to generate per image.
   Default is `0` (no augmentation).
 
-The function loads images and masks, applies augmentations if requested,
+The function loads images and masks, applies augmentations, if requested,
 and collects images and masks into batches, concatenated along the fourth
 dimension (batch dimension).
 
@@ -170,7 +170,7 @@ function dataloader(img_paths::Vector{String},
         push!(X, img_array)
         push!(Y, mask_array)
 
-        # Apply augmentations if requested
+        # Apply augmentations, if requested
         if augmentation_factor > 0
             for _ in 1:augmentation_factor
                 img_aug, mask_aug = augmenter(img, mask)

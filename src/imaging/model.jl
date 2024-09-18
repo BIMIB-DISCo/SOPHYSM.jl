@@ -125,11 +125,11 @@ function copy_and_crop(x, bridge)
     dy = size(bridge, 2) - size(x, 2)
 
     cropped_bridge = @views bridge[
-        div(dx, 2) + 1:end - div(dx, 2) - (dx % 2),
-        div(dy, 2) + 1:end - div(dy, 2) - (dy % 2),
-        :,
-        :
-    ]
+                                div(dx, 2) + 1:end - div(dx, 2) - (dx % 2),
+                                div(dy, 2) + 1:end - div(dy, 2) - (dy % 2),
+                                :,
+                                :
+                            ]
 
     # Concatenate along the channel dimension (3rd dimension)
     return cat(x, cropped_bridge, dims = 3)
