@@ -1,42 +1,31 @@
-"""
+""""
     weighted_cross_entropy_loss(y_hat, y, weight_map)
 
-Calculates the pixel-wise weighted cross-entropy with the weight map w(x).
+Calculates the pixel-wise weighted cross-entropy using the weight map w(x).
 
-- `y_hat`: Output of the network (probabilities for each class).
+- `y_hat`: Output of the network (logits for each class).
 - `y`: Target mask (ground truth labels).
 - `weight_map`: Weight map for each pixel.
 
 Returns the scalar loss value.
 """
 function weighted_cross_entropy_loss(y_hat, y, weight_map)
-    # Apply softmax pixel-wise
-    y_hat_softmax = softmax(y_hat, 3)  # Assuming the channel is the third
+    # Ensure data types are consistent and in Float32
+    y_hat = Float32.(y_hat)
+    y = Float32.(y)
+    weight_map = Float32.(weight_map)
 
-    # Calculate pixel-wise cross-entropy
-    # Avoid log(0) by adding a small epsilon
-    epsilon = 1e-7
-    log_probs = log.(y_hat_softmax .+ epsilon)
-
-    # Convert y into integers (0 or 1)
-    y_int = round.(Int, y)
-
-    # Select the probabilities of the correct class
-    p_correct = zeros(size(y_hat_softmax, 1),
-                        size(y_hat_softmax, 2),
-                        size(y_hat_softmax, 4))
-
-    for i in 1 : size(y_hat_softmax, 1)
-        for j in 1 : size(y_hat_softmax, 2)
-            for b in 1 : size(y_hat_softmax, 4)  # Batch dimension
-                class = y_int[i, j, 1, b] + 1
-                p_correct[i, j, b] = log_probs[i, j, class, b]
-            end
-        end
+    # Reshape y to match the shape of y_hat, if necessary
+    if size(y, 3) != size(y_hat, 3)
+        y = reshape(y, size(y, 1), size(y, 2), size(y_hat, 3), size(y, 4))
     end
 
+    # Compute the cross-entropy loss using logitcrossentropy
+    # y_hat contains logits, and y contains target probabilities (0 or 1)
+    ce_loss = logitcrossentropy(y_hat, y; dims = 3)
+
     # Apply the weight map
-    weighted_loss = -weight_map[:, :, 1, :] .* p_correct
+    weighted_loss = weight_map .* ce_loss
 
     # Calculate the average loss over the batch
     return mean(weighted_loss)

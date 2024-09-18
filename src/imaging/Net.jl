@@ -5,6 +5,8 @@ using BSON: @save
 using FileIO
 using Flux
 using Flux: params
+using Flux.Losses: logitcrossentropy
+using Flux.Optimise: Momentum
 using Images
 using ProgressMeter
 using Random
