@@ -74,12 +74,12 @@ function compute_weight_map(mask::Array{Float32, 2};
                             w0::Float32 = 10.0f0, sigma::Float32 = 5.0f0)
     # Compute class weights w_c(x)
     class_weights = zeros(Float32, size(mask))
-    foreground = mask .== 0.0
-    background = mask .== 1.0
+    foreground = mask .== 0.0f0
+    background = mask .== 1.0f0
     
     # Assign class weights (you can adjust the values as needed)
-    w_foreground = 1.0
-    w_background = 1.0
+    w_foreground = 1.0f0
+    w_background = 1.0f0
     class_weights[foreground] .= w_foreground
     class_weights[background] .= w_background
 
@@ -232,6 +232,7 @@ function dataloader(img_paths::Vector{String},
                             size(weight_map, 1),
                             size(weight_map, 2),
                             1)
+        weight_map = Float32.(weight_map)
 
         # Add the original image, mask, and weight map
         push!(X, img_array)

@@ -41,11 +41,6 @@ function weighted_cross_entropy_loss(y_hat, y, weight_map)
     y = @views crop(y_hat, y)
     weight_map = @views crop(y_hat, weight_map)
 
-    # Ensure data types are consistent and in Float32
-    y_hat = Float32.(y_hat)
-    y = Float32.(y)
-    weight_map = Float32.(weight_map)
-
     # Apply softmax along the class dimension to obtain probabilities
     y_hat_softmax = softmax(y_hat, dims = 3)
 
@@ -74,8 +69,7 @@ function weighted_cross_entropy_loss(y_hat, y, weight_map)
     # Apply the weight map
     weighted_loss = -weight_map .* p_correct
 
-    # Calculate the average loss over the batch
-    return sum(weighted_loss)
+    return Float32(sum(weighted_loss))
 end
 
 """

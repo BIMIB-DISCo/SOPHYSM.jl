@@ -74,22 +74,6 @@ struct UNetOutputBlock
 end
 
 """
-    kaiming_init(out_chs, in_chs, filter)
-
-Initializes the weights for convolutional layers using the Kaiming
-initialization method.
-
-- Sets the weights based on a normal distribution with a standard deviation
-  of sqrt(2 / number of input channels), which helps maintain the variance
-  of activations through the layers.
-"""
-function kaiming_init(out_chs, in_chs, filter)
-    std_dev = sqrt(2 / in_chs)
-
-    return (dims...) -> randn(Float32, filter..., out_chs, in_chs) * std_dev
-end
-
-"""
     conv_3x3(in_chs::Int, out_chs::Int)
 
 Constructs two consecutive 3x3 convolutional layers with ReLU activation
@@ -101,11 +85,11 @@ and batch normalization.
 function conv_3x3(in_chs::Int, out_chs::Int)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu;
-            init = kaiming_init(in_chs, out_chs, (3, 3))
+            init = Flux.kaiming_normal
         ),
         BatchNorm(out_chs),
         Conv((3, 3), out_chs => out_chs, relu;
-            init = kaiming_init(out_chs, out_chs, (3, 3))
+            init = Flux.kaiming_normal
         ),
         BatchNorm(out_chs)
     )
@@ -156,9 +140,9 @@ activation.
 """
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
-        ConvTranspose((2, 2), out_chs => in_chs, relu;
+        ConvTranspose((2, 2), in_chs => out_chs, relu;
             stride = 2,
-            init = kaiming_init(out_chs, in_chs, (2, 2))
+            init = Flux.kaiming_normal
         ),
         BatchNorm(out_chs)
     )
@@ -176,7 +160,7 @@ desired output channels.
 function conv_1x1(in_chs::Int, out_chs::Int)
     Chain(
         Conv((1, 1), in_chs => out_chs;
-            init = kaiming_init(in_chs, out_chs, (1, 1))
+            init = Flux.kaiming_normal
         )
     )
 end
