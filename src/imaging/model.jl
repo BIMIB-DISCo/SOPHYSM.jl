@@ -19,6 +19,8 @@ struct UNet
     output::Chain
 end
 
+@functor UNet
+
 """
     UNetDownBlock
 
@@ -34,6 +36,8 @@ struct UNetDownBlock
     pool::MaxPool
 end
 
+@functor UNetDownBlock
+
 """
     UNetBottleneckBlock
 
@@ -45,6 +49,8 @@ Represents the bottleneck block in the U-Net architecture.
 struct UNetBottleneckBlock
     conv::Chain
 end
+
+@functor UNetBottleneckBlock
 
 """
     UNetUpBlock
@@ -61,6 +67,8 @@ struct UNetUpBlock
     conv::Chain
 end
 
+@functor UNetUpBlock
+
 """
     UNetOutputBlock
 
@@ -72,6 +80,8 @@ Represents the output block of the U-Net.
 struct UNetOutputBlock
     conv::Chain
 end
+
+@functor UNetOutputBlock
 
 """
     conv_3x3(in_chs::Int, out_chs::Int)
@@ -326,11 +336,8 @@ function Base.show(io::IO, model::UNet)
         println(io, "   Layer $i:")
 
         if typeof(layer) <: UNetDownBlock
-            println(io, "      ConvBlock 1: $(size(layer.conv[1].weight))")
-            println(io, "      ConvBlock 2: $(size(layer.conv[3].weight))")
+            println(io, "      ConvBlock 1: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[3].weight)[end]))")
             println(io, "      Max Pooling: 2x2")
-        else
-            println(io, "      Unknown layer type")
         end
     end
 
@@ -341,9 +348,7 @@ function Base.show(io::IO, model::UNet)
         println(io, "   Layer $i:")
 
         if typeof(layer) <: UNetBottleneckBlock
-            println(io, "      ConvBlock: $(size(layer.conv[1].weight))")
-        else
-            println(io, "      Unknown layer type")
+            println(io, "      ConvBlock: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[1].weight)[end]))")
         end
     end
 
@@ -354,10 +359,7 @@ function Base.show(io::IO, model::UNet)
         println(io, "   Layer $i:")
 
         if typeof(layer) <: UNetUpBlock
-            println(io, "      UpConvBlock: $(size(layer.upconv[1].weight))")
-            println(io, "      ConvBlock: $(size(layer.conv[1].weight))")
-        else
-            println(io, "      Unknown layer type")
+            println(io, "      UpConvBlock: ($(size(layer.upconv[1].weight)[end]), $(size(layer.conv[1].weight)[end]))")
         end
     end
 
@@ -368,9 +370,7 @@ function Base.show(io::IO, model::UNet)
         println(io, "   Layer $i:")
 
         if typeof(layer) <: UNetOutputBlock
-            println(io, "      ConvBlock 1: $(size(layer.conv[1].weight))")
-        else
-            println(io, "      Unknown layer type")
+            println(io, "      ConvBlock 1: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[1].weight)[end]))")
         end
     end
 end
