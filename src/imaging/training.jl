@@ -36,45 +36,34 @@ Returns:
 - The scalar loss value computed as the weighted cross-entropy loss over the
   batch.
 """
-function weighted_cross_entropy_loss(logit, mask, weight_map)
-    # Crop the mask and weight map to match the spatial dimensions of the logit
-    mask = @views crop(logit, mask)
-    weight_map = @views crop(logit, weight_map)
+function weighted_cross_entropy_loss(y_hat, y, weight_map)
+    # Crop y and weight_map to match the spatial dimensions of y_hat
+    y = @views crop(y_hat, y)
+    weight_map = @views crop(y_hat, weight_map)
 
-    # Convert mask to integer labels and adjust labels to start from 1
-    mask = round.(Int, mask)
-    mask = mask .+ 1
+    # Ensure data types are consistent and cast to Float32
+    y_hat = Float32.(y_hat)
+    y = Float32.(y)
+    weight_map = Float32.(weight_map)
 
-    # Get dimensions
-    W, H, C, B = size(logit)
-    N = W * H * B  # Total number of pixels in the batch
+    # Apply softmax along the class dimension to obtain class probabilities
+    y_hat_softmax = softmax(y_hat; dims = 3)
 
-    # Remove the singleton dimension from mask and weight_map
-    mask = dropdims(mask, dims=3)
-    weight_map = dropdims(weight_map, dims=3)
+    # Convert y to integer class labels starting from 0
+    y_int = round.(Int, y)
 
-    # Compute probabilities with softmax over the class dimension
-    probabilities = softmax(logit, dims = 3)
+    # Invert y_int to obtain the complement of the class labels
+    y_int_inverted = 1 .- y_int
 
-    # Rearrange dimensions to (W, H, B, C) to facilitate reshaping
-    probabilities = permutedims(probabilities, (1, 2, 4, 3))
-    probabilities_flat = reshape(probabilities, N, C)
+    # Compute the probability for the correct class
+    p_correct = y_hat_softmax[:, :, 2, :] .* y_int .+
+                y_hat_softmax[:, :, 1, :] .* y_int_inverted
 
-    # Flatten mask and weight_map
-    mask_flat = reshape(mask, N)
-    weight_map_flat = reshape(weight_map, N)
-
-    # Extract probabilities corresponding to the true labels for each pixel
-    p_true = probabilities_flat[CartesianIndex.(1:N, mask_flat)]
-
-    # Avoid log(0) by setting a minimum value
-    p_true = max.(p_true, 1e-15)
-
-    # Compute the logarithm of the true probabilities
-    log_p_true = log.(p_true)
+    # Compute the log probabilities for numerical stability
+    log_p_correct = log.(p_correct .+ 1e-15)
 
     # Compute the weighted cross-entropy loss
-    loss = -sum(weight_map_flat .* log_p_true)
+    loss = mean(-sum(weight_map .* log_p_correct; dims = 3))
 
     return loss
 end
@@ -95,8 +84,7 @@ Trains the U-Net model on the image and mask batches.
 Saves the best model weights based on validation loss.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
-                optimizer = Momentum(0.01, 0.99), epochs = 50)
-    opt_state = Flux.setup(optimizer, model)
+                optimizer = Momentum(0.001, 0.99), epochs = 50)
     num_batches = length(img_batches)
     losses = Float32[]
     loss = 0.0f0
@@ -114,11 +102,9 @@ function train!(model, img_batches, mask_batches, weight_batches;
                                                         mask_batches_shuffled,
                                                         weight_batches_shuffled)
             # Compute the loss and gradients
-            gs = Flux.gradient(Flux.params(model)) do
+            loss, gs = Flux.withgradient(Flux.params(model)) do
                 y_hat = model(x_batch)
-                loss = weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
-
-                return loss
+                weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
             end
 
             # Save the loss from the forward pass

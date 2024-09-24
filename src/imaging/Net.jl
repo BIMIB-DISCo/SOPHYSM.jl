@@ -8,6 +8,7 @@ using Flux: @functor
 using Flux.Optimise: Momentum, update!
 using Images
 using Random
+using Statistics
 
 include("dataloader.jl")
 include("model.jl")
