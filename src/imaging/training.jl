@@ -69,6 +69,49 @@ function weighted_cross_entropy_loss(y_hat, y, weight_map)
 end
 
 """
+    accuracy(model, img_batches, mask_batches)
+
+Calculates the accuracy of the model on a given dataset.
+
+- `model`: The U-Net model.
+- `img_batches`: List of image batches.
+- `mask_batches`: List of mask batches.
+
+Returns:
+- The average accuracy on the dataset.
+"""
+function accuracy(model, img_batches, mask_batches)
+    total_correct = 0
+    total_pixels = 0
+
+    for (x_batch, y_batch) in zip(img_batches, mask_batches)
+        # Get the model predictions
+        y_hat = model(x_batch)
+
+        # Apply softmax to obtain probabilities
+        y_hat_softmax = softmax(y_hat; dims = 3)
+
+        # Select the class with the highest probability
+        y_pred = argmax(y_hat_softmax, dims = 3)
+        y_pred = getindex.(y_pred, 3)
+
+        # Convert the ground truth masks to integers
+        y_true = @views crop(y_hat, y_batch)
+        y_true = round.(Int, y_true) .+ 1
+
+        # Compare the predictions with the true labels
+        correct = sum(y_pred .== y_true)
+        total_correct += correct
+        total_pixels += length(y_true)
+    end
+
+    # Calculate the average accuracy
+    accuracy = total_correct / total_pixels
+
+    return accuracy * 100
+end
+
+"""
     train!(model, img_batches, mask_batches, weight_batches;
            optimizer = Momentum(0.01, 0.99), epochs = 50)
 
@@ -87,7 +130,6 @@ function train!(model, img_batches, mask_batches, weight_batches;
                 optimizer = Momentum(0.001, 0.99), epochs = 50)
     num_batches = length(img_batches)
     losses = Float32[]
-    loss = 0.0f0
 
     for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
@@ -102,7 +144,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
                                                         mask_batches_shuffled,
                                                         weight_batches_shuffled)
             # Compute the loss and gradients
-            loss, gs = Flux.withgradient(Flux.params(model)) do
+            loss, grads = Flux.withgradient(Flux.params(model)) do
                 y_hat = model(x_batch)
                 weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
             end
@@ -118,7 +160,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
             end
 
             # Update the model parameters using the gradients
-            Flux.update!(optimizer, Flux.params(model), gs)
+            Flux.update!(optimizer, Flux.params(model), grads)
         end
     end
 
