@@ -99,6 +99,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
     opt_state = Flux.setup(optimizer, model)
     num_batches = length(img_batches)
     losses = Float32[]
+    loss = 0.0f0
 
     for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
@@ -113,23 +114,25 @@ function train!(model, img_batches, mask_batches, weight_batches;
                                                         mask_batches_shuffled,
                                                         weight_batches_shuffled)
             # Compute the loss and gradients
-            l, gs = Flux.withgradient(Flux.params(model)) do
+            gs = Flux.gradient(Flux.params(model)) do
                 y_hat = model(x_batch)
-                weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
+                loss = weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
+
+                return loss
             end
 
             # Save the loss from the forward pass
-            push!(losses, l)
-            println("Loss: ", l)
+            push!(losses, loss)
+            println("Loss: ", loss)
 
             # Detect loss of Inf or NaN. Print a warning and then skip update!
-            if !isfinite(l)
-                @warn "Loss is $l; skipping update."
+            if !isfinite(loss)
+                @warn "Loss is $loss; skipping update."
                 continue
             end
 
             # Update the model parameters using the gradients
-            Flux.Optimise.update!(optimizer, Flux.params(model), gs)
+            Flux.update!(optimizer, Flux.params(model), gs)
         end
     end
 
