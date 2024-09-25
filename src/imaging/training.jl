@@ -112,24 +112,78 @@ function accuracy(model, img_batches, mask_batches)
 end
 
 """
+    prediction(model, img)
+
+Generates a predicted segmentation mask from a given model and input image.
+
+# Arguments:
+- `model`: The U-Net model used for predictions.
+- `img`: A 4D array representing the input image.
+
+# Returns:
+- A 2D array representing the predicted segmentation mask with values between 0
+  and 1.
+"""
+function prediction(model, img)
+    # Get the model predictions
+    y_hat = model(img)
+
+    # Apply softmax to obtain probabilities
+    y_hat_softmax = softmax(y_hat; dims = 3)
+
+    # Select the class with the highest probability
+    y_pred = argmax(y_hat_softmax, dims = 3)
+    y_pred = getindex.(y_pred, 3)
+
+    # Remove the batch dimension
+    y_pred = dropdims(y_pred, dims = 4)
+
+    # Convert predicted class to float between 0 and 1
+    y_pred = Float32.(y_pred .- 1)
+
+    return y_pred
+end
+
+"""
     train!(model, img_batches, mask_batches, weight_batches;
-           optimizer = Momentum(0.01, 0.99), epochs = 50)
+           optimizer = Momentum(0.001, 0.99), epochs = 50, 
+           patience = 5, min_delta = 0.001,
+           val_img_batches = nothing, val_mask_batches = nothing)
 
-Trains the U-Net model on the image and mask batches.
+Trains the U-Net model on image, mask, and weight map batches with optional
+validation and early stopping.
 
-- `model`: The U-Net model.
-- `img_batches`: List of image batches.
-- `mask_batches`: List of mask batches.
-- `weight_batches`: List of weight map batches.
-- `optimizer`: The optimizer to use.
-- `epochs`: Number of epochs for training.
+# Arguments:
+- `model`: The U-Net model to be trained.
+- `img_batches`: A list of batches of input images.
+- `mask_batches`: A list of batches of corresponding target masks.
+- `weight_batches`: A list of batches of weight maps.
+- `optimizer`: The optimizer to use during training.
+- `epochs`: The number of training epochs.
+- `patience`: Number of epochs to wait for improvement in validation accuracy
+  before stopping early.
+- `min_delta`: Minimum change in validation accuracy required to reset patience.
+- `val_img_batches`: A list of validation image batches.
+- `val_mask_batches`: A list of validation mask batches.
 
-Saves the best model weights based on validation loss.
+# Returns:
+- The function trains the model and optionally saves the best model based on
+  validation accuracy.
+- The training stops early if the validation accuracy doesn't improve for
+  `patience` epochs.
+- The final model or the best model is saved as `"best_model.bson"` when
+  validation accuracy improves.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
-                optimizer = Momentum(0.001, 0.99), epochs = 50)
+                optimizer = Momentum(0.001, 0.99), epochs = 50, 
+                patience = 5, min_delta = 0.001,
+                val_img_batches = nothing, val_mask_batches = nothing)
+    
     num_batches = length(img_batches)
     losses = Float32[]
+    val_accuracies = Float32[]
+    best_accuracy = 0.0
+    epochs_without_improvement = 0
 
     for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
@@ -140,6 +194,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
         mask_batches_shuffled = mask_batches[shuffled_indices]
         weight_batches_shuffled = weight_batches[shuffled_indices]
 
+        # Iterate over each batch of training data
         for (x_batch, y_batch, weight_map_batch) in zip(img_batches_shuffled,
                                                         mask_batches_shuffled,
                                                         weight_batches_shuffled)
@@ -153,20 +208,44 @@ function train!(model, img_batches, mask_batches, weight_batches;
             push!(losses, loss)
             println("Loss: ", loss)
 
-            # Detect loss of Inf or NaN. Print a warning and then skip update!
+            # Skip update if loss is Inf or NaN (due to numerical instability)
             if !isfinite(loss)
                 @warn "Loss is $loss; skipping update."
                 continue
             end
 
-            # Update the model parameters using the gradients
+            # Update model parameters with the computed gradients
             Flux.update!(optimizer, Flux.params(model), grads)
+        end
+
+        # Optional validation accuracy computation
+        if val_img_batches !== nothing && val_mask_batches !== nothing
+            acc = accuracy(model, val_img_batches, val_mask_batches)
+            push!(val_accuracies, acc)
+            println("Validation Accuracy: ", acc)
+
+            # Check if validation accuracy has improved
+            if acc > best_accuracy + min_delta
+                best_accuracy = acc
+                epochs_without_improvement = 0
+                
+                # Save the best model so far
+                @save "best_model.bson" model
+                println("New best model saved.")
+            else
+                # Increment the counter for epochs without improvement
+                epochs_without_improvement += 1
+                println("Epochs without improvement: ", epochs_without_improvement)
+
+                # Early stopping if no improvement for `patience` epochs
+                if epochs_without_improvement >= patience
+                    println("Early stopping after $epoch epochs.")
+                    break
+                end
+            end
         end
     end
 
+    println("Training completed.")
     println(losses)
-
-    # Save the final model
-    @save "final_model.bson" model
-    println("Training completed. Final model saved.")   
 end

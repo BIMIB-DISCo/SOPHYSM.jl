@@ -1,7 +1,7 @@
 module Net
 
 using Augmentor
-using BSON: @save
+using BSON: @save, @load
 using FileIO
 using Flux
 using Flux: @functor
