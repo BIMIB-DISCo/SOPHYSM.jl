@@ -336,7 +336,7 @@ function Base.show(io::IO, model::UNet)
         println(io, "   Layer $i:")
 
         if typeof(layer) <: UNetDownBlock
-            println(io, "      ConvBlock 1: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[3].weight)[end]))")
+            println(io, "      ConvBlock: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[3].weight)[end]))")
             println(io, "      Max Pooling: 2x2")
         end
     end
@@ -370,7 +370,7 @@ function Base.show(io::IO, model::UNet)
         println(io, "   Layer $i:")
 
         if typeof(layer) <: UNetOutputBlock
-            println(io, "      ConvBlock 1: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[1].weight)[end]))")
+            println(io, "      ConvBlock: ($(size(layer.conv[1].weight)[end - 1]), $(size(layer.conv[1].weight)[end]))")
         end
     end
 end

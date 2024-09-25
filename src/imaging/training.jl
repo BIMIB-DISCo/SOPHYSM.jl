@@ -112,39 +112,6 @@ function accuracy(model, img_batches, mask_batches)
 end
 
 """
-    prediction(model, img)
-
-Generates a predicted segmentation mask from a given model and input image.
-
-# Arguments:
-- `model`: The U-Net model used for predictions.
-- `img`: A 4D array representing the input image.
-
-# Returns:
-- A 2D array representing the predicted segmentation mask with values between 0
-  and 1.
-"""
-function prediction(model, img)
-    # Get the model predictions
-    y_hat = model(img)
-
-    # Apply softmax to obtain probabilities
-    y_hat_softmax = softmax(y_hat; dims = 3)
-
-    # Select the class with the highest probability
-    y_pred = argmax(y_hat_softmax, dims = 3)
-    y_pred = getindex.(y_pred, 3)
-
-    # Remove the batch dimension
-    y_pred = dropdims(y_pred, dims = 4)
-
-    # Convert predicted class to float between 0 and 1
-    y_pred = Float32.(y_pred .- 1)
-
-    return y_pred
-end
-
-"""
     train!(model, img_batches, mask_batches, weight_batches;
            optimizer = Momentum(0.001, 0.99), epochs = 50, 
            patience = 5, min_delta = 0.001,
@@ -165,14 +132,6 @@ validation and early stopping.
 - `min_delta`: Minimum change in validation accuracy required to reset patience.
 - `val_img_batches`: A list of validation image batches.
 - `val_mask_batches`: A list of validation mask batches.
-
-# Returns:
-- The function trains the model and optionally saves the best model based on
-  validation accuracy.
-- The training stops early if the validation accuracy doesn't improve for
-  `patience` epochs.
-- The final model or the best model is saved as `"best_model.bson"` when
-  validation accuracy improves.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
                 optimizer = Momentum(0.001, 0.99), epochs = 50, 
