@@ -4,8 +4,8 @@
 Binarizes the input mask based on a specified threshold.
 
 - `mask`: The input mask array.
-- `threshold`: Threshold value. Pixels with values greater than this value are
-  set to `true`, otherwise to `false`.
+- `threshold`: Threshold value. Pixels with values less than or equal to this
+  value are set to `true`, otherwise to `false`.
 
 Returns a binary mask with `true` or `false` values.
 """
@@ -29,7 +29,7 @@ necessary, and binarizes the mask using a predefined threshold.
 
 Returns:
 - `img`: The processed image.
-- `mask`: The binarized mask as a `Gray{Float32}` array.
+- `mask`: The binarized mask as a `Gray{Float16}` array.
 """
 function load_image(img_path::String, mask_path::String; rsize = (512, 512))
     # Load and resize the image
@@ -50,15 +50,15 @@ function load_image(img_path::String, mask_path::String; rsize = (512, 512))
     end
 
     # Binarize the mask
-    mask_binary = binarize_mask(Float32.(mask_gray), 0.004)
-    mask_binary = Gray{Float32}.(mask_binary)
+    mask_binary = binarize_mask(Float16.(mask_gray), 0.004)
+    mask_binary = Gray{Float16}.(mask_binary)
 
     return img, mask_binary
 end
 
 """
-    compute_weight_map(mask::Array{Float32, 2};
-                       w0::Float32 = 10.0, sigma::Float32 = 5.0)
+    compute_weight_map(mask::Array{Float16, 2};
+                       w0::Float16 = 10.0, sigma::Float16 = 5.0)
 
 Computes the weight map for a given mask.
 
@@ -70,16 +70,17 @@ Returns:
 - `weight_map`: An array of the same shape as `mask` containing the weights
   for each pixel.
 """
-function compute_weight_map(mask::Array{Float32, 2};
-                            w0::Float32 = 10.0f0, sigma::Float32 = 5.0f0)
+function compute_weight_map(mask::Array{Float16, 2};
+                            w0::Float16 = Float16(10.0),
+                            sigma::Float16 = Float16(5.0))
     # Compute class weights w_c(x)
-    class_weights = zeros(Float32, size(mask))
-    foreground = mask .== 0.0f0
-    background = mask .== 1.0f0
+    class_weights = zeros(Float16, size(mask))
+    foreground = mask .== Float16(0.0)
+    background = mask .== Float16(1.0)
     
-    # Assign class weights (you can adjust the values as needed)
-    w_foreground = 1.0f0
-    w_background = 1.0f0
+    # Assign class weights
+    w_foreground = Float16(1.0)
+    w_background = Float16(1.0)
     class_weights[foreground] .= w_foreground
     class_weights[background] .= w_background
 
@@ -131,13 +132,13 @@ function augmenter(img, mask)
 
     # Convert the augmented images to arrays suitable for the model
     if eltype(new_img) <: Gray
-        img_array = Float32.(new_img)
+        img_array = Float16.(new_img)
         img_array = reshape(img_array,
                             size(img_array, 1),
                             size(img_array, 2),
                             1)
     elseif eltype(new_img) <: RGB
-        img_array = Float32.(channelview(new_img))
+        img_array = Float16.(channelview(new_img))
         img_array = permutedims(img_array, (2, 3, 1))
     else
         error("Unsupported image element type after augmentation: ",
@@ -145,8 +146,8 @@ function augmenter(img, mask)
     end
 
     # Masks
-    mask_array = binarize_mask(Float32.(new_mask), 0.004)
-    mask_array = Float32.(mask)
+    mask_array = binarize_mask(Float16.(new_mask), 0.004)
+    mask_array = Float16.(mask)
     mask_array = reshape(mask_array,
                             size(mask_array, 1),
                             size(mask_array, 2),
@@ -203,20 +204,20 @@ function dataloader(img_paths::Vector{String},
 
         # Convert images to arrays suitable for the model
         if eltype(img) <: Gray
-            img_array = Float32.(img)
+            img_array = Float16.(img)
             img_array = reshape(img_array,
                                 size(img_array, 1),
                                 size(img_array, 2),
                                 1)
         elseif eltype(img) <: RGB
-            img_array = Float32.(channelview(img))
+            img_array = Float16.(channelview(img))
             img_array = permutedims(img_array, (2, 3, 1))
         else
             error("Unsupported image element type: ",
                   "$(eltype(img))")
         end
 
-        mask_array = Float32.(mask)
+        mask_array = Float16.(mask)
         mask_array = reshape(mask_array,
                                 size(mask_array, 1),
                                 size(mask_array, 2),
@@ -232,7 +233,7 @@ function dataloader(img_paths::Vector{String},
                             size(weight_map, 1),
                             size(weight_map, 2),
                             1)
-        weight_map = Float32.(weight_map)
+        weight_map = Float16.(weight_map)
 
         # Add the original image, mask, and weight map
         push!(X, img_array)

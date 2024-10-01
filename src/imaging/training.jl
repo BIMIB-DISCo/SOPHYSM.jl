@@ -135,7 +135,7 @@ validation and early stopping.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
                 optimizer = Momentum(0.001, 0.99), epochs = 50, 
-                patience = 5, min_delta = 0.001,
+                patience = 5, min_delta = 0.1,
                 val_img_batches = nothing, val_mask_batches = nothing)
     
     num_batches = length(img_batches)
