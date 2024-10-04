@@ -76,7 +76,7 @@ ApplicationWindow {
     onRejected: {
         Julia.log_message("@info", "Canceled Image selection");
         this.close();
-    }
+        }
     }
 
     // Dropdown menu to display the application settings
@@ -88,21 +88,7 @@ ApplicationWindow {
             text: "Change Directory"
             onClicked: folderDialog.open();
         }
-
-        MenuItem {
-            text: "Switch Theme"
-            onClicked: {
-                console.log("todo");
-            }
-
-        }
-
-        MenuItem {
-            text: "Item 3"
-            onClicked: console.log("Item 3 selected");
-        }
     }
-
 
     // Popup window for downloading histopathology collection from TCGA
     Popup {
@@ -439,13 +425,13 @@ ApplicationWindow {
             id: handleDelegate
             implicitWidth: 3
             color: SplitHandle.pressed ? "#0984e3"
-                : (SplitHandle.hovered ? Qt.lighter("lightblue", 1.1) : "#b2bec3")
+                : (SplitHandle.hovered ? Qt.lighter("lightblue", 1.1) : "black")
         }
 
         // folder
         Rectangle {
             id: folder
-            color: "#b2bec3"
+            color: "#282828"
             implicitWidth: 200
             SplitView.minimumWidth: splitView.width / 5
             SplitView.maximumWidth: splitView.width * 3 / 4
@@ -453,14 +439,14 @@ ApplicationWindow {
             // current workspace
             Column {
                 Label {
-                    padding: 5
-                    color: "black"
+                    padding: 10
+                    color: "white"
                     text: "Current workspace:"
                     font.pixelSize: 16
                 }
                 Label {
-                    padding: 5
-                    color: "black"
+                    padding: 10
+                    color: "white"
                     text: propmap.workspace_dir
                     font.pixelSize: 12
                 }
@@ -622,26 +608,25 @@ ApplicationWindow {
                     Rectangle {
                         id: viewTabContainer
                         anchors.fill: parent
-                        color: "black"
+                        color: "#282828"
 
                         Rectangle {
+                            id: rectangleViewContainer
+                            width: 572
+                            height: 572
                             anchors {
                                 top: parent.top
                                 left: parent.left
-                                right: parent.right
-                                bottom: imageSelectionButton.top
-                                margins: 30
+                                topMargin: 30
+                                leftMargin: 30
                             }
-                            width: parent.width
-                            height: parent.height
-                
-                            id: jdispcontainer
-                            color: "black"
+                            color: "#3f3f3f"
 
                             JuliaDisplay {
                                 id: jdisp
-                                width: parent.width
-                                height: parent.height
+                                width: 512
+                                height: 512
+                                anchors.centerIn: parent
                             }
                         }
 
@@ -654,8 +639,8 @@ ApplicationWindow {
                             height: 30
 
                             anchors {
-                                bottom: viewTabContainer.bottom
-                                bottomMargin: 30
+                                top: rectangleViewContainer.bottom
+                                topMargin: 10
                                 left: viewTabContainer.left
                                 leftMargin: 30
                             }
@@ -675,20 +660,65 @@ ApplicationWindow {
 
                 // Segmentation window
                 Item {
-                    Rectangle{
-                        color: "lime"
-                        anchors.fill: parent
-                    }
                     id: segmentationTab
+                    Rectangle{
+                        id: segmentationTabContainer
+                        color: "#282828"
+                        anchors.fill: parent
+
+                        Rectangle {
+                            id: rectangleSegmentationContainer
+                            width: 572
+                            height: 572
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                topMargin: 30
+                                leftMargin: 30
+                            }
+                            color: "#3f3f3f"
+
+                            JuliaDisplay {
+                                id: jdispSegmentation
+                                width: 512
+                                height: 512
+                                anchors.centerIn: parent
+                            }
+                        }
+
+                        // Segmentate Button
+                        Button {
+                            id: segmentateButton
+                            text: "Segmentate"
+                            
+                            width: 120
+                            height: 30
+
+                            anchors {
+                                top: rectangleSegmentationContainer.bottom
+                                topMargin: 10
+                                left: segmentationTabContainer.left
+                                leftMargin: 30
+                            }
+                            // On hover tooltip
+                            hoverEnabled: true
+                            ToolTip.delay: 500
+                            ToolTip.timeout: 5000
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
+
+                            onClicked: {
+                                
+                            }
+                        }
+                    }
                 }
 
                 // Tessellation window
                 Item {
-
                     Rectangle{
-                        color: "yellow"
-                        width: 30
-                        height: 30
+                        color: "#282828"
+                        anchors.fill: parent
                     }
                     id: tessellationTab
                 }
@@ -696,9 +726,8 @@ ApplicationWindow {
                 // Simulation window
                 Item {
                     Rectangle{
-                        color: "green"
-                        width: 30
-                        height: 30
+                        color: "#282828"
+                        anchors.fill: parent
                     }
                     id: simulationTab
                 }
