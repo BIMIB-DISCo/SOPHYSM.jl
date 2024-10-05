@@ -14,6 +14,8 @@ include("dataloader.jl")
 include("model.jl")
 include("training.jl")
 
+export load_model, load_input, prediction, save_prediction
+
 """
     load_model(filepath::String)
 
@@ -30,6 +32,42 @@ function load_model(filepath::String)
     @load filepath model
 
     return model
+end
+
+"""
+    load_input(img_path::String; rsize = (512, 512))
+
+Processes a single image to prepare it for input into the U-Net model without
+adding a batch dimension.
+
+- `img_path`: Path to the image file.
+- `rsize`: Tuple specifying the dimensions for resizing.
+  Default is `(512, 512)`.
+
+Returns:
+- `img_array`: The processed image array ready for input into the model.
+"""
+function load_input(img_path::String; rsize = (512, 512))
+    # Load and resize the image
+    img = load(img_path)
+    img = imresize(img, rsize...)
+
+    # Convert images to arrays suitable for the model
+    if eltype(img) <: Gray
+        img_array = Float16.(img)
+        img_array = reshape(img_array,
+                            size(img_array, 1),
+                            size(img_array, 2),
+                            1)
+    elseif eltype(img) <: RGB
+        img_array = Float16.(channelview(img))
+        img_array = permutedims(img_array, (2, 3, 1))
+    else
+        error("Unsupported image element type: ",
+              "$(eltype(img))")
+    end
+
+    return img_array
 end
 
 """

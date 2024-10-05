@@ -24,15 +24,45 @@ segmentation_update_text = Observable("{...}")
 
 ### Main Functions
 
-function UNet_Segmentation(img_path::AbstractString)
-    if(isempty(img_path))
-        s_log_message("@error", "Img path not selected")
-    else
-        segmentation_update_text = Observable("Starting segmentation...")
-        s_log_message("@info", "Correct input image given at " * img_path)
-        # model = load_model("/home/moeasy/github/SOPHYSM/best_model.bson")
-    # ...
-    end
+"""
+    segment_image(model_path::String, img_path::String, output_path::String;
+                    rsize = (512, 512))
+
+Segments an input image using a pre-trained U-Net model and saves the predicted
+mask.
+
+# Arguments:
+- `model_path`: Path to the BSON file where the U-Net model is saved.
+- `img_path`: Path to the input image file to be segmented.
+- `output_path`: Path where the predicted segmentation mask will be saved.
+- `rsize`: Tuple specifying the dimensions for resizing.
+  Default is `(512, 512)`.
+"""
+function segment_image(model_path::String, img_path::String,
+                        output_path::String;
+                        rsize = (512, 512))
+    # Load the model
+    println("\nLoading model from: $model_path")
+    model = Net.load_model(model_path)
+    println("Model loaded successfully.")
+
+    # Load and preprocess the input image
+    println("\nLoading and preprocessing input image from: $img_path")
+    img = Net.load_input(img_path; rsize = rsize)
+    println("Input image loaded and preprocessed with size: ", size(img))
+
+    # Add batch dimension to the image
+    img = reshape(img, size(img)..., 1)
+
+    # Generate the prediction
+    println("\nGenerating prediction...")
+    pred = Net.prediction(model, img)
+    println("Prediction generated with size: ", size(pred))
+
+    # Save the predicted mask
+    println("\nSaving the predicted mask to: $output_path")
+    Net.save_prediction(pred, output_path)
+    println("Predicted mask saved successfully.")
 end
 
 
