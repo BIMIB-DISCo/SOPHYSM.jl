@@ -12,6 +12,7 @@ using JHistint
 ### Included modules
 include("Workspace.jl")
 include("SOPHYSMLogger.jl")
+include("imaging/Net.jl")
 
 ### Exported functions
 export start_GUI
