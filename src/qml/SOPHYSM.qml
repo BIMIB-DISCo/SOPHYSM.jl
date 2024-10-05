@@ -18,6 +18,10 @@ ApplicationWindow {
 
     Universal.theme: Universal.Dark
 
+    Component.onCompleted: {
+        console.logLevel = QtLoggingLevel.None
+    }
+
     // Components
     MessageDialog {
         id: downloadMessageDialog
@@ -68,8 +72,10 @@ ApplicationWindow {
 
     onAccepted: {
             var path = imageDialog.selectedFile.toString().slice(7);
-            Julia.log_message("@info", path)
+            Julia.log_message("@info", path);
             Julia.display_img(jdisp, path);
+            Julia.display_img(jdispSegmentation, path);
+            propmap.selected_image_path = path;
             this.close();
         }
 
@@ -686,6 +692,26 @@ ApplicationWindow {
                             }
                         }
 
+                        Rectangle {
+                            id: rectangleSegmentatedContainer
+                            width: 572
+                            height: 572
+                            anchors {
+                                top: parent.top
+                                left: rectangleSegmentationContainer.right
+                                topMargin: 30
+                                leftMargin: 30
+                            }
+                            color: "#3f3f3f"
+
+                            JuliaDisplay {
+                                id: jdispSegmentated
+                                width: 512
+                                height: 512
+                                anchors.centerIn: parent
+                            }
+                        }
+
                         // Segmentate Button
                         Button {
                             id: segmentateButton
@@ -708,7 +734,20 @@ ApplicationWindow {
                             ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
 
                             onClicked: {
-                                
+                                Julia.UNet_Segmentation(propmap.selected_image_path);
+                            }
+                        }
+
+                        Label {
+                            id: segmentationUpdateText
+                            text: propmap.segmentation_update_text
+                            color: "white"
+                            font.pixelSize: 12
+                            anchors{
+                                top: rectangleSegmentationContainer.bottom
+                                topMargin: 10
+                                left: segmentateButton.right
+                                leftMargin: 30
                             }
                         }
                     }
