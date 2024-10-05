@@ -101,8 +101,7 @@ function conv_3x3(in_chs::Int, out_chs::Int)
         Conv((3, 3), out_chs => out_chs, relu;
             init = Flux.kaiming_normal
         ),
-        BatchNorm(out_chs),
-        Dropout(0.3)
+        BatchNorm(out_chs)
     )
 end
 
