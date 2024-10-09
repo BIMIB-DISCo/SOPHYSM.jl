@@ -690,8 +690,8 @@ ApplicationWindow {
 
                         Rectangle {
                             id: rectangleSegmentatedContainer
-                            width: 572
-                            height: 572
+                            width: 448
+                            height: 448
                             anchors {
                                 top: parent.top
                                 left: rectangleSegmentationContainer.right
@@ -702,8 +702,8 @@ ApplicationWindow {
 
                             JuliaDisplay {
                                 id: jdispSegmentated
-                                width: 512
-                                height: 512
+                                width: 388
+                                height: 388
                                 anchors.centerIn: parent
                             }
                         }
@@ -730,7 +730,9 @@ ApplicationWindow {
                             ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
 
                             onClicked: {
-                                Julia.segment_image(propmap.selected_image_path);
+                                Julia.segment_image(propmap.selected_image_path, propmap.selected_image_path, propmap.selected_image_path);
+                                var path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
+                                Julia.display_img(jdispSegmentated, path)
                             }
                         }
 

@@ -47,7 +47,7 @@ adding a batch dimension.
 Returns:
 - `img_array`: The processed image array ready for input into the model.
 """
-function load_input(img_path::String; rsize = (512, 512))
+function load_input(img_path::AbstractString; rsize = (512, 512))
     # Load and resize the image
     img = load(img_path)
     img = imresize(img, rsize...)

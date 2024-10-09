@@ -135,7 +135,7 @@ end
     display selected image
 """
 function display_img(d::JuliaDisplay, path::AbstractString)
-    if Sys.iswindows()
+    if Sys.iswindows() && path[1] == '/'
         path = path[2: end]
     end
     img = ImageMagick.load(path; view = true)
