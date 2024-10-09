@@ -18,10 +18,6 @@ ApplicationWindow {
 
     Universal.theme: Universal.Dark
 
-    Component.onCompleted: {
-        console.logLevel = QtLoggingLevel.None
-    }
-
     // Components
     MessageDialog {
         id: downloadMessageDialog
@@ -734,7 +730,7 @@ ApplicationWindow {
                             ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
 
                             onClicked: {
-                                Julia.UNet_Segmentation(propmap.selected_image_path);
+                                Julia.segment_image(propmap.selected_image_path);
                             }
                         }
 

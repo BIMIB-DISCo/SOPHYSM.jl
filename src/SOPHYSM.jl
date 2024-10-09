@@ -38,8 +38,8 @@ mask.
 - `rsize`: Tuple specifying the dimensions for resizing.
   Default is `(512, 512)`.
 """
-function segment_image(model_path::String, img_path::String,
-                        output_path::String;
+function segment_image(model_path::AbstractString, img_path::AbstractString,
+                        output_path::AbstractString;
                         rsize = (512, 512))
     # Load the model
     println("\nLoading model from: $model_path")
@@ -81,7 +81,7 @@ function start_GUI()
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
     qmlfunction("log_message", s_log_message)
     qmlfunction("display_img", Workspace.display_img)
-    qmlfunction("UNet_Segmentation", UNet_Segmentation)
+    qmlfunction("segment_image", segment_image)
     
     # Propmap
     propmap = JuliaPropertyMap()
