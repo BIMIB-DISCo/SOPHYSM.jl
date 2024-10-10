@@ -18,9 +18,8 @@ include("imaging/Net.jl")
 export start_GUI, segment_iamge
 
 ### Constants
+global propmap = JuliaPropertyMap()
 workspace_dir = Observable(Workspace.get_workspace_dir())
-selected_image_path = Observable("")
-segmentation_update_text = Observable("{...}")
 
 ### Main Functions
 """
@@ -38,42 +37,64 @@ mask.
   Default is `(512, 512)`.
 """
 function segment_image(model_path::AbstractString,
-                        img_path::AbstractString,
-                        output_path::AbstractString;
-                        rsize = (512, 512))
-    # Load the model
-    model_path = "D:/Programmazione/GIT/SOPHYSM/SOPHYSM.jl/src/imaging/models/example_model.bson"
+    img_path::AbstractString,
+    output_path::AbstractString;
+    rsize = (512, 512))
+    try
+        # Load the model
+        model_path = "/Users/chriselleannguillermo/Downloads/best_model.bson"
 
-    if Sys.iswindows() && img_path[1] == '/'
-        img_path = img_path[2:end]
+        if Sys.iswindows() && img_path[1] == '/'
+            img_path = img_path[2:end]
+            output_path = output_path[2:end]
+        end
+        s_log_message("@info", img_path)
+
+        s_log_message("@info", string("Loading model from: ", model_path))
+        model = Net.load_model(model_path)
+        s_log_message("@info", "Model loaded successfully.")
+
+        # Load and preprocess the input image
+        s_log_message("@info", string("Loading and preprocessing input image from: ", img_path))
+        img = Net.load_input(img_path; rsize = rsize)
+        s_log_message("@info", string("Input image loaded and preprocessed with size: ", size(img)))
+
+        # Add batch dimension to the image
+        img = reshape(img, size(img)..., 1)
+
+        # Generate the prediction
+        s_log_message("@info", "Generating prediction...")
+        pred = Net.prediction(model, img)
+        s_log_message("@info", string("Prediction generated with size: ", size(pred)))
+
+        # Save the predicted mask
+        s_log_message("@info", string("Saving predicted mask to: ", output_path))
+        Net.save_prediction(pred, output_path)
+        s_log_message("@info", "Predicted mask saved successfully.")
+        propmap["segmentation_update_text"] = "Predicted mask saved successfully."
+
+    catch e
+        s_log_message("@error", string("An error occurred: ", e))
+        s_log_message("@error", string("Stacktrace: ", stacktrace(catch_backtrace())))
+        propmap["segmentation_update_text"] = "Predicted mask saved successfully."
     end
-    s_log_message("@info", img_path)
-
-    s_log_message("@info", string("Loading model from: ", model_path))
-    model = Net.load_model(model_path)
-    s_log_message("@info", "Model loaded successfully.")
-
-    # Load and preprocess the input image
-    s_log_message("@info", string("Loading and preprocessing input image from: ", img_path))
-    img = Net.load_input(img_path; rsize = rsize)
-    s_log_message("@info", string("Input image loaded and preprocessed with size: ", size(img)))
-
-    # Add batch dimension to the image
-    img = reshape(img, size(img)..., 1)
-
-    # Generate the prediction
-    s_log_message("@info", "Generating prediction...")
-    pred = Net.prediction(model, img)
-    s_log_message("@info", string("Prediction generated with size: ", size(pred)))
-
-    output_path = replace(img_path, ".jpg" => "_result.jpg")
-    # Save the predicted mask
-    s_log_message("@info", string("Prediction generated with size: ", output_path))
-    Net.save_prediction(pred, output_path)
-    s_log_message("@info", "Predicted mask saved successfully.")
 end
 
+function async_segment_image(model_path::AbstractString,
+    img_path::AbstractString,
+    output_path::AbstractString;
+    rsize = (512, 512))
+    task = @task segment_image(model_path, img_path, output_path: rsize(512, 512))
+    schedule(task)
+    return task
+end
 
+"""
+    start_GUI()
+
+Starts SOPHYSM UI.
+
+"""
 ### GUI logic
 function start_GUI()
     s_open_logger()
@@ -81,7 +102,6 @@ function start_GUI()
 
     workspace_dir = Observable(Workspace.get_workspace_dir())
     Workspace.set_environment()
-    selected_image_path = Observable("")
 
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
@@ -92,7 +112,6 @@ function start_GUI()
     qmlfunction("segment_image", segment_image)
     
     # Propmap
-    propmap = JuliaPropertyMap()
     propmap["workspace_dir"] = workspace_dir
     propmap["selected_image_path"] = selected_image_path
     propmap["segmentation_update_text"] = segmentation_update_text
@@ -102,11 +121,6 @@ function start_GUI()
         Workspace.set_workspace_dir(x)
         workspace_dir = Observable(Workspace.get_workspace_dir())
         s_log_message("@info", "WS Changed to $workspace_dir")
-    end
-
-    # Listening if there is any changes on the image the user selected
-    on(selected_image_path) do x
-        selected_image_path = x
     end
 
     # All keyword arguments to load are added as context properties on the QML side

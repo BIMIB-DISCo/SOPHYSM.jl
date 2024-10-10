@@ -8,9 +8,9 @@ import org.julialang
 
 ApplicationWindow {
     font.family: "Arial"
-    width: 1000
+    width: 1100
     height: 700
-    minimumWidth: 1000
+    minimumWidth: 1100
     minimumHeight: 700
     visible: true
     title: qsTr("SOPHYSM")
@@ -68,7 +68,6 @@ ApplicationWindow {
 
     onAccepted: {
             var path = imageDialog.selectedFile.toString().slice(7);
-            Julia.log_message("@info", path);
             Julia.display_img(jdisp, path);
             Julia.display_img(jdispSegmentation, path);
             propmap.selected_image_path = path;
@@ -470,7 +469,7 @@ ApplicationWindow {
 
                 TabButton {
                     id: viewButton
-                    width: 100
+                    width: 120
                     height: 40
 
                     anchors.bottom: parent.bottom
@@ -494,7 +493,7 @@ ApplicationWindow {
 
                 TabButton {
                     id: segmentationButton
-                    width: 100
+                    width: 120
                     height: 40
 
                     anchors.bottom: parent.bottom
@@ -518,7 +517,7 @@ ApplicationWindow {
 
                 TabButton {
                     id: tessellationButton
-                    width: 100 
+                    width: 120 
                     height: 40
                     anchors.bottom: parent.bottom 
 
@@ -541,7 +540,7 @@ ApplicationWindow {
 
                 TabButton {
                     id: simulationButton
-                    width: 100
+                    width: 120
                     height: 40
                     anchors.bottom: parent.bottom
 
@@ -690,8 +689,8 @@ ApplicationWindow {
 
                         Rectangle {
                             id: rectangleSegmentatedContainer
-                            width: 448
-                            height: 448
+                            width: 384
+                            height: 384
                             anchors {
                                 top: parent.top
                                 left: rectangleSegmentationContainer.right
@@ -702,8 +701,8 @@ ApplicationWindow {
 
                             JuliaDisplay {
                                 id: jdispSegmentated
-                                width: 388
-                                height: 388
+                                width: 324
+                                height: 324
                                 anchors.centerIn: parent
                             }
                         }
@@ -711,7 +710,7 @@ ApplicationWindow {
                         // Segmentate Button
                         Button {
                             id: segmentateButton
-                            text: "Segmentate"
+                            text: "Segment"
                             
                             width: 120
                             height: 30
@@ -730,9 +729,11 @@ ApplicationWindow {
                             ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
 
                             onClicked: {
-                                Julia.segment_image(propmap.selected_image_path, propmap.selected_image_path, propmap.selected_image_path);
-                                var path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
-                                Julia.display_img(jdispSegmentated, path)
+                                var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
+                                Julia.segment_image(propmap.selected_image_path, 
+                                                    propmap.selected_image_path, 
+                                                    output_path);
+                                Julia.display_img(jdispSegmentated, output_path)
                             }
                         }
 
@@ -740,7 +741,7 @@ ApplicationWindow {
                             id: segmentationUpdateText
                             text: propmap.segmentation_update_text
                             color: "white"
-                            font.pixelSize: 12
+                            font.pixelSize: 18
                             anchors{
                                 top: rectangleSegmentationContainer.bottom
                                 topMargin: 10

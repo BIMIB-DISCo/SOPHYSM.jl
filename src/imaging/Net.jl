@@ -112,7 +112,7 @@ Saves the predicted segmentation mask as an image.
 - `prediction`: A 2D array representing the predicted segmentation mask.
 - `filepath`: The path where the image will be saved, including the filename.
 """
-function save_prediction(prediction::Array, filepath::String)
+function save_prediction(prediction::Array, filepath::AbstractString)
     # Save the result as an image
     save(filepath, prediction)
     println("Prediction saved at: ", filepath)
