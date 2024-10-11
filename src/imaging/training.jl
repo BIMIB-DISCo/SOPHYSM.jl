@@ -135,7 +135,7 @@ validation and early stopping.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
                 optimizer = Momentum(0.001, 0.99), epochs = 50, 
-                patience = 5, min_delta = 0.1,
+                patience = 5, min_delta = 0.01,
                 val_img_batches = nothing, val_mask_batches = nothing)
     
     num_batches = length(img_batches)
@@ -146,6 +146,8 @@ function train!(model, img_batches, mask_batches, weight_batches;
 
     for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
+
+        trainmode!(model)
         
         # Shuffle the batches at the beginning of each epoch
         shuffled_indices = shuffle(1:num_batches)
@@ -153,44 +155,54 @@ function train!(model, img_batches, mask_batches, weight_batches;
         mask_batches_shuffled = mask_batches[shuffled_indices]
         weight_batches_shuffled = weight_batches[shuffled_indices]
 
+        pbar = ProgressBar(1:num_batches)
+
         # Iterate over each batch of training data
-        for (x_batch, y_batch, weight_map_batch) in zip(img_batches_shuffled,
-                                                        mask_batches_shuffled,
-                                                        weight_batches_shuffled)
+        for i in pbar
+            x_batch = img_batches_shuffled[i]
+            y_batch = mask_batches_shuffled[i]
+            weight_map_batch = weight_batches_shuffled[i]
+        
             # Compute the loss and gradients
             loss, grads = Flux.withgradient(Flux.params(model)) do
                 y_hat = model(x_batch)
                 weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
             end
-
+        
             # Save the loss from the forward pass
             push!(losses, loss)
-            println("Loss: ", loss)
-
-            # Skip update if loss is Inf or NaN (due to numerical instability)
+        
+            # Skip update if loss is Inf or NaN
             if !isfinite(loss)
                 @warn "Loss is $loss; skipping update."
                 continue
             end
 
-            # Update model parameters with the computed gradients
+            set_postfix(pbar, Loss = @sprintf("%.2f", loss))
+        
+            # Update model parameters
             Flux.update!(optimizer, Flux.params(model), grads)
         end
 
         # Optional validation accuracy computation
         if val_img_batches !== nothing && val_mask_batches !== nothing
+            testmode!(model)
+
             acc = accuracy(model, val_img_batches, val_mask_batches)
             push!(val_accuracies, acc)
-            println("Validation Accuracy: ", acc)
+            println("Validation Accuracy: ", @sprintf("%.2f", acc), "%")
 
             # Check if validation accuracy has improved
             if acc > best_accuracy + min_delta
                 best_accuracy = acc
                 epochs_without_improvement = 0
                 
+                model = model |> cpu
                 # Save the best model so far
                 @save "best_model.bson" model
                 println("New best model saved.")
+
+                model = model |> gpu
             else
                 # Increment the counter for epochs without improvement
                 epochs_without_improvement += 1
@@ -206,5 +218,4 @@ function train!(model, img_batches, mask_batches, weight_batches;
     end
 
     println("Training completed.")
-    println(losses)
 end

@@ -2,12 +2,15 @@ module JNet
 
 using Augmentor
 using BSON: @save, @load
+using CUDA
 using FileIO
 using Flux
 using Flux: @functor
 using Flux.Optimise: Momentum, update!
 using Images
+using ProgressBars
 using Random
+using Printf
 using Statistics
 
 include("dataloader.jl")

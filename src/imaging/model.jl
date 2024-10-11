@@ -94,16 +94,18 @@ and batch normalization.
 """
 function conv_3x3(in_chs::Int, out_chs::Int; prob = 0.0)
     Chain(
-        Conv((3, 3), in_chs => out_chs, relu;
-            init = Flux.kaiming_normal
-        ),
-        Dropout(prob; dims = 3),
+        Conv((3, 3), in_chs => out_chs;
+            pad = 1,
+            init = Flux.kaiming_normal),
         BatchNorm(out_chs),
-        Conv((3, 3), out_chs => out_chs, relu;
-            init = Flux.kaiming_normal
-        ),
+        x -> relu(x),
         Dropout(prob; dims = 3),
-        BatchNorm(out_chs)
+        Conv((3, 3), out_chs => out_chs;
+            pad = 1,
+            init = Flux.kaiming_normal),
+        BatchNorm(out_chs),
+        x -> relu(x),
+        Dropout(prob; dims = 3)
     )
 end
 
@@ -152,11 +154,12 @@ activation.
 """
 function up_conv_2x2(in_chs::Int, out_chs::Int)
     Chain(
-        ConvTranspose((2, 2), in_chs => out_chs, relu;
+        ConvTranspose((2, 2), in_chs => out_chs;
             stride = 2,
             init = Flux.kaiming_normal
         ),
-        BatchNorm(out_chs)
+        BatchNorm(out_chs),
+        x -> relu(x)
     )
 end
 
@@ -248,11 +251,11 @@ function UNet(channels::Int = 3, labels::Int = 2)
         UNetDownBlock(channels, 64),
         UNetDownBlock(64, 128),
         UNetDownBlock(128, 256),
-        UNetDownBlock(256, 512; p = 0.5)
+        UNetDownBlock(256, 512; p = 0.1)
     )
 
     bottleneck = Chain(
-        UNetBottleneckBlock(512, 1024; p = 0.5)
+        UNetBottleneckBlock(512, 1024; p = 0.05)
     )
 
     upsample = Chain(

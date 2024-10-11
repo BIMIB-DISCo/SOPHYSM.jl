@@ -159,7 +159,7 @@ function augmenter(img, mask)
 
     # Masks
     mask_array = binarize_mask(Float16.(new_mask), 0.004)
-    mask_array = Float16.(mask)
+    mask_array = Float16.(mask_array)
     mask_array = reshape(mask_array,
                             size(mask_array, 1),
                             size(mask_array, 2),
@@ -199,16 +199,14 @@ function dataloader(img_paths::Vector{String},
                     batch_size::Int = 1,
                     rsize = (512, 512),
                     augmentation_factor::Int = 0)
-    println("Total dataset size: ", length(img_paths))
+    println("\nTotal dataset size: ", length(img_paths))
 
     X = []
     Y = []
     W = []
 
     # Collect all images, masks and weight maps
-    for idx in 1:length(img_paths)
-        println("Processing image #", idx)
-
+    for idx in ProgressBar(1:length(img_paths))
         img_path = img_paths[idx]
         mask_path = mask_paths[idx]
 
@@ -238,8 +236,7 @@ function dataloader(img_paths::Vector{String},
         # Compute weight map
         weight_map = compute_weight_map(reshape(mask_array,
                                                 size(mask_array, 1),
-                                                size(mask_array, 2)),
-                                        sigma = Float16(1.0))
+                                                size(mask_array, 2)))
 
         # Add channel dimension to weight map
         weight_map = reshape(weight_map,
@@ -275,6 +272,8 @@ function dataloader(img_paths::Vector{String},
         end
     end
 
+    println("Creating batches...")
+
     # Shuffle the data
     total_samples = length(X)
     indices = randperm(total_samples)
@@ -289,30 +288,19 @@ function dataloader(img_paths::Vector{String},
     weight_batches = []
     batch_num = 1
 
-    while length(X_shuffled) >= batch_size
-        println("Saving batch #", batch_num)
+    # Calculate total number of batches
+    num_batches = ceil(Int, length(X_shuffled) / batch_size)
+
+    # Process all batches
+    for i in ProgressBar(1:num_batches)
         batch_num += 1
 
-        img_batch = cat(X_shuffled[1 : batch_size]...; dims = 4)
-        mask_batch = cat(Y_shuffled[1 : batch_size]...; dims = 4)
-        weight_batch = cat(W_shuffled[1 : batch_size]...; dims = 4)
+        start_idx = (i - 1) * batch_size + 1
+        end_idx = min(i * batch_size, length(X_shuffled))
 
-        push!(img_batches, img_batch)
-        push!(mask_batches, mask_batch)
-        push!(weight_batches, weight_batch)
-
-        X_shuffled = X_shuffled[batch_size + 1 : end]
-        Y_shuffled = Y_shuffled[batch_size + 1 : end]
-        W_shuffled = W_shuffled[batch_size + 1 : end]
-    end
-
-    # Handle remaining data
-    if !isempty(X_shuffled)
-        println("Saving final batch #", batch_num)
-
-        img_batch = cat(X_shuffled...; dims = 4)
-        mask_batch = cat(Y_shuffled...; dims = 4)
-        weight_batch = cat(W_shuffled...; dims = 4)
+        img_batch = cat(X_shuffled[start_idx:end_idx]...; dims = 4)
+        mask_batch = cat(Y_shuffled[start_idx:end_idx]...; dims = 4)
+        weight_batch = cat(W_shuffled[start_idx:end_idx]...; dims = 4)
 
         push!(img_batches, img_batch)
         push!(mask_batches, mask_batch)
