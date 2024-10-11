@@ -12,7 +12,7 @@ using JHistint
 ### Included modules
 include("Workspace.jl")
 include("SOPHYSMLogger.jl")
-include("imaging/Net.jl")
+include("imaging/JNet.jl")
 
 ### Exported functions
 export start_GUI, segment_iamge
@@ -51,12 +51,12 @@ function segment_image(model_path::AbstractString,
         s_log_message("@info", img_path)
 
         s_log_message("@info", string("Loading model from: ", model_path))
-        model = Net.load_model(model_path)
+        model = JNet.load_model(model_path)
         s_log_message("@info", "Model loaded successfully.")
 
         # Load and preprocess the input image
         s_log_message("@info", string("Loading and preprocessing input image from: ", img_path))
-        img = Net.load_input(img_path; rsize = rsize)
+        img = JNet.load_input(img_path; rsize = rsize)
         s_log_message("@info", string("Input image loaded and preprocessed with size: ", size(img)))
 
         # Add batch dimension to the image
@@ -64,12 +64,12 @@ function segment_image(model_path::AbstractString,
 
         # Generate the prediction
         s_log_message("@info", "Generating prediction...")
-        pred = Net.prediction(model, img)
+        pred = JNet.prediction(model, img)
         s_log_message("@info", string("Prediction generated with size: ", size(pred)))
 
         # Save the predicted mask
         s_log_message("@info", string("Saving predicted mask to: ", output_path))
-        Net.save_prediction(pred, output_path)
+        JNet.save_prediction(pred, output_path)
         s_log_message("@info", "Predicted mask saved successfully.")
         propmap["segmentation_update_text"] = "Predicted mask saved successfully."
 
