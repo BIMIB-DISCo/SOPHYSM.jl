@@ -92,17 +92,18 @@ and batch normalization.
 - Each convolution reduces dimensions and applies ReLU activation.
 - Batch normalization is applied after each convolution.
 """
-function conv_3x3(in_chs::Int, out_chs::Int)
+function conv_3x3(in_chs::Int, out_chs::Int; prob = 0.0)
     Chain(
         Conv((3, 3), in_chs => out_chs, relu;
             init = Flux.kaiming_normal
         ),
+        Dropout(prob; dims = 3),
         BatchNorm(out_chs),
         Conv((3, 3), out_chs => out_chs, relu;
             init = Flux.kaiming_normal
         ),
-        BatchNorm(out_chs),
-        Dropout(0.3)
+        Dropout(prob; dims = 3),
+        BatchNorm(out_chs)
     )
 end
 
@@ -185,8 +186,8 @@ Creates a downsampling block with specified channels.
 
 - Applies convolutional layers and max pooling.
 """
-function UNetDownBlock(in_chs::Int, out_chs::Int)
-    conv = conv_3x3(in_chs, out_chs)
+function UNetDownBlock(in_chs::Int, out_chs::Int; p::Float64 = 0.0)
+    conv = conv_3x3(in_chs, out_chs; prob = p)
     pool = max_pool_2x2()
 
     return UNetDownBlock(conv, pool)
@@ -199,8 +200,8 @@ Creates the bottleneck block with specified channels.
 
 - Applies convolutional layers without pooling.
 """
-function UNetBottleneckBlock(in_chs::Int, out_chs::Int)
-    conv = conv_3x3(in_chs, out_chs)
+function UNetBottleneckBlock(in_chs::Int, out_chs::Int; p = 0.0)
+    conv = conv_3x3(in_chs, out_chs; prob = p)
 
     return UNetBottleneckBlock(conv)
 end
@@ -247,11 +248,11 @@ function UNet(channels::Int = 3, labels::Int = 2)
         UNetDownBlock(channels, 64),
         UNetDownBlock(64, 128),
         UNetDownBlock(128, 256),
-        UNetDownBlock(256, 512)
+        UNetDownBlock(256, 512; p = 0.5)
     )
 
     bottleneck = Chain(
-        UNetBottleneckBlock(512, 1024)
+        UNetBottleneckBlock(512, 1024; p = 0.5)
     )
 
     upsample = Chain(
