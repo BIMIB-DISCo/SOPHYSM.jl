@@ -73,29 +73,41 @@ Returns:
 function compute_weight_map(mask::Array{Float16, 2};
                             w0::Float16 = Float16(10.0),
                             sigma::Float16 = Float16(5.0))
-    # Compute class weights w_c(x)
-    class_weights = zeros(Float16, size(mask))
+    # Identify foreground and background
     foreground = mask .== Float16(0.0)
     background = mask .== Float16(1.0)
-    
-    # Assign class weights
-    w_foreground = Float16(1.0)
-    w_background = Float16(1.0)
+
+    # Compute the number of pixels for each class
+    n_foreground = sum(foreground)
+    n_background = sum(background)
+    total_pixels = n_foreground + n_background
+
+    if n_foreground == 0 || n_background == 0
+        error("One of the classes has no pixels in the dataset.")
+    end
+
+    # Compute class weights inversely proportional to the class frequencies
+    w_foreground = total_pixels / (2 * n_foreground)
+    w_background = total_pixels / (2 * n_background)
+
+    # Normalize the weights to maintain an average of 1
+    sum_weights = w_foreground * (n_foreground / total_pixels) + 
+                    w_background * (n_background / total_pixels)
+    w_foreground /= sum_weights
+    w_background /= sum_weights
+
+    # Create the class weight map
+    class_weights = zeros(Float16, size(mask))
     class_weights[foreground] .= w_foreground
     class_weights[background] .= w_background
 
-    # Compute distance transforms
-    # Distance to the nearest cell (foreground)
+    # Compute the distance transforms
     distance_foreground = distance_transform(feature_transform(.!foreground))
-    # Distance to the nearest background
     distance_background = distance_transform(feature_transform(.!background))
 
-    # Approximate d1 and d2
-    d1 = distance_foreground
-    d2 = distance_background
-
     # Compute the border emphasis term
-    border_term = w0 .* exp.(-(d1 .+ d2).^2 ./ (2 * sigma^2))
+    border_term = w0 .* exp.(- (distance_foreground .+ distance_background).^2
+                    ./ (2 * sigma^2))
 
     # Total weight map
     weight_map = class_weights .+ border_term
@@ -226,7 +238,8 @@ function dataloader(img_paths::Vector{String},
         # Compute weight map
         weight_map = compute_weight_map(reshape(mask_array,
                                                 size(mask_array, 1),
-                                                size(mask_array, 2)))
+                                                size(mask_array, 2)),
+                                        sigma = Float16(1.0))
 
         # Add channel dimension to weight map
         weight_map = reshape(weight_map,
@@ -248,7 +261,8 @@ function dataloader(img_paths::Vector{String},
                 # Compute weight map for augmented mask
                 weight_map_aug = compute_weight_map(reshape(mask_aug,
                                                             size(mask_aug, 1),
-                                                            size(mask_aug, 2)))
+                                                            size(mask_aug, 2)),
+                                                    sigma = Float16(1.0))
                 weight_map_aug = reshape(weight_map_aug,
                                             size(weight_map_aug, 1),
                                             size(weight_map_aug, 2),
