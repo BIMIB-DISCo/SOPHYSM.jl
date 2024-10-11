@@ -1,4 +1,4 @@
-module Net
+module JNet
 
 using Augmentor
 using BSON: @save, @load
