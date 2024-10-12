@@ -134,6 +134,8 @@ validation and early stopping.
 - `val_mask_batches`: A list of validation mask batches.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
+                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
+                decay_epochs = 5, warmup_epochs = 5,
                 optimizer = Momentum(0.001, 0.99), epochs = 50, 
                 patience = 5, min_delta = 0.01,
                 val_img_batches = nothing, val_mask_batches = nothing)
@@ -144,8 +146,31 @@ function train!(model, img_batches, mask_batches, weight_batches;
     best_accuracy = 0.0
     epochs_without_improvement = 0
 
+    # Initialize data for the plots
+    training_losses = Float32[]
+    validation_accuracies = Float32[]
+
+    # Create empty plots
+    loss_plot = nothing
+    accuracy_plot = nothing
+
     for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
+
+        # Learning Rate Warm-up and Decay
+        if epoch ≤ warmup_epochs
+            lr = initial_lr + (max_lr - initial_lr) * (epoch / warmup_epochs)
+            optimizer = Momentum(lr, 0.99)
+
+            println("Warm-up learning rate: $lr")
+        elseif epoch > warmup_epochs &&
+                        (epoch - warmup_epochs) % decay_epochs == 0
+            num_decays = div((epoch - warmup_epochs), decay_epochs)
+            lr = max_lr * (decay_factor ^ num_decays)
+            optimizer = Momentum(lr, 0.99)
+
+            println("Learning rate decayed to: $lr")
+        end
 
         trainmode!(model)
         
@@ -156,6 +181,8 @@ function train!(model, img_batches, mask_batches, weight_batches;
         weight_batches_shuffled = weight_batches[shuffled_indices]
 
         pbar = ProgressBar(1:num_batches)
+
+        epoch_loss = 0.0
 
         # Iterate over each batch of training data
         for i in pbar
@@ -169,27 +196,32 @@ function train!(model, img_batches, mask_batches, weight_batches;
                 weighted_cross_entropy_loss(y_hat, y_batch, weight_map_batch)
             end
         
-            # Save the loss from the forward pass
-            push!(losses, loss)
-        
+            # Accumulate the loss
+            epoch_loss += loss
+
             # Skip update if loss is Inf or NaN
             if !isfinite(loss)
                 @warn "Loss is $loss; skipping update."
                 continue
             end
 
-            set_postfix(pbar, Loss = @sprintf("%.2f", loss))
+            set_postfix(pbar, Loss = @sprintf("%.4f", loss))
         
             # Update model parameters
             Flux.update!(optimizer, Flux.params(model), grads)
         end
+
+        # Calculate the average loss of the epoch
+        avg_epoch_loss = epoch_loss / num_batches
+        push!(training_losses, avg_epoch_loss)
+        println("Average Training Loss: ", @sprintf("%.4f", avg_epoch_loss))
 
         # Optional validation accuracy computation
         if val_img_batches !== nothing && val_mask_batches !== nothing
             testmode!(model)
 
             acc = accuracy(model, val_img_batches, val_mask_batches)
-            push!(val_accuracies, acc)
+            push!(validation_accuracies, acc)
             println("Validation Accuracy: ", @sprintf("%.2f", acc), "%")
 
             # Check if validation accuracy has improved
@@ -206,13 +238,46 @@ function train!(model, img_batches, mask_batches, weight_batches;
             else
                 # Increment the counter for epochs without improvement
                 epochs_without_improvement += 1
-                println("Epochs without improvement: ", epochs_without_improvement)
+                println("Epochs without improvement: ",
+                        epochs_without_improvement)
 
-                # Early stopping if no improvement for `patience` epochs
+                # Early stopping, if no improvement for `patience` epochs
                 if epochs_without_improvement >= patience
                     println("Early stopping after $epoch epochs.")
+
+                    loss_plot = lineplot(1:epoch, training_losses;
+                        title="Training Loss",
+                        xlabel="Epoch",
+                        ylabel="Loss")
+                    display(loss_plot)
+
+                    println()
+
+                    acc_plot = lineplot(1:epoch, validation_accuracies;
+                                title="Validation Accuracy",
+                                xlabel="Epoch",
+                                ylabel="Accuracy (%)")
+                    display(acc_plot)
                     break
                 end
+            end
+        end
+
+        if epoch > 1
+            loss_plot = lineplot(1:epoch, training_losses;
+                        title="Training Loss",
+                        xlabel="Epoch",
+                        ylabel="Loss")
+            display(loss_plot)
+
+            println()
+
+            if val_img_batches !== nothing && val_mask_batches !== nothing
+                acc_plot = lineplot(1:epoch, validation_accuracies;
+                            title="Validation Accuracy",
+                            xlabel="Epoch",
+                            ylabel="Accuracy (%)")
+                display(acc_plot)
             end
         end
     end

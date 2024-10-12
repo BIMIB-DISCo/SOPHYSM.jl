@@ -12,6 +12,7 @@ using ProgressBars
 using Random
 using Printf
 using Statistics
+using UnicodePlots
 
 include("dataloader.jl")
 include("model.jl")
