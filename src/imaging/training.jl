@@ -235,12 +235,6 @@ function train!(model, img_batches, mask_batches, weight_batches;
             acc = accuracy(model, val_img_batches, val_mask_batches)
             push!(validation_accuracies, acc)
 
-            if acc > best_accuracy + min_delta
-                
-            else
-
-            end
-
             # Check if validation accuracy has improved
             if acc > best_accuracy + min_delta
                 best_accuracy = acc
@@ -283,6 +277,10 @@ function train!(model, img_batches, mask_batches, weight_batches;
                     display(acc_plot)
                     break
                 end
+            else
+                println("Accuracy: ", @sprintf("%.2f", acc), "%")
+                println("Current best accuracy: ",
+                        @sprintf("%.2f", best_accuracy), "%")
             end
         end
 
