@@ -251,11 +251,11 @@ function UNet(channels::Int = 3, labels::Int = 2)
         UNetDownBlock(channels, 64),
         UNetDownBlock(64, 128),
         UNetDownBlock(128, 256),
-        UNetDownBlock(256, 512; p = 0.1)
+        UNetDownBlock(256, 512; p = 0.3)
     )
 
     bottleneck = Chain(
-        UNetBottleneckBlock(512, 1024; p = 0.05)
+        UNetBottleneckBlock(512, 1024; p = 0.2)
     )
 
     upsample = Chain(

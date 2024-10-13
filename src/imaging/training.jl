@@ -142,15 +142,16 @@ validation and early stopping.
 - `val_mask_batches`: A list of validation mask batches.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
-                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.25,
-                decay_epochs = 5, warmup_epochs = 5,
-                optimizer = Momentum(0.001, 0.99), epochs = 50, 
-                patience = 5, min_delta = 0.01,
+                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.1,
+                warmup_epochs = 8, decay_epochs = 2,
+                early_stopping_start = 13, patience = 5, min_delta = 0.01,
+                epochs = 30,
                 val_img_batches = nothing, val_mask_batches = nothing)
     CUDA.reclaim()
 
     model = model |> gpu
     lr = initial_lr
+    optimizer = Momentum(lr, 0.99)
     num_batches = length(img_batches)
     best_accuracy = 0.0
     epochs_without_improvement = 0
@@ -172,13 +173,13 @@ function train!(model, img_batches, mask_batches, weight_batches;
             optimizer = Momentum(lr, 0.99)
 
             println("Warm-up learning rate: $lr")
-        elseif epoch > warmup_epochs &&
-                        (epoch - warmup_epochs) % decay_epochs == 0
-            num_decays = div((epoch - warmup_epochs), decay_epochs)
-            lr = max_lr * (decay_factor ^ num_decays)
+        elseif epochs_without_improvement == decay_epochs
+            lr *= decay_factor
             optimizer = Momentum(lr, 0.99)
 
             println("Learning rate decayed to: $lr")
+        else
+            println("Current learning rate: $lr")
         end
 
         trainmode!(model)
@@ -233,12 +234,19 @@ function train!(model, img_batches, mask_batches, weight_batches;
 
             acc = accuracy(model, val_img_batches, val_mask_batches)
             push!(validation_accuracies, acc)
-            println("Validation Accuracy: ", @sprintf("%.2f", acc), "%")
+
+            if acc > best_accuracy + min_delta
+                
+            else
+
+            end
 
             # Check if validation accuracy has improved
             if acc > best_accuracy + min_delta
                 best_accuracy = acc
                 epochs_without_improvement = 0
+
+                println("New best accuracy: ", @sprintf("%.2f", acc), "%")
                 
                 model = model |> cpu
                 # Save the best model so far
@@ -246,7 +254,11 @@ function train!(model, img_batches, mask_batches, weight_batches;
                 println("New best model saved.")
 
                 model = model |> gpu
-            else
+            elseif epoch >= early_stopping_start
+                println("Accuracy: ", @sprintf("%.2f", acc), "%")
+                println("Current best accuracy: ",
+                        @sprintf("%.2f", best_accuracy), "%")
+
                 # Increment the counter for epochs without improvement
                 epochs_without_improvement += 1
                 println("Epochs without improvement: ",
