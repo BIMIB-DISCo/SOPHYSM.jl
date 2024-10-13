@@ -84,7 +84,13 @@ function accuracy(model, img_batches, mask_batches)
     total_correct = 0
     total_pixels = 0
 
-    for (x_batch, y_batch) in zip(img_batches, mask_batches)
+    num_batches = length(img_batches)
+
+    println("\nCalculating accuracy...")
+    for i in ProgressBar(1:num_batches)
+        x_batch = img_batches[i] |> gpu
+        y_batch = mask_batches[i] |> gpu
+
         # Get the model predictions
         y_hat = model(x_batch)
 
@@ -104,6 +110,8 @@ function accuracy(model, img_batches, mask_batches)
         total_correct += correct
         total_pixels += length(y_true)
     end
+
+    CUDA.reclaim()
 
     # Calculate the average accuracy
     accuracy = total_correct / total_pixels
@@ -134,15 +142,16 @@ validation and early stopping.
 - `val_mask_batches`: A list of validation mask batches.
 """
 function train!(model, img_batches, mask_batches, weight_batches;
-                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
+                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.25,
                 decay_epochs = 5, warmup_epochs = 5,
                 optimizer = Momentum(0.001, 0.99), epochs = 50, 
                 patience = 5, min_delta = 0.01,
                 val_img_batches = nothing, val_mask_batches = nothing)
-    
+    CUDA.reclaim()
+
+    model = model |> gpu
+    lr = initial_lr
     num_batches = length(img_batches)
-    losses = Float32[]
-    val_accuracies = Float32[]
     best_accuracy = 0.0
     epochs_without_improvement = 0
 
@@ -152,7 +161,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
 
     # Create empty plots
     loss_plot = nothing
-    accuracy_plot = nothing
+    acc_plot = nothing
 
     for epoch in 1:epochs
         println("\nEpoch $epoch/$epochs")
@@ -186,9 +195,9 @@ function train!(model, img_batches, mask_batches, weight_batches;
 
         # Iterate over each batch of training data
         for i in pbar
-            x_batch = img_batches_shuffled[i]
-            y_batch = mask_batches_shuffled[i]
-            weight_map_batch = weight_batches_shuffled[i]
+            x_batch = img_batches_shuffled[i] |> gpu
+            y_batch = mask_batches_shuffled[i] |> gpu
+            weight_map_batch = weight_batches_shuffled[i] |> gpu
         
             # Compute the loss and gradients
             loss, grads = Flux.withgradient(Flux.params(model)) do
@@ -210,6 +219,8 @@ function train!(model, img_batches, mask_batches, weight_batches;
             # Update model parameters
             Flux.update!(optimizer, Flux.params(model), grads)
         end
+
+        CUDA.reclaim()
 
         # Calculate the average loss of the epoch
         avg_epoch_loss = epoch_loss / num_batches
@@ -282,5 +293,6 @@ function train!(model, img_batches, mask_batches, weight_batches;
         end
     end
 
+    CUDA.reclaim()
     println("Training completed.")
 end
