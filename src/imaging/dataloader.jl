@@ -5,12 +5,12 @@ Binarizes the input mask based on a specified threshold.
 
 - `mask`: The input mask array.
 - `threshold`: Threshold value. Pixels with values less than or equal to this
-  value are set to `true`, otherwise to `false`.
+  value are set to 1, otherwise to 0.
 
-Returns a binary mask with `true` or `false` values.
+Returns a binary mask with 1 or 0 values.
 """
 function binarize_mask(mask, threshold = 0.5)
-    return .!(mask .> threshold)
+    return Gray{Float32}.(.!(mask .> threshold))
 end
 
 """
@@ -40,20 +40,7 @@ function load_image(img_path::String, mask_path::String; rsize = (512, 512))
     mask = load(mask_path)
     mask = imresize(mask, rsize...)
 
-    # Convert the mask to grayscale, if necessary
-    if eltype(mask) <: Gray
-        mask_gray = mask
-    elseif eltype(mask) <: RGB
-        mask_gray = Gray.(mask)
-    else
-        error("Unsupported mask element type: $(eltype(mask))")
-    end
-
-    # Binarize the mask
-    mask_binary = binarize_mask(Float32.(mask_gray), 0.004)
-    mask_binary = Gray{Float32}.(mask_binary)
-
-    return img, mask_binary
+    return img, mask
 end
 
 """
@@ -70,7 +57,7 @@ Returns:
 - `weight_map`: An array of the same shape as `mask` containing the weights
   for each pixel.
 """
-function compute_weight_map(mask::Array{Float32, 2};
+function compute_weight_map(mask::Array{Float32, 3};
                             w0::Float32 = Float32(10.0),
                             sigma::Float32 = Float32(5.0))
     # Identify foreground and background
@@ -112,6 +99,12 @@ function compute_weight_map(mask::Array{Float32, 2};
     # Total weight map
     weight_map = class_weights .+ border_term
 
+    # Add channel dimension to weight map
+    weight_map = reshape(weight_map,
+                        size(weight_map, 1),
+                        size(weight_map, 2),
+                        1)
+
     return weight_map
 end
 
@@ -133,39 +126,18 @@ Returns:
 """
 function augmenter(img, mask)
     # Define the augmentation pipeline
-    pipeline = Either(ElasticDistortion(3, 3, 0.2; sigma = 10), NoOp()) |>
-               Either(2 => Rotate([-90, 90, 180]), 1 => NoOp()) |>
-               Either(2 => ColorJitter(0.8:0.1:1.2, -0.2:0.1:0.2),
-                      1 => NoOp()) |>
-               Either(2 => GaussianBlur(3), 1 => NoOp())
+     pipeline = Either(2 => ElasticDistortion(3, 3, 0.2; sigma = 10),
+                    1 => NoOp()) |>
+                Either(2 => Rotate([-90, 90, 180]), 1 => NoOp()) |>
+                Either(2 => ColorJitter(0.8:0.1:1.2, -0.2:0.1:0.2),
+                    1 => NoOp()) |>
+                Either(2 => GaussianBlur(3), 1 => NoOp())
+                
 
     # Apply the pipeline to the image and mask
-    new_img, new_mask = augment(img => mask, pipeline)
+    img_aug, mask_aug = augment(img => mask, pipeline)
 
-    # Convert the augmented images to arrays suitable for the model
-    if eltype(new_img) <: Gray
-        img_array = Float32.(new_img)
-        img_array = reshape(img_array,
-                            size(img_array, 1),
-                            size(img_array, 2),
-                            1)
-    elseif eltype(new_img) <: RGB
-        img_array = Float32.(channelview(new_img))
-        img_array = permutedims(img_array, (2, 3, 1))
-    else
-        error("Unsupported image element type after augmentation: ",
-              "$(eltype(new_img))")
-    end
-
-    # Masks
-    mask_array = binarize_mask(Float32.(new_mask), 0.004)
-    mask_array = Float32.(mask_array)
-    mask_array = reshape(mask_array,
-                            size(mask_array, 1),
-                            size(mask_array, 2),
-                            1)
-
-    return img_array, mask_array
+    return img_aug, mask_aug
 end
 
 """
@@ -214,61 +186,85 @@ function dataloader(img_paths::Vector{String},
 
         # Convert images to arrays suitable for the model
         if eltype(img) <: Gray
-            img_array = Float32.(img)
-            img_array = reshape(img_array,
-                                size(img_array, 1),
-                                size(img_array, 2),
+            img_array = reshape(img,
+                                size(img, 1),
+                                size(img, 2),
                                 1)
         elseif eltype(img) <: RGB
-            img_array = Float32.(channelview(img))
+            img_array = channelview(img)
             img_array = permutedims(img_array, (2, 3, 1))
         else
-            error("Unsupported image element type: ",
-                  "$(eltype(img))")
+            error("Unsupported image element type: $(eltype(img))")
         end
 
-        mask_array = Float32.(mask)
-        mask_array = reshape(mask_array,
-                                size(mask_array, 1),
-                                size(mask_array, 2),
-                                1)
+        # Convert the mask to grayscale, if necessary
+        if eltype(mask) <: Gray
+            mask_gray = mask
+        elseif eltype(mask) <: RGB
+            mask_gray = Gray.(mask)
+        else
+            error("Unsupported mask element type: $(eltype(mask))")
+        end
+
+        # Binarize the mask
+        mask_binarized = binarize_mask(mask_gray, 0.004)
+
+        mask_array = Float32.(reshape(mask_binarized,
+                                size(mask_binarized, 1),
+                                size(mask_binarized, 2),
+                                1))
 
         # Compute weight map
-        weight_map = compute_weight_map(reshape(mask_array,
-                                                size(mask_array, 1),
-                                                size(mask_array, 2)),
+        weight_map = compute_weight_map(mask_array,
                                         sigma = Float32(1.0))
 
-        # Add channel dimension to weight map
-        weight_map = reshape(weight_map,
-                            size(weight_map, 1),
-                            size(weight_map, 2),
-                            1)
-        weight_map = Float32.(weight_map)
-
         # Add the original image, mask, and weight map
-        push!(X, img_array)
-        push!(Y, mask_array)
-        push!(W, weight_map)
+        push!(X, Float16.(img_array))
+        push!(Y, Float16.(mask_array))
+        push!(W, Float16.(weight_map))
 
         # Apply augmentations, if requested
         if augmentation_factor > 0
             for _ in 1 : augmentation_factor
                 img_aug, mask_aug = augmenter(img, mask)
 
-                # Compute weight map for augmented mask
-                weight_map_aug = compute_weight_map(reshape(mask_aug,
-                                                            size(mask_aug, 1),
-                                                            size(mask_aug, 2)),
-                                                    sigma = Float32(1.0))
-                weight_map_aug = reshape(weight_map_aug,
-                                            size(weight_map_aug, 1),
-                                            size(weight_map_aug, 2),
-                                            1)
+                # Convert images to arrays suitable for the model
+                if eltype(img_aug) <: Gray
+                    img_aug_array = reshape(img_aug_array,
+                                        size(img_aug_array, 1),
+                                        size(img_aug_array, 2),
+                                        1)
+                elseif eltype(img_aug) <: RGB
+                    img_aug_array = channelview(img_aug)
+                    img_aug_array = permutedims(img_aug_array, (2, 3, 1))
+                else
+                    error("Unsupported image element type: $(eltype(img_aug))")
+                end
 
-                push!(X, img_aug)
-                push!(Y, mask_aug)
-                push!(W, weight_map_aug)
+                # Convert the mask to grayscale, if necessary
+                if eltype(mask_aug) <: Gray
+                    mask_aug_gray = mask_aug
+                elseif eltype(mask_aug) <: RGB
+                    mask_aug_gray = Gray.(mask_aug)
+                else
+                    error("Unsupported image element type: $(eltype(mask_aug))")
+                end
+
+                # Binarize the mask
+                mask_aug_binarized = binarize_mask(mask_aug_gray, 0.004)
+
+                mask_aug_array = Float32.(reshape(mask_aug_binarized,
+                                            size(mask_aug_binarized, 1),
+                                            size(mask_aug_binarized, 2),
+                                            1))
+
+                # Compute weight map for augmented mask
+                weight_map_aug = compute_weight_map(mask_aug_array,
+                                                    sigma = Float32(1.0))
+
+                push!(X, Float16.(img_aug_array))
+                push!(Y, Float16.(mask_aug_array))
+                push!(W, Float16.(weight_map_aug))
             end
         end
     end

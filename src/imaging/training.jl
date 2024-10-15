@@ -121,37 +121,49 @@ end
 
 """
     train!(model, img_batches, mask_batches, weight_batches;
-           optimizer = Momentum(0.001, 0.99), epochs = 50, 
-           patience = 5, min_delta = 0.001,
-           val_img_batches = nothing, val_mask_batches = nothing)
+            initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
+            warmup_epochs = 5, decay_epochs = 5,
+            early_stopping_start = 25, patience = 7, min_delta = 0.001,
+            epochs = 50,
+            val_img_batches = nothing, val_mask_batches = nothing)
 
-Trains the U-Net model on image, mask, and weight map batches with optional
-validation and early stopping.
+Trains the U-Net model on batches of images, masks, and weight maps with
+learning rate warm-up, decay, optional validation, and early stopping.
 
 # Arguments:
 - `model`: The U-Net model to be trained.
 - `img_batches`: A list of batches of input images.
 - `mask_batches`: A list of batches of corresponding target masks.
 - `weight_batches`: A list of batches of weight maps.
-- `optimizer`: The optimizer to use during training.
-- `epochs`: The number of training epochs.
-- `patience`: Number of epochs to wait for improvement in validation accuracy
-  before stopping early.
+- `initial_lr`: The initial learning rate for warm-up.
+- `max_lr`: The maximum learning rate to reach during warm-up.
+- `decay_factor`: Factor by which the learning rate is reduced after
+  `decay_epochs` without improvement.
+- `warmup_epochs`: Number of epochs to perform learning rate warm-up.
+- `decay_epochs`: Number of epochs without improvement before applying learning
+  rate decay.
+- `early_stopping_start`: Epoch at which to start considering early stopping
+  based on validation accuracy.
+- `patience`: Number of epochs to wait without improvement in validation
+  accuracy before stopping early.
 - `min_delta`: Minimum change in validation accuracy required to reset patience.
+- `epochs`: Total number of training epochs.
 - `val_img_batches`: A list of validation image batches.
 - `val_mask_batches`: A list of validation mask batches.
 """
+
 function train!(model, img_batches, mask_batches, weight_batches;
-                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.1,
-                warmup_epochs = 8, decay_epochs = 2,
-                early_stopping_start = 13, patience = 5, min_delta = 0.01,
+                initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
+                warmup_epochs = 5, decay_epochs = 5,
+                early_stopping_start = 15, patience = 8, min_delta = 0.001,
                 epochs = 30,
-                val_img_batches = nothing, val_mask_batches = nothing)
+                val_img_batches = nothing, val_mask_batches = nothing,
+                test_img_batches = nothing, test_mask_batches = nothing)
     CUDA.reclaim()
 
     model = model |> gpu
     lr = initial_lr
-    optimizer = Momentum(lr, 0.99)
+    optimizer = Adam(lr)
     num_batches = length(img_batches)
     best_accuracy = 0.0
     epochs_without_improvement = 0
@@ -169,13 +181,16 @@ function train!(model, img_batches, mask_batches, weight_batches;
 
         # Learning Rate Warm-up and Decay
         if epoch ≤ warmup_epochs
-            lr = initial_lr + (max_lr - initial_lr) * (epoch / warmup_epochs)
-            optimizer = Momentum(lr, 0.99)
+            lr = initial_lr * exp(epoch / warmup_epochs *
+                                    log(max_lr / initial_lr))
+            optimizer = Adam(lr)       
 
             println("Warm-up learning rate: $lr")
-        elseif epochs_without_improvement == decay_epochs
+        elseif epochs_without_improvement != 0 &&
+                epochs_without_improvement % decay_epochs == 0
+                
             lr *= decay_factor
-            optimizer = Momentum(lr, 0.99)
+            optimizer = Adam(lr)
 
             println("Learning rate decayed to: $lr")
         else
@@ -240,7 +255,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
                 best_accuracy = acc
                 epochs_without_improvement = 0
 
-                println("New best accuracy: ", @sprintf("%.2f", acc), "%")
+                println("New best accuracy: ", @sprintf("%.3f", acc), "%")
                 
                 model = model |> cpu
                 # Save the best model so far
@@ -249,9 +264,9 @@ function train!(model, img_batches, mask_batches, weight_batches;
 
                 model = model |> gpu
             elseif epoch >= early_stopping_start
-                println("Accuracy: ", @sprintf("%.2f", acc), "%")
+                println("Accuracy: ", @sprintf("%.3f", acc), "%")
                 println("Current best accuracy: ",
-                        @sprintf("%.2f", best_accuracy), "%")
+                        @sprintf("%.3f", best_accuracy), "%")
 
                 # Increment the counter for epochs without improvement
                 epochs_without_improvement += 1
@@ -278,9 +293,14 @@ function train!(model, img_batches, mask_batches, weight_batches;
                     break
                 end
             else
-                println("Accuracy: ", @sprintf("%.2f", acc), "%")
+                println("Accuracy: ", @sprintf("%.3f", acc), "%")
                 println("Current best accuracy: ",
-                        @sprintf("%.2f", best_accuracy), "%")
+                        @sprintf("%.3f", best_accuracy), "%")
+
+                # Increment the counter for epochs without improvement
+                epochs_without_improvement += 1
+                println("Epochs without improvement: ",
+                        epochs_without_improvement)
             end
         end
 
@@ -301,6 +321,14 @@ function train!(model, img_batches, mask_batches, weight_batches;
                 display(acc_plot)
             end
         end
+    end
+
+    # Optional test accuracy computation
+    if test_img_batches !== nothing && test_mask_batches !== nothing
+        testmode!(model)
+
+        test_acc = accuracy(model, test_img_batches, test_mask_batches)
+        println("Test Accuracy: ", @sprintf("%.3f", test_acc), "%")
     end
 
     CUDA.reclaim()
