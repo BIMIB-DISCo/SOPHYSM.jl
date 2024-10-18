@@ -18,7 +18,6 @@ include("imaging/JNet.jl")
 export start_GUI, segment_iamge
 
 ### Constants
-global propmap = JuliaPropertyMap()
 workspace_dir = Observable(Workspace.get_workspace_dir())
 
 ### Main Functions
@@ -42,13 +41,14 @@ function segment_image(model_path::AbstractString,
     rsize = (512, 512))
     try
         # Load the model
-        model_path = "/Users/chriselleannguillermo/Downloads/best_model.bson"
+        model_path = "/D:/Programmazione/GIT/SOPHYSM/SOPHYSM.jl/src/imaging/models/model.bson"
 
         if Sys.iswindows() && img_path[1] == '/'
             img_path = img_path[2:end]
             output_path = output_path[2:end]
         end
         s_log_message("@info", img_path)
+        s_log_message("@info", output_path)
 
         s_log_message("@info", string("Loading model from: ", model_path))
         model = JNet.load_model(model_path)
@@ -71,12 +71,10 @@ function segment_image(model_path::AbstractString,
         s_log_message("@info", string("Saving predicted mask to: ", output_path))
         JNet.save_prediction(pred, output_path)
         s_log_message("@info", "Predicted mask saved successfully.")
-        propmap["segmentation_update_text"] = "Predicted mask saved successfully."
 
     catch e
         s_log_message("@error", string("An error occurred: ", e))
         s_log_message("@error", string("Stacktrace: ", stacktrace(catch_backtrace())))
-        propmap["segmentation_update_text"] = "Predicted mask saved successfully."
     end
 end
 
@@ -112,9 +110,10 @@ function start_GUI()
     qmlfunction("segment_image", segment_image)
     
     # Propmap
+    global propmap = JuliaPropertyMap()
     propmap["workspace_dir"] = workspace_dir
-    propmap["selected_image_path"] = selected_image_path
-    propmap["segmentation_update_text"] = segmentation_update_text
+    propmap["selected_image_path"] = ""
+    propmap["segmentation_update_text"] = ""
 
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x

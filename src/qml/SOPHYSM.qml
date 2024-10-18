@@ -68,6 +68,7 @@ ApplicationWindow {
 
     onAccepted: {
             var path = imageDialog.selectedFile.toString().slice(7);
+            Julia.log_message("@info", "loaded image: " + path);
             Julia.display_img(jdisp, path);
             Julia.display_img(jdispSegmentation, path);
             propmap.selected_image_path = path;
