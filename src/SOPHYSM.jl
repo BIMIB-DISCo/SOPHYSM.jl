@@ -15,7 +15,7 @@ include("SOPHYSMLogger.jl")
 include("imaging/JNet.jl")
 
 ### Exported functions
-export start_GUI, segment_iamge
+export start_GUI, segment_image
 
 ### Constants
 workspace_dir = Observable(Workspace.get_workspace_dir())
