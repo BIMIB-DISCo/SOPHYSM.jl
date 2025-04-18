@@ -259,7 +259,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
                 
                 model = model |> cpu
                 # Save the best model so far
-                @save "best_model.bson" model
+                @save "model.bson" model
                 println("New best model saved.")
 
                 model = model |> gpu

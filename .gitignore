@@ -2,3 +2,4 @@ Manifest.toml
 .vscode
 src/settings.json
 .DS_Store
+model.bson

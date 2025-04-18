@@ -40,8 +40,7 @@ function segment_image(model_path::AbstractString,
     output_path::AbstractString;
     rsize = (512, 512))
     try
-        # Load the model
-        model_path = "/D:/Programmazione/GIT/SOPHYSM/SOPHYSM.jl/src/imaging/models/model.bson"
+        model_path = joinpath(@__DIR__, "..", "model.bson")
 
         if Sys.iswindows() && img_path[1] == '/'
             img_path = img_path[2:end]
@@ -64,7 +63,11 @@ function segment_image(model_path::AbstractString,
 
         # Generate the prediction
         s_log_message("@info", "Generating prediction...")
-        pred = JNet.prediction(model, img)
+        try
+            pred = JNet.prediction(model, img)
+        catch e
+            s_log_message("@error", string("An error occurred: ", first(string(e), 300)))
+        end
         s_log_message("@info", string("Prediction generated with size: ", size(pred)))
 
         # Save the predicted mask

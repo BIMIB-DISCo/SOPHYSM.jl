@@ -5,7 +5,6 @@ using BSON: @save, @load
 using CUDA
 using FileIO
 using Flux
-using Flux: @functor
 using Flux.Optimise: Momentum, update!
 using Images
 using ProgressBars
@@ -58,13 +57,13 @@ function load_input(img_path::AbstractString; rsize = (512, 512))
 
     # Convert images to arrays suitable for the model
     if eltype(img) <: Gray
-        img_array = Float16.(img)
+        img_array = Float32.(img)
         img_array = reshape(img_array,
                             size(img_array, 1),
                             size(img_array, 2),
                             1)
     elseif eltype(img) <: RGB
-        img_array = Float16.(channelview(img))
+        img_array = Float32.(channelview(img))
         img_array = permutedims(img_array, (2, 3, 1))
     else
         error("Unsupported image element type: ",

@@ -16,6 +16,7 @@ ApplicationWindow {
     title: qsTr("SOPHYSM")
     id : mainWindow
 
+    visibility: ApplicationWindow.Maximized
     Universal.theme: Universal.Dark
 
     // Components
@@ -100,232 +101,103 @@ ApplicationWindow {
         height: 380
         x: 50
         y: 50
-
+    
         enter: Transition {
-        NumberAnimation { 
-            property: "scale"; 
-            from: 0.0; to: 1.0 
-            duration: 100}
+            NumberAnimation { property: "scale"; from: 0.0; to: 1.0; duration: 100 }
         }
-
+    
+        // Collection data model
+        ListModel {
+            id: collectionsModel
+            ListElement { code: "brca"; description: "Breast Invasive Carcinoma (Breast)" }
+            ListElement { code: "ov"; description: "Ovarian Serous Cystadenocarcinoma (Ovary)" }
+            ListElement { code: "luad"; description: "Lung Adenocarcinoma (Bronchus and Lung)" }
+            ListElement { code: "ucec"; description: "Uterine Corpus Endometrial Carcinoma (Corpus uteri)" }
+            ListElement { code: "gbm"; description: "Glioblastoma Multiforme (Brain)" }
+            ListElement { code: "hsnc"; description: "Head and Neck Squamous Cell Carcinoma (Larynx, Lip, Tonsil, Gum, Other and unspecified parths of mouth)" }
+            ListElement { code: "kirc"; description: "Kidney Renal Clear Cell Carcinoma (Kidney)" }
+            ListElement { code: "lgg"; description: "Brain Lower Grade Glioma (Brain)" }
+            ListElement { code: "lusc"; description: "Lung Squamous Cell Carcinoma (Bronchus and lung)" }
+            ListElement { code: "tcha"; description: "Thyroid Carcinoma (Thyroid gland)" }
+            ListElement { code: "prad"; description: "Prostate Adenocarcinoma (Prostate gland)" }
+            ListElement { code: "skcm"; description: "Skin Cutaneous Melanoma (Skin)" }
+            ListElement { code: "coad"; description: "Colon Adenocarcinoma (Colon)" }
+            ListElement { code: "stad"; description: "Stomach Adenocarcinoma (Stomach)" }
+            ListElement { code: "blca"; description: "Bladder Urothelial Carcinoma (Bladder)" }
+            ListElement { code: "lihc"; description: "Liver Hepatocellular Carcinoma (Liver and intrahepatic bile ducts)" }
+            ListElement { code: "cesc"; description: "Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (Cervix uteri)" }
+            ListElement { code: "kirp"; description: "Kidney Renal Papillary Cell Carcinoma (Kidney)" }
+            ListElement { code: "sarc"; description: "Sarcoma (Various)" }
+            ListElement { code: "esca"; description: "Esophageal Carcinoma (Esophagus)" }
+            ListElement { code: "paad"; description: "Pancreatic Adenocarcinoma (Pancreas)" }
+            ListElement { code: "read"; description: "Rectum Adenocarcinoma (Rectum)" }
+            ListElement { code: "pcpg"; description: "Pheochromocytoma and Paraganglioma (Adrenal gland)" }
+            ListElement { code: "tgct"; description: "Testicular Germ Cell Tumors (Testis)" }
+            ListElement { code: "thym"; description: "Thymoma (Thymus)" }
+            ListElement { code: "acc"; description: "Adrenocortical Carcinoma - Adenomas and Adenocarcinomas (Adrenal gland)" }
+            ListElement { code: "meso"; description: "Mesothelioma (Heart, mediastinum and pleura)" }
+            ListElement { code: "uvm"; description: "Uveal Melanoma (Eye and adnexa)" }
+            ListElement { code: "kich"; description: "Kidney Chromophobe (Kidney)" }
+            ListElement { code: "ucs"; description: "Uterine Carcinosarcoma (Uterus, NOS)" }
+            ListElement { code: "chol"; description: "Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)" }
+            ListElement { code: "dlbc"; description: "Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)" }
+        }
+    
         ScrollView {
             id: scrollView
-            // Scrollbar is 15px large
             width: 900
             height: 365
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             ScrollBar.vertical.policy: ScrollBar.AlwaysOn
-
+    
             ColumnLayout {
                 Label {
                     text: "Select the collections you want to download"
                     width: parent.width
                 }
-
+    
                 Column {
                     id: checkBoxColumn
                     spacing: 5
-                    CheckBox {
-                        id: brca
-                        objectName: "brca"
-                        text: qsTr("TCGA-BRCA = Breast Invasive Carcinoma (Breast)")
+                    
+                    // Generate checkboxes dynamically from model
+                    Repeater {
+                        model: collectionsModel
+                        
+                        CheckBox {
+                            objectName: model.code
+                            text: qsTr("TCGA-" + model.code.toUpperCase() + " = " + model.description)
+                        }
                     }
-                    CheckBox {
-                        id: ov
-                        objectName: "ov"
-                        text: qsTr("TCGA-OV = Ovarian Serous Cystadenocarcinoma (Ovary)")
-                    }
-                    CheckBox {
-                        id: luad
-                        objectName: "luad"
-                        text: qsTr("TCGA-LUAD = Lung Adenocarcinoma (Bronchus and Lung)")
-                    }
-                    CheckBox {
-                        id: ucec
-                        objectName: "ucec"
-                        text: qsTr("TCGA-UCEC = Uterine Corpus Endometrial Carcinoma (Corpus uteri)")
-                    }
-                    CheckBox {
-                        id: gbm
-                        objectName: "gbm"
-                        text: qsTr("TCGA-GBM = Glioblastoma Multiforme (Brain)")
-                    }
-                    CheckBox {
-                        id: hsnc
-                        objectName: "hsnc"
-                        text: qsTr("TCGA-HSNC = Head and Neck Squamous Cell Carcinoma (Larynx, Lip, Tonsil, Gum, Other and unspecified parths of mouth)")
-                    }
-                    CheckBox {
-                        id: kirc
-                        objectName: "kirc"
-                        text: qsTr("TCGA-KIRC = Kidney Renal Clear Cell Carcinoma (Kidney)")
-                    }
-                    CheckBox {
-                        id: lgg
-                        objectName: "lgg"
-                        text: qsTr("TCGA-LGG = Brain Lower Grade Glioma (Brain)")
-                    }
-                    CheckBox {
-                        id: lusc
-                        objectName: "lusc"
-                        text: qsTr("TCGA-LUSC = Lung Squamous Cell Carcinoma (Bronchus and lung)")
-                    }
-                    CheckBox {
-                        id: tcha
-                        objectName: "tcha"
-                        text: qsTr("TCGA-TCHA = Thyroid Carcinoma (Thyroid gland)")
-                    }
-                    CheckBox {
-                        id: prad
-                        objectName: "prad"
-                        text: qsTr("TCGA-PRAD = Prostate Adenocarcinoma (Prostate gland)")
-                    }
-                    CheckBox {
-                        id: skcm
-                        objectName: "skcm"
-                        text: qsTr("TCGA-SKCM = Skin Cutaneous Melanoma (Skin)")
-                    }
-                    CheckBox {
-                        id: coad
-                        objectName: "coad"
-                        text: qsTr("TCGA-COAD = Colon Adenocarcinoma (Colon)")
-                    }
-                    CheckBox {
-                        id: stad
-                        objectName: "stad"
-                        text: qsTr("TCGA-STAD = Stomach Adenocarcinoma (Stomach)")
-                    }
-                    CheckBox {
-                        id: blca
-                        objectName: "blca"
-                        text: qsTr("TCGA-BLCA = Bladder Urothelial Carcinoma (Bladder)")
-                    }
-                    CheckBox {
-                        id: lihc
-                        objectName: "lihc"
-                        text: qsTr("TCGA-LIHC = Liver Hepatocellular Carcinoma (Liver and intrahepatic bile ducts)")
-                    }
-                    CheckBox {
-                        id: cesc
-                        objectName: "cesc"
-                        text: qsTr("TCGA-CESC = Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (Cervix uteri)")
-                    }
-                    CheckBox {
-                        id: kirp
-                        objectName: "kirp"
-                        text: qsTr("TCGA-KIRP = Kidney Renal Papillary Cell Carcinoma (Kidney)")
-                    }
-                    CheckBox {
-                        id: sarc
-                        objectName: "sarc"
-                        text: qsTr("TCGA-SARC = Sarcoma (Various)")
-                    }
-                    CheckBox {
-                        id: esca
-                        objectName: "esca"
-                        text: qsTr("TCGA-ESCA = Esophageal Carcinoma (Esophagus)")
-                    }
-                    CheckBox {
-                        id: paad
-                        objectName: "paad"
-                        text: qsTr("TCGA-PAAD = Pancreatic Adenocarcinoma (Pancreas)")
-                    }
-                    CheckBox {
-                        id: read
-                        objectName: "read"
-                        text: qsTr("TCGA-READ = Rectum Adenocarcinoma (Rectum)")
-                    }
-                    CheckBox {
-                        id: pcpg
-                        objectName: "pcpg"
-                        text: qsTr("TCGA-PCPG = Pheochromocytoma and Paraganglioma (Adrenal gland)")
-                    }
-                    CheckBox {
-                        id: tgct
-                        objectName: "tgct"
-                        text: qsTr("TCGA-TGCT = Testicular Germ Cell Tumors (Testis)")
-                    }
-                    CheckBox {
-                        id: thym
-                        objectName: "thym"
-                        text: qsTr("TCGA-THYM = Thymoma (Thymus)")
-                    }
-                    CheckBox {
-                        id: acc
-                        objectName: "acc"
-                        text: qsTr("TCGA-ACC = Adrenocortical Carcinoma - Adenomas and Adenocarcinomas (Adrenal gland)")
-                    }
-                    CheckBox {
-                        id: meso
-                        objectName: "meso"
-                        text: qsTr("TCGA-MESO = Mesothelioma (Heart, mediastinum and pleura)")
-                    }
-                    CheckBox {
-                        id: uvm
-                        objectName: "uvm"
-                        text: qsTr("TCGA-UVM = Uveal Melanoma (Eye and adnexa)")
-                    }
-                    CheckBox {
-                        id: kich
-                        objectName: "kich"
-                        text: qsTr("TCGA-KICH = Kidney Chromophobe (Kidney)")
-                    }
-                    CheckBox {
-                        id: ucs
-                        objectName: "ucs"
-                        text: qsTr("TCGA-UCS = Uterine Carcinosarcoma (Uterus, NOS)")
-                    }
-                    CheckBox {
-                        id: chol
-                        objectName: "chol"
-                        text: qsTr("TCGA-CHOL = Cholangiocarcinoma (Liver and intrahepatic bile ducts, Other and unspecified part of biliary track)")
-                    }
-                    CheckBox {
-                        id: dlbc
-                        objectName: "dlbc"
-                        text: qsTr("TCGA-DLBC = Lymphoid Neoplasm Diffuse Large B-cell Lymphoma (Various)")
-                    }
-
-                    Rectangle{
+    
+                    Rectangle {
                         height: 30
                         color: "transparent"
                         width: parent.width
-
-                       Button {
-                            id: downloadCollectionsButton
-                            text: "Download collections"
-
-                            Universal.background: Universal.Orange
-                            anchors{
-                                bottomMargin: 5
-                                left: parent.left
-                                bottom: parent.bottom
+    
+                        Row {
+                            spacing: 10
+                            anchors.bottom: parent.bottom
+                            
+                            Button {
+                                id: downloadCollectionsButton
+                                text: "Download collections"
+                                Universal.background: Universal.Orange
+                                onClicked: downloadMessageDialog.open()
                             }
-                             onClicked: {
-                                downloadMessageDialog.open()
+    
+                            Button {
+                                id: closePopupButton
+                                text: "Cancel"
+                                onClicked: downloadPopup.close()
                             }
-
-                        }
-
-                        Button {
-                            id: closePopupButton
-                            text: "Cancel"
-                            anchors{
-                                topMargin: 5
-                                bottomMargin: 5
-                                right: parent.right
-                                bottom: parent.bottom
-                            }
-                            //Close the popup
-                            onClicked: downloadPopup.close()
                         }
                     }
                 }
             }
         }
     }
-
 
     // Application
     Column {

@@ -19,8 +19,6 @@ struct UNet
     output::Chain
 end
 
-@functor UNet
-
 """
     UNetDownBlock
 
@@ -36,8 +34,6 @@ struct UNetDownBlock
     pool::MaxPool
 end
 
-@functor UNetDownBlock
-
 """
     UNetBottleneckBlock
 
@@ -49,8 +45,6 @@ Represents the bottleneck block in the U-Net architecture.
 struct UNetBottleneckBlock
     conv::Chain
 end
-
-@functor UNetBottleneckBlock
 
 """
     UNetUpBlock
@@ -67,8 +61,6 @@ struct UNetUpBlock
     conv::Chain
 end
 
-@functor UNetUpBlock
-
 """
     UNetOutputBlock
 
@@ -81,7 +73,7 @@ struct UNetOutputBlock
     conv::Chain
 end
 
-@functor UNetOutputBlock
+relu_fn(x) = relu(x)
 
 """
     conv_3x3(in_chs::Int, out_chs::Int)
@@ -98,16 +90,17 @@ function conv_3x3(in_chs::Int, out_chs::Int; prob = 0.0)
             pad = 1,
             init = Flux.kaiming_normal),
         BatchNorm(out_chs),
-        x -> relu(x),
+        relu_fn,
         Dropout(prob; dims = 3),
         Conv((3, 3), out_chs => out_chs;
             pad = 1,
             init = Flux.kaiming_normal),
         BatchNorm(out_chs),
-        x -> relu(x),
+        relu_fn,
         Dropout(prob; dims = 3)
     )
 end
+
 
 """
     copy_and_crop(x, bridge)
@@ -159,7 +152,7 @@ function up_conv_2x2(in_chs::Int, out_chs::Int)
             init = Flux.kaiming_normal
         ),
         BatchNorm(out_chs),
-        x -> relu(x)
+        relu_fn
     )
 end
 
