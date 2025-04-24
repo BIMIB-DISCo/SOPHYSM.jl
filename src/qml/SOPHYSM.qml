@@ -38,6 +38,20 @@ ApplicationWindow {
             Julia.log_message("@info", "Download canceled by user")
         }
     }
+    
+    // Settings dialog
+    Dialogs.Settings {
+        id: settingsDialog
+        workspaceDir: propmap.workspace_dir
+        
+        onSettingsApplied: {
+            Julia.log_message("@info", "Settings applied")
+        }
+        
+        onSettingsCanceled: {
+            Julia.log_message("@info", "Settings canceled")
+        }
+    }
 
     // Folder Dialog to Select a new Workspace
     FolderDialog {
@@ -47,6 +61,8 @@ ApplicationWindow {
             // Parsing the selectedFolder with "file://" removed
             propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(7);
             downloadDialog.workspaceDir = propmap.workspace_dir;
+            settingsDialog.workspaceDir = propmap.workspace_dir;
+            Julia.log_message("@info", "Changed workspace directory to: " + propmap.workspace_dir);
         }
         onRejected: {
             Julia.log_message("@info", "Canceled new Workspace Folder selection");
@@ -55,10 +71,10 @@ ApplicationWindow {
 
     // File Dialog to Select an Image
     FileDialog {
-    id: imageDialog
-    title: "Please choose an image"
+        id: imageDialog
+        title: "Please choose an image"
 
-    onAccepted: {
+        onAccepted: {
             var path = imageDialog.selectedFile.toString().slice(7);
             Julia.log_message("@info", "loaded image: " + path);
             Julia.display_img(jdisp, path);
@@ -67,53 +83,17 @@ ApplicationWindow {
             this.close();
         }
 
-    onRejected: {
-        Julia.log_message("@info", "Canceled Image selection");
-        this.close();
+        onRejected: {
+            Julia.log_message("@info", "Canceled Image selection");
+            this.close();
         }
     }
 
-    // Dropdown menu to display the application settings
-    Menu {
-        id: dropdownMenu
-        width: 200
-
-        MenuItem {
-            text: "Change Directory"
-            onClicked: folderDialog.open();
-        }
-    }
-
-    // Application
+    // Application - Barra laterale con solo 3 icone
     Column {
         id: verticalBar
         width: 40
         height: parent.height
-
-        // Explorer
-        Button {
-            id: explorerButton
-            icon.source: "img/explorer.png"
-            width: parent.width
-            height: parent.width
-
-            // On hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Open file Explorer")
-
-            onClicked: {                
-                if(folder.visible == true)
-                {
-                    folder.visible = false;
-                    folder.width = 0;
-                }
-                else
-                    folder.visible = true;
-            }
-        }
         
         // download
         Button {
@@ -134,23 +114,6 @@ ApplicationWindow {
             }
         }
 
-        // help button
-        Button {
-            id: helpButton
-            icon.source: "img/help.png"
-            width: parent.width
-            height: parent.width
-
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Open GitHub documentation")
-
-            onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")            
-        }
-
         // settings button
         Button {
             id: settingsButton
@@ -165,368 +128,342 @@ ApplicationWindow {
             ToolTip.visible: hovered
             ToolTip.text: qsTr("Settings")
 
-            onClicked: dropdownMenu.popup()
+            onClicked: settingsDialog.open()
+        }
+
+        // help button (rinominato a About nel tooltip)
+        Button {
+            id: helpButton
+            icon.source: "img/help.png"
+            width: parent.width
+            height: parent.width
+
+            // on hover tooltip
+            hoverEnabled: true
+            ToolTip.delay: 500
+            ToolTip.timeout: 5000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("About")
+
+            onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")            
         }
     }
 
-    // workspace Item
-    SplitView {
-        id: splitView
+    // workspace Item - Modifica per rimuovere il pannello laterale
+    Rectangle {
+        id: mainViewArea
         anchors {
             left: verticalBar.right
             right: parent.right
             bottom: parent.bottom
             top: parent.top
         }
+        color: "#282828"
 
-        // handle to resize the window
-        handle: Rectangle {
-            id: handleDelegate
-            implicitWidth: 3
-            color: SplitHandle.pressed ? "#0984e3"
-                : (SplitHandle.hovered ? Qt.lighter("lightblue", 1.1) : "black")
-        }
-
-        // folder
-        Rectangle {
-            id: folder
-            color: "#282828"
-            implicitWidth: 200
-            SplitView.minimumWidth: splitView.width / 5
-            SplitView.maximumWidth: splitView.width * 3 / 4
-
-            // current workspace
-            Column {
-                Label {
-                    padding: 10
-                    color: "white"
-                    text: "Current workspace:"
-                    font.pixelSize: 16
-                }
-                Label {
-                    padding: 10
-                    color: "white"
-                    text: propmap.workspace_dir
-                    font.pixelSize: 12
-                }
-            }
-        }
-
-        Rectangle {
-            id: viewer
+        // tabBar
+        TabBar {
+            id: tabBar
             width: parent.width
-            height: parent.height
+            height: 40
 
-            anchors.left: folder.right
-
-            // tabBar
-            TabBar {
-                id: tabBar
-                width: parent.width
+            TabButton {
+                id: viewButton
+                width: 120
                 height: 40
 
-                TabButton {
-                    id: viewButton
-                    width: 120
-                    height: 40
+                anchors.bottom: parent.bottom
 
-                    anchors.bottom: parent.bottom
-
-                    contentItem: Text {
-                        text: qsTr("View")
-                        opacity: enabled ? 1.0 : 0.3
-                        color: "lightblue"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
-
-                    // on hover tooltip
-                    hoverEnabled: true
-                    ToolTip.delay: 500
-                    ToolTip.timeout: 5000
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("View Panel")          
+                contentItem: Text {
+                    text: qsTr("View")
+                    opacity: enabled ? 1.0 : 0.3
+                    color: "lightblue"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
                 }
 
-                TabButton {
-                    id: segmentationButton
-                    width: 120
-                    height: 40
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("View Panel")          
+            }
 
-                    anchors.bottom: parent.bottom
+            TabButton {
+                id: segmentationButton
+                width: 120
+                height: 40
 
-                    contentItem: Text {
-                        text: qsTr("Segmentation")
-                        opacity: enabled ? 1.0 : 0.3
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
+                anchors.bottom: parent.bottom
 
-                    // on hover tooltip
-                    hoverEnabled: true
-                    ToolTip.delay: 500
-                    ToolTip.timeout: 5000
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Segmentation Panel")          
+                contentItem: Text {
+                    text: qsTr("Segmentation")
+                    opacity: enabled ? 1.0 : 0.3
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
                 }
 
-                TabButton {
-                    id: tessellationButton
-                    width: 120 
-                    height: 40
-                    anchors.bottom: parent.bottom 
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Segmentation Panel")          
+            }
 
-                    contentItem: Text {
-                        text: qsTr("Tessellation")
-                        opacity: enabled ? 1.0 : 0.3
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
+            TabButton {
+                id: tessellationButton
+                width: 120 
+                height: 40
+                anchors.bottom: parent.bottom 
 
-                    // on hover tooltip
-                    hoverEnabled: true
-                    ToolTip.delay: 500
-                    ToolTip.timeout: 5000
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Tessellation Panel")
+                contentItem: Text {
+                    text: qsTr("Tessellation")
+                    opacity: enabled ? 1.0 : 0.3
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
                 }
 
-                TabButton {
-                    id: simulationButton
-                    width: 120
-                    height: 40
-                    anchors.bottom: parent.bottom
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Tessellation Panel")
+            }
 
-                    contentItem: Text {
-                        text: qsTr("Simulation")
-                        opacity: enabled ? 1.0 : 0.3
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
+            TabButton {
+                id: simulationButton
+                width: 120
+                height: 40
+                anchors.bottom: parent.bottom
 
-                    // on hover tooltip
-                    hoverEnabled: true
-                    ToolTip.delay: 500
-                    ToolTip.timeout: 5000
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Simulation Panel")
+                contentItem: Text {
+                    text: qsTr("Simulation")
+                    opacity: enabled ? 1.0 : 0.3
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Simulation Panel")
+            }
+        }
+
+        // stackLayout
+        StackLayout {
+            id: stackLayout
+            width: parent.width
+            height: parent.height
+            anchors {
+                bottom: mainViewArea.bottom
+                top: tabBar.bottom
+            }
+            currentIndex: tabBar.currentIndex
+            onCurrentIndexChanged: {
+                switch (currentIndex) {
+                    case 0:
+                        viewButton.contentItem.color = "lightblue";
+                        segmentationButton.contentItem.color = "white";
+                        tessellationButton.contentItem.color = "white";
+                        simulationButton.contentItem.color = "white";
+                        break;
+                    case 1:
+                        viewButton.contentItem.color = "white";
+                        segmentationButton.contentItem.color = "lightblue";
+                        tessellationButton.contentItem.color = "white";
+                        simulationButton.contentItem.color = "white";
+                        break;
+                    case 2:
+                        viewButton.contentItem.color = "white";
+                        segmentationButton.contentItem.color = "white";
+                        tessellationButton.contentItem.color = "lightblue";
+                        simulationButton.contentItem.color = "white";
+                        break;
+                    case 3:
+                        viewButton.contentItem.color = "white";
+                        segmentationButton.contentItem.color = "white";
+                        tessellationButton.contentItem.color = "white";
+                        simulationButton.contentItem.color = "lightblue";
+                        break;
                 }
             }
 
-            //stackLayout
-            StackLayout {
-                id: stackLayout
-                width: parent.width
-                height: parent.height
-                anchors {
-                    bottom: viewer.bottom
-                }
-                currentIndex: tabBar.currentIndex
-                onCurrentIndexChanged: {
-                    switch (currentIndex) {
-                        case 0:
-                            viewButton.contentItem.color = "lightblue";
-                            segmentationButton.contentItem.color = "white";
-                            tessellationButton.contentItem.color = "white";
-                            simulationButton.contentItem.color = "white";
-                            break;
-                        case 1:
-                            viewButton.contentItem.color = "white";
-                            segmentationButton.contentItem.color = "lightblue";
-                            tessellationButton.contentItem.color = "white";
-                            simulationButton.contentItem.color = "white";
-                            break;
-                        case 2:
-                            viewButton.contentItem.color = "white";
-                            segmentationButton.contentItem.color = "white";
-                            tessellationButton.contentItem.color = "lightblue";
-                            simulationButton.contentItem.color = "white";
-                            break;
-                        case 3:
-                            viewButton.contentItem.color = "white";
-                            segmentationButton.contentItem.color = "white";
-                            tessellationButton.contentItem.color = "white";
-                            simulationButton.contentItem.color = "lightblue";
-                            break;
-                    }
-                }
-                
-                anchors {
-                    top: tabBar.bottom
-                }
+            Item {
+                id: viewTab
+                Rectangle {
+                    id: viewTabContainer
+                    anchors.fill: parent
+                    color: "#282828"
 
-                Item {
-                    id: viewTab
                     Rectangle {
-                        id: viewTabContainer
-                        anchors.fill: parent
-                        color: "#282828"
-
-                        Rectangle {
-                            id: rectangleViewContainer
-                            width: 572
-                            height: 572
-                            anchors {
-                                top: parent.top
-                                left: parent.left
-                                topMargin: 30
-                                leftMargin: 30
-                            }
-                            color: "#3f3f3f"
-
-                            JuliaDisplay {
-                                id: jdisp
-                                width: 512
-                                height: 512
-                                anchors.centerIn: parent
-                            }
+                        id: rectangleViewContainer
+                        width: 572
+                        height: 572
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            topMargin: 30
+                            leftMargin: 30
                         }
+                        color: "#3f3f3f"
 
-                        // Image Selection button
-                        Button {
-                            id: imageSelectionButton
-                            text: "Select Image"
-                            
-                            width: 120
-                            height: 30
-
-                            anchors {
-                                top: rectangleViewContainer.bottom
-                                topMargin: 10
-                                left: viewTabContainer.left
-                                leftMargin: 30
-                            }
-                            // On hover tooltip
-                            hoverEnabled: true
-                            ToolTip.delay: 500
-                            ToolTip.timeout: 5000
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Open an Image")
-
-                            onClicked: {
-                                imageDialog.open()
-                            }
+                        JuliaDisplay {
+                            id: jdisp
+                            width: 512
+                            height: 512
+                            anchors.centerIn: parent
                         }
-                    }                    
-                }
+                    }
 
-                // Segmentation window
-                Item {
-                    id: segmentationTab
-                    Rectangle{
-                        id: segmentationTabContainer
-                        color: "#282828"
-                        anchors.fill: parent
+                    // Image Selection button
+                    Button {
+                        id: imageSelectionButton
+                        text: "Select Image"
+                        
+                        width: 120
+                        height: 30
 
-                        Rectangle {
-                            id: rectangleSegmentationContainer
-                            width: 572
-                            height: 572
-                            anchors {
-                                top: parent.top
-                                left: parent.left
-                                topMargin: 30
-                                leftMargin: 30
-                            }
-                            color: "#3f3f3f"
-
-                            JuliaDisplay {
-                                id: jdispSegmentation
-                                width: 512
-                                height: 512
-                                anchors.centerIn: parent
-                            }
+                        anchors {
+                            top: rectangleViewContainer.bottom
+                            topMargin: 10
+                            left: viewTabContainer.left
+                            leftMargin: 30
                         }
+                        // On hover tooltip
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Open an Image")
 
-                        Rectangle {
-                            id: rectangleSegmentatedContainer
-                            width: 384
-                            height: 384
-                            anchors {
-                                top: parent.top
-                                left: rectangleSegmentationContainer.right
-                                topMargin: 30
-                                leftMargin: 30
-                            }
-                            color: "#3f3f3f"
-
-                            JuliaDisplay {
-                                id: jdispSegmentated
-                                width: 324
-                                height: 324
-                                anchors.centerIn: parent
-                            }
+                        onClicked: {
+                            imageDialog.open()
                         }
+                    }
+                }                    
+            }
 
-                        // Segmentate Button
-                        Button {
-                            id: segmentateButton
-                            text: "Segment"
-                            
-                            width: 120
-                            height: 30
+            // Segmentation window
+            Item {
+                id: segmentationTab
+                Rectangle{
+                    id: segmentationTabContainer
+                    color: "#282828"
+                    anchors.fill: parent
 
-                            anchors {
-                                top: rectangleSegmentationContainer.bottom
-                                topMargin: 10
-                                left: segmentationTabContainer.left
-                                leftMargin: 30
-                            }
-                            // On hover tooltip
-                            hoverEnabled: true
-                            ToolTip.delay: 500
-                            ToolTip.timeout: 5000
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
-
-                            onClicked: {
-                                var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
-                                Julia.segment_image(propmap.selected_image_path, 
-                                                    propmap.selected_image_path, 
-                                                    output_path);
-                                Julia.display_img(jdispSegmentated, output_path)
-                            }
+                    Rectangle {
+                        id: rectangleSegmentationContainer
+                        width: 572
+                        height: 572
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            topMargin: 30
+                            leftMargin: 30
                         }
+                        color: "#3f3f3f"
 
-                        Label {
-                            id: segmentationUpdateText
-                            text: propmap.segmentation_update_text
-                            color: "white"
-                            font.pixelSize: 18
-                            anchors{
-                                top: rectangleSegmentationContainer.bottom
-                                topMargin: 10
-                                left: segmentateButton.right
-                                leftMargin: 30
-                            }
+                        JuliaDisplay {
+                            id: jdispSegmentation
+                            width: 512
+                            height: 512
+                            anchors.centerIn: parent
+                        }
+                    }
+
+                    Rectangle {
+                        id: rectangleSegmentatedContainer
+                        width: 384
+                        height: 384
+                        anchors {
+                            top: parent.top
+                            left: rectangleSegmentationContainer.right
+                            topMargin: 30
+                            leftMargin: 30
+                        }
+                        color: "#3f3f3f"
+
+                        JuliaDisplay {
+                            id: jdispSegmentated
+                            width: 324
+                            height: 324
+                            anchors.centerIn: parent
+                        }
+                    }
+
+                    // Segmentate Button
+                    Button {
+                        id: segmentateButton
+                        text: "Segment"
+                        
+                        width: 120
+                        height: 30
+
+                        anchors {
+                            top: rectangleSegmentationContainer.bottom
+                            topMargin: 10
+                            left: segmentationTabContainer.left
+                            leftMargin: 30
+                        }
+                        // On hover tooltip
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
+
+                        onClicked: {
+                            var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
+                            Julia.segment_image(propmap.selected_image_path, 
+                                                propmap.selected_image_path, 
+                                                output_path);
+                            Julia.display_img(jdispSegmentated, output_path)
+                        }
+                    }
+
+                    Label {
+                        id: segmentationUpdateText
+                        text: propmap.segmentation_update_text
+                        color: "white"
+                        font.pixelSize: 18
+                        anchors{
+                            top: rectangleSegmentationContainer.bottom
+                            topMargin: 10
+                            left: segmentateButton.right
+                            leftMargin: 30
                         }
                     }
                 }
+            }
 
-                // Tessellation window
-                Item {
-                    Rectangle{
-                        color: "#282828"
-                        anchors.fill: parent
-                    }
-                    id: tessellationTab
+            // Tessellation window
+            Item {
+                Rectangle{
+                    color: "#282828"
+                    anchors.fill: parent
                 }
+                id: tessellationTab
+            }
 
-                // Simulation window
-                Item {
-                    Rectangle{
-                        color: "#282828"
-                        anchors.fill: parent
-                    }
-                    id: simulationTab
+            // Simulation window
+            Item {
+                Rectangle{
+                    color: "#282828"
+                    anchors.fill: parent
                 }
+                id: simulationTab
             }
         }
     }

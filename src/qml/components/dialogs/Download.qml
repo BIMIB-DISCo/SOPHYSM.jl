@@ -22,29 +22,8 @@ Item {
     signal downloadRequested(var collections, string targetDir)
     signal downloadCanceled()
     
-    function setAllCheckboxes(checked) {
-        for (var i = 0; i < checkBoxColumn.children.length; i++) {
-            var child = checkBoxColumn.children[i];
-            if (child instanceof Common.CheckBox) {
-                child.checked = checked;
-            }
-        }
-        updateHasSelections();
-    }
-    
-    function updateHasSelections() {
-        for (var i = 0; i < checkBoxColumn.children.length; i++) {
-            var child = checkBoxColumn.children[i];
-            if (child instanceof Common.CheckBox && child.checked) {
-                root.hasSelections = true;
-                return;
-            }
-        }
-        root.hasSelections = false;
-    }
-    
     function open() {
-        updateHasSelections();
+        collectionSelector.updateHasSelections();
         downloadPopup.open();
     }
     
@@ -83,92 +62,18 @@ Item {
             anchors.fill: parent
             spacing: 16
             
-            Label {
-                text: "Download TCGA Collections"
-                font.pixelSize: 24
-                font.bold: true
-                color: "#FFFFFF"
-                Layout.fillWidth: true
-                Layout.bottomMargin: 4
+            Common.DialogHeader {
+                title: "Download TCGA Collections"
+                description: "Select the collections you want to download:"
             }
             
-            Label {
-                text: "Select the collections you want to download:"
-                color: "#FFFFFF"
-                Layout.fillWidth: true
-            }
-            
-            RowLayout {
-                Layout.fillWidth: true
-                
-                Common.Button {
-                    text: "Select All"
-                    buttonWidth: 100
-                    onClicked: setAllCheckboxes(true)
-                }
-                
-                Common.Button {
-                    text: "Deselect All"
-                    buttonWidth: 100
-                    onClicked: setAllCheckboxes(false)
-                }
-                
-                Item { Layout.fillWidth: true }
-            }
-            
-            // Collection selection area
-            Rectangle {
+            Common.CollectionSelector {
+                id: collectionSelector
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "transparent"
-                border.width: 1
-                border.color: "#2D2D2D" 
-                radius: 5
-                
-                ScrollView {
-                    id: scrollView
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    clip: true
-                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                    ScrollBar.vertical.policy: ScrollBar.AsNeeded
-            
-                    Column {
-                        id: checkBoxColumn
-                        width: scrollView.width - 30
-                        spacing: 8
-                        
-                        Repeater {
-                            model: tcgaCollections
-                            
-                            Common.CheckBox {
-                                objectName: model.code
-                                text: ""
-                                width: parent.width
-                                
-                                onCheckedChanged: {
-                                    updateHasSelections();
-                                }
-                                
-                                contentItem: Row {
-                                    spacing: 4
-                                    leftPadding: 28
-                                    
-                                    Text {
-                                        text: "TCGA-" + model.code.toUpperCase() + " = "
-                                        color: "#FFFFFF"
-                                        verticalAlignment: Text.AlignVCenter
-                                    }
-                                    
-                                    Text {
-                                        text: model.description
-                                        color: "#AAAAAA"
-                                        verticalAlignment: Text.AlignVCenter
-                                    }
-                                }
-                            }
-                        }
-                    }
+                model: tcgaCollections
+                onSelectionChanged: {
+                    root.hasSelections = collectionSelector.hasSelections
                 }
             }
             
@@ -181,38 +86,21 @@ Item {
                 Layout.topMargin: 5
             }
             
-            RowLayout {
-                Layout.fillWidth: true
+            Common.DialogFooter {
                 Layout.topMargin: 5
-                spacing: 15
+                primaryText: "Download"
+                secondaryText: "Cancel"
+                primaryEnabled: root.hasSelections
+                primaryHighlighted: root.hasSelections
                 
-                Item { Layout.fillWidth: true }
-                
-                Common.Button {
-                    id: closePopupButton
-                    text: "Cancel"
-                    onClicked: {
-                        downloadPopup.close()
-                        root.downloadCanceled()
-                    }
+                onPrimaryClicked: {
+                    downloadPopup.close()
+                    root.downloadRequested(collectionSelector.getSelectedItems(), root.workspaceDir)
                 }
                 
-                Common.Button {
-                    id: downloadCollectionsButton
-                    text: "Download"
-                    isHighlighted: root.hasSelections
-                    enabled: root.hasSelections
-                    onClicked: {
-                        var collectionsToDownload = []
-                        for (var i = 0; i < checkBoxColumn.children.length; i++) {
-                            var child = checkBoxColumn.children[i]
-                            if (child instanceof Common.CheckBox && child.checked) {
-                                collectionsToDownload.push(child.objectName)
-                            }
-                        }
-                        downloadPopup.close()
-                        root.downloadRequested(collectionsToDownload, root.workspaceDir)
-                    }
+                onSecondaryClicked: {
+                    downloadPopup.close()
+                    root.downloadCanceled()
                 }
             }
         }

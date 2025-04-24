@@ -25,7 +25,7 @@ Button {
         implicitHeight: root.implicitHeight
         color: {
             if (!root.enabled) {
-                return "#202020" // Colore specifico per stato disabilitato
+                return "#202020"
             } else if (root.isHighlighted) {
                 return root.down ? "#A05000" : (root.hovered ? "#FF7D1A" : "#FF6600")
             } else {
@@ -35,7 +35,7 @@ Button {
         radius: 5
         border.color: {
             if (!root.enabled) {
-                return "#444444" // Bordo per stato disabilitato
+                return "#444444"
             } else if (root.isHighlighted) {
                 return "#FF6600"
             } else {
