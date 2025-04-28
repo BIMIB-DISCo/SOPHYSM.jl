@@ -20,13 +20,11 @@ ApplicationWindow {
     visibility: ApplicationWindow.Maximized
     Universal.theme: Universal.Dark
 
-    // Components
     Dialogs.Download {
         id: downloadDialog
         workspaceDir: propmap.workspace_dir
         
         onDownloadRequested: function(collections, targetDir) {
-            // Process download requests
             for (var i = 0; i < collections.length; i++) {
                 Julia.log_message("@info", "Starting download...")
                 Julia.log_message("@info", "Start downloading [" + collections[i] + "] in " + targetDir)
@@ -39,7 +37,6 @@ ApplicationWindow {
         }
     }
     
-    // Settings dialog
     Dialogs.Settings {
         id: settingsDialog
         workspaceDir: propmap.workspace_dir
@@ -52,13 +49,15 @@ ApplicationWindow {
             Julia.log_message("@info", "Settings canceled")
         }
     }
+    
+    Dialogs.About {
+        id: aboutDialog
+    }
 
-    // Folder Dialog to Select a new Workspace
     FolderDialog {
         id: folderDialog
         title: "Please choose your new Workspace Folder"
         onAccepted: {
-            // Parsing the selectedFolder with "file://" removed
             propmap.workspace_dir = folderDialog.selectedFolder.toString().slice(7);
             downloadDialog.workspaceDir = propmap.workspace_dir;
             settingsDialog.workspaceDir = propmap.workspace_dir;
@@ -69,7 +68,6 @@ ApplicationWindow {
         }
     }
 
-    // File Dialog to Select an Image
     FileDialog {
         id: imageDialog
         title: "Please choose an image"
@@ -89,7 +87,6 @@ ApplicationWindow {
         }
     }
 
-    // Application - Barra laterale con solo 3 icone
     Column {
         id: verticalBar
         width: 40
@@ -98,7 +95,7 @@ ApplicationWindow {
         // download
         Button {
             id: downloadButton
-            icon.source: "img/download.png"
+            icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
             width: parent.width
             height: parent.width
 
@@ -114,10 +111,9 @@ ApplicationWindow {
             }
         }
 
-        // settings button
         Button {
             id: settingsButton
-            icon.source: "img/settings.png"
+            icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
             width: parent.width
             height: parent.width
 
@@ -131,10 +127,9 @@ ApplicationWindow {
             onClicked: settingsDialog.open()
         }
 
-        // help button (rinominato a About nel tooltip)
         Button {
             id: helpButton
-            icon.source: "img/help.png"
+            icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
             width: parent.width
             height: parent.width
 
@@ -145,11 +140,10 @@ ApplicationWindow {
             ToolTip.visible: hovered
             ToolTip.text: qsTr("About")
 
-            onClicked: Qt.openUrlExternally("https://github.com/BIMIB-DISCo/SOPHYSM.jl/tree/development")            
+            onClicked: aboutDialog.open()
         }
     }
 
-    // workspace Item - Modifica per rimuovere il pannello laterale
     Rectangle {
         id: mainViewArea
         anchors {
@@ -160,7 +154,6 @@ ApplicationWindow {
         }
         color: "#282828"
 
-        // tabBar
         TabBar {
             id: tabBar
             width: parent.width
@@ -182,7 +175,6 @@ ApplicationWindow {
                     elide: Text.ElideRight
                 }
 
-                // on hover tooltip
                 hoverEnabled: true
                 ToolTip.delay: 500
                 ToolTip.timeout: 5000
@@ -206,7 +198,6 @@ ApplicationWindow {
                     elide: Text.ElideRight
                 }
 
-                // on hover tooltip
                 hoverEnabled: true
                 ToolTip.delay: 500
                 ToolTip.timeout: 5000
@@ -229,7 +220,6 @@ ApplicationWindow {
                     elide: Text.ElideRight
                 }
 
-                // on hover tooltip
                 hoverEnabled: true
                 ToolTip.delay: 500
                 ToolTip.timeout: 5000
@@ -252,7 +242,6 @@ ApplicationWindow {
                     elide: Text.ElideRight
                 }
 
-                // on hover tooltip
                 hoverEnabled: true
                 ToolTip.delay: 500
                 ToolTip.timeout: 5000
@@ -261,7 +250,6 @@ ApplicationWindow {
             }
         }
 
-        // stackLayout
         StackLayout {
             id: stackLayout
             width: parent.width
@@ -327,7 +315,6 @@ ApplicationWindow {
                         }
                     }
 
-                    // Image Selection button
                     Button {
                         id: imageSelectionButton
                         text: "Select Image"
@@ -355,7 +342,6 @@ ApplicationWindow {
                 }                    
             }
 
-            // Segmentation window
             Item {
                 id: segmentationTab
                 Rectangle{
@@ -403,7 +389,6 @@ ApplicationWindow {
                         }
                     }
 
-                    // Segmentate Button
                     Button {
                         id: segmentateButton
                         text: "Segment"
@@ -448,7 +433,6 @@ ApplicationWindow {
                 }
             }
 
-            // Tessellation window
             Item {
                 Rectangle{
                     color: "#282828"
@@ -457,7 +441,6 @@ ApplicationWindow {
                 id: tessellationTab
             }
 
-            // Simulation window
             Item {
                 Rectangle{
                     color: "#282828"

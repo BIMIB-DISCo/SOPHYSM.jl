@@ -27,7 +27,6 @@ Item {
         settingsPopup.close();
     }
     
-    // FileDialog per selezionare il file model.bson
     FileDialog {
         id: modelFileDialog
         title: "Select Model File (.bson)"
@@ -80,7 +79,6 @@ Item {
             Common.DialogHeader {
                 title: "Settings"
                 description: "Configure application settings:"
-                bottomMargin: 16  // Aggiunge spazio sotto la descrizione
             }
             
             ColumnLayout {
@@ -88,7 +86,6 @@ Item {
                 Layout.fillHeight: true
                 spacing: 24
                 
-                // Theme selection section
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 24
@@ -100,6 +97,13 @@ Item {
                         color: "#454545"
                         Layout.alignment: Qt.AlignTop
                         Layout.topMargin: 4
+                        
+                        Image {
+                            anchors.centerIn: parent
+                            source: "../../img/routine_24dp_E3E3E3_FILL0_wght300_GRAD0_opsz24.png"
+                            width: 16
+                            height: 16
+                        }
                     }
                     
                     ColumnLayout {
@@ -120,7 +124,6 @@ Item {
                         }
                     }
                     
-                    // Custom toggle per tema chiaro/scuro - ridimensionato e riposizionato
                     Item {
                         Layout.preferredWidth: 60
                         Layout.preferredHeight: 40
@@ -156,14 +159,12 @@ Item {
                                     height: 24
                                     radius: 12
                                     color: themeSwitch.checked ? "#222222" : "#EEEEEE"
-                                    border.width: 0  // Rimozione del bordo
+                                    border.width: 0
                                     
-                                    // Area per futura icona nel toggle
                                     Item {
                                         anchors.centerIn: parent
                                         width: 16
                                         height: 16
-                                        // Qui potrà essere inserita un'icona
                                     }
                                     
                                     Behavior on x {
@@ -177,7 +178,6 @@ Item {
                     }
                 }
                 
-                // Model file selection section
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 24
@@ -189,6 +189,13 @@ Item {
                         color: "#454545"
                         Layout.alignment: Qt.AlignTop
                         Layout.topMargin: 4
+                        
+                        Image {
+                            anchors.centerIn: parent
+                            source: "../../img/graph_3_24dp_E3E3E3_FILL0_wght300_GRAD0_opsz24.png"
+                            width: 16
+                            height: 16
+                        }
                     }
                     
                     ColumnLayout {
@@ -220,7 +227,6 @@ Item {
                     }
                 }
                 
-                // Workspace directory section
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 24
@@ -232,6 +238,13 @@ Item {
                         color: "#454545"
                         Layout.alignment: Qt.AlignTop
                         Layout.topMargin: 4
+                        
+                        Image {
+                            anchors.centerIn: parent
+                            source: "../../img/folder_24dp_E3E3E3_FILL0_wght300_GRAD0_opsz24.png"
+                            width: 16
+                            height: 16
+                        }
                     }
                     
                     ColumnLayout {
