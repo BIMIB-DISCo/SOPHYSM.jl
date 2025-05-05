@@ -20,7 +20,7 @@ include("training.jl")
 export load_model, load_input, prediction, save_prediction
 
 """
-    load_model(filepath::String)
+    load_model(filepath::AbstractString)
 
 Loads a U-Net model from a BSON file.
 
@@ -30,7 +30,7 @@ Loads a U-Net model from a BSON file.
 # Returns:
 - The U-Net model loaded from the specified file.
 """
-function load_model(filepath::String)
+function load_model(filepath::AbstractString)
     model = nothing
     @load filepath model
 

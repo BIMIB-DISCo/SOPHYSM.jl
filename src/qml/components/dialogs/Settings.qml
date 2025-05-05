@@ -14,12 +14,20 @@ Item {
     property bool hasChanges: false
     property bool isDarkTheme: true
     property string modelBsonPath: ""
+    property bool highlightModelButton: false
     
     signal settingsApplied()
     signal settingsCanceled()
     
     function open() {
         root.hasChanges = false;
+        // Carica il path del modello corrente quando apre il dialog
+        if (propmap.model_bson_path && propmap.model_bson_path !== "") {
+            root.modelBsonPath = propmap.model_bson_path
+            modelPathLabel.text = propmap.model_bson_path
+            // Se il modello è già selezionato, reset highlight
+            root.highlightModelButton = false
+        }
         settingsPopup.open();
     }
     
@@ -38,6 +46,8 @@ Item {
             root.modelBsonPath = path;
             modelPathLabel.text = path;
             root.hasChanges = true;
+            // Rimuovi l'evidenziazione dopo la selezione del modello
+            root.highlightModelButton = false;
         }
         
         onRejected: {
@@ -55,6 +65,11 @@ Item {
         modal: true
         dim: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        
+        // Ripristina l'evidenziazione quando il dialog viene chiuso
+        onClosed: {
+            root.highlightModelButton = false;
+        }
     
         enter: Transition {
             NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200 }
@@ -219,7 +234,7 @@ Item {
                     
                     Common.Button {
                         text: "Select Model"
-                        isHighlighted: false
+                        isHighlighted: root.highlightModelButton
                         Layout.alignment: Qt.AlignBottom
                         onClicked: {
                             modelFileDialog.open()
@@ -290,6 +305,11 @@ Item {
                 Common.Button {
                     text: "Close"
                     onClicked: {
+                        if (root.hasChanges) {
+                            // Salva il path del modello nel propmap quando si chiude il dialog
+                            propmap.model_bson_path = root.modelBsonPath
+                            root.settingsApplied()
+                        }
                         settingsPopup.close()
                     }
                 }

@@ -410,11 +410,27 @@ ApplicationWindow {
                         ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
 
                         onClicked: {
+                            if (!propmap.model_bson_path || propmap.model_bson_path === "") {
+                                Julia.log_message("@error", "No model file selected. Opening settings dialog.");
+                                // Apri il dialog impostazioni con il bottone del modello evidenziato
+                                settingsDialog.highlightModelButton = true;
+                                settingsDialog.open();
+                                return;
+                            }
+                            
+                            if (!propmap.selected_image_path || propmap.selected_image_path === "") {
+                                Julia.log_message("@error", "No image selected. Please select an image first.");
+                                propmap.segmentation_update_text = "Please select an image first";
+                                return;
+                            }
+                            
+                            propmap.segmentation_update_text = "Processing...";
                             var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
-                            Julia.segment_image(propmap.selected_image_path, 
-                                                propmap.selected_image_path, 
-                                                output_path);
-                            Julia.display_img(jdispSegmentated, output_path)
+                            Julia.segment_image(propmap.model_bson_path, 
+                                              propmap.selected_image_path, 
+                                              output_path);
+                            Julia.display_img(jdispSegmentated, output_path);
+                            propmap.segmentation_update_text = "Segmentation complete";
                         }
                     }
 

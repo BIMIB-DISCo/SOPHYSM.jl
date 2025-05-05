@@ -40,22 +40,25 @@ function segment_image(model_path::AbstractString,
     output_path::AbstractString;
     rsize = (512, 512))
     try
-        model_path = joinpath(@__DIR__, "..", "model.bson")
+        # Converti le stringhe QML in stringhe Julia
+        model_path_str = String(model_path)
+        img_path_str = String(img_path)
+        output_path_str = String(output_path)
 
-        if Sys.iswindows() && img_path[1] == '/'
-            img_path = img_path[2:end]
-            output_path = output_path[2:end]
+        if Sys.iswindows() && img_path_str[1] == '/'
+            img_path_str = img_path_str[2:end]
+            output_path_str = output_path_str[2:end]
         end
-        s_log_message("@info", img_path)
-        s_log_message("@info", output_path)
+        s_log_message("@info", img_path_str)
+        s_log_message("@info", output_path_str)
 
-        s_log_message("@info", string("Loading model from: ", model_path))
-        model = JNet.load_model(model_path)
+        s_log_message("@info", string("Loading model from: ", model_path_str))
+        model = JNet.load_model(model_path_str)
         s_log_message("@info", "Model loaded successfully.")
 
         # Load and preprocess the input image
-        s_log_message("@info", string("Loading and preprocessing input image from: ", img_path))
-        img = JNet.load_input(img_path; rsize = rsize)
+        s_log_message("@info", string("Loading and preprocessing input image from: ", img_path_str))
+        img = JNet.load_input(img_path_str; rsize = rsize)
         s_log_message("@info", string("Input image loaded and preprocessed with size: ", size(img)))
 
         # Add batch dimension to the image
@@ -71,8 +74,8 @@ function segment_image(model_path::AbstractString,
         s_log_message("@info", string("Prediction generated with size: ", size(pred)))
 
         # Save the predicted mask
-        s_log_message("@info", string("Saving predicted mask to: ", output_path))
-        JNet.save_prediction(pred, output_path)
+        s_log_message("@info", string("Saving predicted mask to: ", output_path_str))
+        JNet.save_prediction(pred, output_path_str)
         s_log_message("@info", "Predicted mask saved successfully.")
 
     catch e
@@ -117,6 +120,7 @@ function start_GUI()
     propmap["workspace_dir"] = workspace_dir
     propmap["selected_image_path"] = ""
     propmap["segmentation_update_text"] = ""
+    propmap["model_bson_path"] = ""
 
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x
