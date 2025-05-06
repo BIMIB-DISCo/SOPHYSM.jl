@@ -410,10 +410,8 @@ ApplicationWindow {
                         ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
 
                         onClicked: {
-                            if (!propmap.model_bson_path || propmap.model_bson_path === "") {
-                                Julia.log_message("@error", "No model file selected. Opening settings dialog.");
-                                // Apri il dialog impostazioni con il bottone del modello evidenziato
-                                settingsDialog.highlightModelButton = true;
+                            if (!propmap.segmentation_method || propmap.segmentation_method === "") {
+                                Julia.log_message("@error", "No segmentation method selected. Opening settings dialog.");
                                 settingsDialog.open();
                                 return;
                             }
@@ -424,11 +422,23 @@ ApplicationWindow {
                                 return;
                             }
                             
+                            if (propmap.segmentation_method === "jnet" && 
+                                (!propmap.model_bson_path || propmap.model_bson_path === "")) {
+                                Julia.log_message("@error", "JNet selected but no model file provided. Opening settings dialog.");
+                                // Highlight the model button in the settings dialog
+                                settingsDialog.highlightModelButton = true;
+                                settingsDialog.open();
+                                return;
+                            }
+                            
                             propmap.segmentation_update_text = "Processing...";
                             var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
-                            Julia.segment_image(propmap.model_bson_path, 
+                            
+                            Julia.segment_image(propmap.segmentation_method,
+                                              propmap.model_bson_path, 
                                               propmap.selected_image_path, 
                                               output_path);
+                                              
                             Julia.display_img(jdispSegmentated, output_path);
                             propmap.segmentation_update_text = "Segmentation complete";
                         }

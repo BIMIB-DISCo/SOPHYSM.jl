@@ -15,19 +15,25 @@ Item {
     property bool isDarkTheme: true
     property string modelBsonPath: ""
     property bool highlightModelButton: false
+    property string segmentationMethod: ""
     
     signal settingsApplied()
     signal settingsCanceled()
     
     function open() {
         root.hasChanges = false;
-        // Carica il path del modello corrente quando apre il dialog
         if (propmap.model_bson_path && propmap.model_bson_path !== "") {
             root.modelBsonPath = propmap.model_bson_path
             modelPathLabel.text = propmap.model_bson_path
-            // Se il modello è già selezionato, reset highlight
             root.highlightModelButton = false
         }
+        
+        if (propmap.segmentation_method) {
+            root.segmentationMethod = propmap.segmentation_method
+            jnetCheckBox.checked = root.segmentationMethod === "jnet"
+            thresholdCheckBox.checked = root.segmentationMethod === "threshold"
+        }
+        
         settingsPopup.open();
     }
     
@@ -46,12 +52,24 @@ Item {
             root.modelBsonPath = path;
             modelPathLabel.text = path;
             root.hasChanges = true;
-            // Rimuovi l'evidenziazione dopo la selezione del modello
             root.highlightModelButton = false;
         }
         
         onRejected: {
             Julia.log_message("@info", "Canceled model file selection");
+        }
+    }
+    
+    FileDialog {
+        id: folderDialog
+        title: "Select Workspace Directory"
+        fileMode: FileDialog.OpenFolder
+        
+        onAccepted: {
+            var path = folderDialog.selectedFolder.toString().slice(7);
+            root.workspaceDir = path;
+            workspaceDirLabel.text = path;
+            root.hasChanges = true;
         }
     }
     
@@ -193,9 +211,104 @@ Item {
                     }
                 }
                 
+                // New segmentation method selection
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 24
+                    
+                    Rectangle {
+                        width: 36
+                        height: 36
+                        radius: width / 2
+                        color: "#454545"
+                        Layout.alignment: Qt.AlignTop
+                        Layout.topMargin: 4
+                        
+                        Image {
+                            anchors.centerIn: parent
+                            source: "../../img/image_24dp_E3E3E3_FILL0_wght300_GRAD0_opsz24.png"
+                            width: 16
+                            height: 16
+                        }
+                    }
+                    
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+                        
+                        Label {
+                            text: "Segmentation Method:"
+                            color: "#FFFFFF"
+                            font.bold: true
+                        }
+                        
+                        Label {
+                            text: "Choose between neural network (JNet) or threshold-based segmentation."
+                            color: "#CCCCCC"
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                        }
+                        
+                        RowLayout {
+                            spacing: 20
+                            Layout.topMargin: 10
+                            
+                            Common.CheckBox {
+                                id: jnetCheckBox
+                                text: "Neural Network (JNet)"
+                                checked: root.segmentationMethod === "jnet"
+                                onCheckedChanged: {
+                                    if (checked) {
+                                        root.segmentationMethod = "jnet"
+                                        thresholdCheckBox.checked = false
+                                        root.hasChanges = true
+                                    } else if (!thresholdCheckBox.checked) {
+                                        // Ensure at least one option is selected
+                                        root.segmentationMethod = ""
+                                    }
+                                }
+                                contentItem: Text {
+                                    text: jnetCheckBox.text
+                                    font: jnetCheckBox.font
+                                    opacity: enabled ? 1.0 : 0.3
+                                    color: "#FFFFFF"
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: jnetCheckBox.indicator.width + jnetCheckBox.spacing
+                                }
+                            }
+                            
+                            Common.CheckBox {
+                                id: thresholdCheckBox
+                                text: "Threshold Method"
+                                checked: root.segmentationMethod === "threshold"
+                                onCheckedChanged: {
+                                    if (checked) {
+                                        root.segmentationMethod = "threshold"
+                                        jnetCheckBox.checked = false
+                                        root.hasChanges = true
+                                    } else if (!jnetCheckBox.checked) {
+                                        // Ensure at least one option is selected
+                                        root.segmentationMethod = ""
+                                    }
+                                }
+                                contentItem: Text {
+                                    text: thresholdCheckBox.text
+                                    font: thresholdCheckBox.font
+                                    opacity: enabled ? 1.0 : 0.3
+                                    color: "#FFFFFF"
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: thresholdCheckBox.indicator.width + thresholdCheckBox.spacing
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Model selection row - only visible when JNet is selected
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 24
+                    visible: root.segmentationMethod === "jnet"
                     
                     Rectangle {
                         width: 36
@@ -308,6 +421,8 @@ Item {
                         if (root.hasChanges) {
                             // Salva il path del modello nel propmap quando si chiude il dialog
                             propmap.model_bson_path = root.modelBsonPath
+                            // Salva il metodo di segmentazione
+                            propmap.segmentation_method = root.segmentationMethod
                             root.settingsApplied()
                         }
                         settingsPopup.close()
