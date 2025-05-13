@@ -29,7 +29,7 @@ workspace_dir = Observable(Workspace.get_workspace_dir())
 Segments an input image using the specified segmentation method and saves the predicted mask.
 
 # Arguments:
-- `segmentation_method`: Method to use for segmentation ("jnet" or "threshold").
+- `segmentation_method`: Method to use for segmentation ("jnet", "graph", or "tessellation").
 - `model_path`: Path to the BSON file where the U-Net model is saved (used only with "jnet").
 - `img_path`: Path to the input image file to be segmented.
 - `output_path`: Path where the predicted segmentation mask will be saved.
@@ -83,23 +83,60 @@ function segment_image(segmentation_method::AbstractString,
             s_log_message("@info", string("Saving predicted mask to: ", output_path_str))
             JNet.save_prediction(pred, output_path_str)
         
-        elseif method_str == "threshold"
-            # Use Threshold-based segmentation
-            s_log_message("@info", "Using threshold-based segmentation")
+        elseif method_str == "graph"
+            # Use Graph-based segmentation
+            s_log_message("@info", "Using graph-based segmentation")
             
-            # Load and preprocess the input image
-            s_log_message("@info", string("Loading input image from: ", img_path_str))
-            img = ThresholdSegmentation.load_input(img_path_str; rsize = rsize)
-            s_log_message("@info", string("Input image loaded with size: ", size(img)))
+            # Default thresholds - these could be made configurable through the UI
+            thresholdGray = 0.5
+            thresholdMarker = 0.3
+            min_threshold = Float32(50)
+            max_threshold = Float32(1000)
             
-            # Apply threshold segmentation (using default threshold of 0.5)
-            s_log_message("@info", "Applying threshold segmentation...")
-            seg = ThresholdSegmentation.segment_with_threshold(img)
-            s_log_message("@info", string("Segmentation completed with size: ", size(seg)))
+            s_log_message("@info", string("Processing image with thresholds: Gray=", thresholdGray, 
+                                         ", Marker=", thresholdMarker, 
+                                         ", Min=", min_threshold, 
+                                         ", Max=", max_threshold))
             
-            # Save the segmentation result
-            s_log_message("@info", string("Saving segmentation to: ", output_path_str))
-            ThresholdSegmentation.save_segmentation(seg, output_path_str)
+            # Apply graph-based segmentation
+            ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
+                img_path_str,
+                output_path_str,
+                thresholdGray,
+                thresholdMarker,
+                min_threshold,
+                max_threshold
+            )
+            
+            s_log_message("@info", "Graph-based segmentation completed")
+            
+        elseif method_str == "tessellation"
+            # Use Tessellation-based segmentation
+            s_log_message("@info", "Using tessellation-based segmentation")
+            
+            # Default thresholds - these could be made configurable through the UI
+            thresholdGray = 0.5
+            thresholdMarker = 0.3
+            min_threshold = Float32(50)
+            max_threshold = Float32(1000)
+            
+            s_log_message("@info", string("Processing image with thresholds: Gray=", thresholdGray, 
+                                         ", Marker=", thresholdMarker, 
+                                         ", Min=", min_threshold, 
+                                         ", Max=", max_threshold))
+            
+            # Apply tessellation-based segmentation
+            ThresholdSegmentation.start_segmentation_SOPHYSM_tessellation(
+                img_path_str,
+                output_path_str,
+                thresholdGray,
+                thresholdMarker,
+                min_threshold,
+                max_threshold
+            )
+            
+            s_log_message("@info", "Tessellation-based segmentation completed")
+            
         else
             s_log_message("@error", string("Unknown segmentation method: ", method_str))
             return

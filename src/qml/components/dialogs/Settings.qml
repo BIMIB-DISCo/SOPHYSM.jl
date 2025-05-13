@@ -260,9 +260,10 @@ Item {
                                 onCheckedChanged: {
                                     if (checked) {
                                         root.segmentationMethod = "jnet"
-                                        thresholdCheckBox.checked = false
+                                        graphCheckBox.checked = false
+                                        tessellationCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!thresholdCheckBox.checked) {
+                                    } else if (!graphCheckBox.checked && !tessellationCheckBox.checked) {
                                         // Ensure at least one option is selected
                                         root.segmentationMethod = ""
                                     }
@@ -278,26 +279,52 @@ Item {
                             }
                             
                             Common.CheckBox {
-                                id: thresholdCheckBox
-                                text: "Threshold Method"
-                                checked: root.segmentationMethod === "threshold"
+                                id: graphCheckBox
+                                text: "Graph Method"
+                                checked: root.segmentationMethod === "graph"
                                 onCheckedChanged: {
                                     if (checked) {
-                                        root.segmentationMethod = "threshold"
+                                        root.segmentationMethod = "graph"
                                         jnetCheckBox.checked = false
+                                        tessellationCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!jnetCheckBox.checked) {
+                                    } else if (!jnetCheckBox.checked && !tessellationCheckBox.checked) {
                                         // Ensure at least one option is selected
                                         root.segmentationMethod = ""
                                     }
                                 }
                                 contentItem: Text {
-                                    text: thresholdCheckBox.text
-                                    font: thresholdCheckBox.font
+                                    text: graphCheckBox.text
+                                    font: graphCheckBox.font
                                     opacity: enabled ? 1.0 : 0.3
                                     color: "#FFFFFF"
                                     verticalAlignment: Text.AlignVCenter
-                                    leftPadding: thresholdCheckBox.indicator.width + thresholdCheckBox.spacing
+                                    leftPadding: graphCheckBox.indicator.width + graphCheckBox.spacing
+                                }
+                            }
+                            
+                            Common.CheckBox {
+                                id: tessellationCheckBox
+                                text: "Tessellation Method"
+                                checked: root.segmentationMethod === "tessellation"
+                                onCheckedChanged: {
+                                    if (checked) {
+                                        root.segmentationMethod = "tessellation"
+                                        jnetCheckBox.checked = false
+                                        graphCheckBox.checked = false
+                                        root.hasChanges = true
+                                    } else if (!jnetCheckBox.checked && !graphCheckBox.checked) {
+                                        // Ensure at least one option is selected
+                                        root.segmentationMethod = ""
+                                    }
+                                }
+                                contentItem: Text {
+                                    text: tessellationCheckBox.text
+                                    font: tessellationCheckBox.font
+                                    opacity: enabled ? 1.0 : 0.3
+                                    color: "#FFFFFF"
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: tessellationCheckBox.indicator.width + tessellationCheckBox.spacing
                                 }
                             }
                         }
