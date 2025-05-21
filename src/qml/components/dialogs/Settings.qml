@@ -31,7 +31,8 @@ Item {
         if (propmap.segmentation_method) {
             root.segmentationMethod = propmap.segmentation_method
             jnetCheckBox.checked = root.segmentationMethod === "jnet"
-            thresholdCheckBox.checked = root.segmentationMethod === "threshold"
+            graphCheckBox.checked = root.segmentationMethod === "graph"
+            tessellationCheckBox.checked = root.segmentationMethod === "tessellation"
         }
         
         settingsPopup.open();

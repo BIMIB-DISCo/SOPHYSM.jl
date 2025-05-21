@@ -432,15 +432,25 @@ ApplicationWindow {
                             }
                             
                             propmap.segmentation_update_text = "Processing...";
-                            var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
                             
-                            Julia.segment_image(propmap.segmentation_method,
-                                              propmap.model_bson_path, 
-                                              propmap.selected_image_path, 
-                                              output_path);
-                                              
-                            Julia.display_img(jdispSegmentated, output_path);
-                            propmap.segmentation_update_text = "Segmentation complete";
+                            var pathParts = propmap.selected_image_path.split('.');
+                            var extension = pathParts.pop();
+                            var basePath = pathParts.join('.');
+                            var output_path = basePath + "_seg.png";
+                            
+                            var result_path = Julia.segment_image(propmap.segmentation_method,
+                                               propmap.model_bson_path, 
+                                               propmap.selected_image_path, 
+                                               output_path);
+                            
+                            if (result_path && result_path !== "") {
+                                Julia.log_message("@info", "Displaying segmentation result: " + result_path);
+                                Julia.display_img(jdispSegmentated, result_path);
+                                propmap.segmentation_update_text = "Segmentation complete";
+                            } else {
+                                propmap.segmentation_update_text = "Segmentation failed";
+                                Julia.log_message("@error", "Failed to get segmentation result path");
+                            }
                         }
                     }
 
