@@ -36,11 +36,6 @@ function start_segmentation_SOPHYSM_tessellation(filepath_input::AbstractString,
                                     thresholdMarker::Float64,
                                     min_threshold::Float32,
                                     max_threshold::Float32)
-    # Ensure output path is consistent with what's expected in the UI
-    if !endswith(filepath_output, "_seg.png")
-        filepath_output = replace(filepath_output, r"....$" => "_seg.png")
-    end
-    
     apply_segmentation_SOPHYSM_tessellation(filepath_input,
                                 filepath_output,
                                 thresholdGray,
@@ -56,12 +51,7 @@ function start_segmentation_SOPHYSM_graph(filepath_input::AbstractString,
                                     thresholdGray::Float64,
                                     thresholdMarker::Float64,
                                     min_threshold::Float32,
-                                    max_threshold::Float32)
-    # Ensure output path is consistent with what's expected in the UI
-    if !endswith(filepath_output, "_seg.png")
-        filepath_output = replace(filepath_output, r"....$" => "_seg.png")
-    end
-    
+                                    max_threshold::Float32)    
     apply_segmentation_SOPHYSM_graph(filepath_input,
                                 filepath_output,
                                 thresholdGray,
