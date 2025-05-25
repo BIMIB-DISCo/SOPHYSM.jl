@@ -432,7 +432,11 @@ ApplicationWindow {
                             }
                             
                             propmap.segmentation_update_text = "Processing...";
-                            var output_path = propmap.selected_image_path.replace(".jpg", "_result.jpg");
+                            
+                            var pathParts = propmap.selected_image_path.split('.');
+                            var extension = pathParts.pop();
+                            var basePath = pathParts.join('.');
+                            var output_path = basePath + "_seg.png";
                             
                             Julia.segment_image(propmap.segmentation_method,
                                               propmap.model_bson_path, 

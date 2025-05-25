@@ -62,18 +62,28 @@ Item {
                 Layout.margins: 10
                 spacing: 20
                 
-                Rectangle {
+                Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: "#777777"
-                    radius: 5
+                    
+                    Image {
+                        anchors.fill: parent
+                        source: "../../img/before.jpg"
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
                 }
                 
-                Rectangle {
+                Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: "#777777"
-                    radius: 5
+                    
+                    Image {
+                        anchors.fill: parent
+                        source: "../../img/after.png"
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
                 }
             }
             

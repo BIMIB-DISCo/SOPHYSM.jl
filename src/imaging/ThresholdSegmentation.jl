@@ -1,70 +1,65 @@
 module ThresholdSegmentation
 
-using FileIO
+### Packages
+using DataFrames
 using Images
+using ImageSegmentation
+using ImageMagick
+using FileIO
+using Random
+using IndirectArrays
+using Graphs
+using SimpleWeightedGraphs
+using CSV
+using J_Space
+using Luxor
+using Karnak
+using MetaGraphs
+using Plots
+using VoronoiCells
+using GeometryBasics
 
-export segment_with_threshold, load_input, save_segmentation
+### Exported Functions
+export start_segmentation_SOPHYSM_tessellation
+export start_segmentation_SOPHYSM_graph
 
-"""
-    load_input(img_path::AbstractString; rsize = (512, 512))
+### Included Files
+include("segmentationManager.jl")
+include("graphManager.jl")
+include("noiseManager.jl")
+include("tessellationManager.jl")
 
-Loads and preprocesses an image for threshold-based segmentation.
 
-# Arguments:
-- `img_path`: Path to the image file.
-- `rsize`: Tuple specifying the dimensions for resizing. Default is (512, 512).
-
-# Returns:
-- Processed image as a grayscale array.
-"""
-function load_input(img_path::AbstractString; rsize = (512, 512))
-    # Load and resize the image
-    img = load(img_path)
-    img = imresize(img, rsize...)
-    
-    # Convert to grayscale if needed
-    if eltype(img) <: RGB
-        img = Gray.(img)
-    end
-    
-    # Convert to array
-    img_array = Float32.(img)
-    
-    return img_array
+function start_segmentation_SOPHYSM_tessellation(filepath_input::AbstractString,
+                                    filepath_output::AbstractString,
+                                    thresholdGray::Float64,
+                                    thresholdMarker::Float64,
+                                    min_threshold::Float32,
+                                    max_threshold::Float32)
+    apply_segmentation_SOPHYSM_tessellation(filepath_input,
+                                filepath_output,
+                                thresholdGray,
+                                thresholdMarker,
+                                min_threshold,
+                                max_threshold)
+                                
+    return filepath_output
 end
 
-"""
-    segment_with_threshold(img_array::Array; threshold = 0.5)
-
-Segments an image using a simple threshold method.
-
-# Arguments:
-- `img_array`: Input image array.
-- `threshold`: Threshold value between 0 and 1. Default is 0.5.
-
-# Returns:
-- Binary mask after applying threshold.
-"""
-function segment_with_threshold(img_array::Array; threshold = 0.5)
-    # Apply threshold
-    mask = img_array .> threshold
-    
-    # Return binary mask as Float32 for compatibility with JNet output
-    return Float32.(mask)
+function start_segmentation_SOPHYSM_graph(filepath_input::AbstractString,
+                                    filepath_output::AbstractString,
+                                    thresholdGray::Float64,
+                                    thresholdMarker::Float64,
+                                    min_threshold::Float32,
+                                    max_threshold::Float32)    
+    apply_segmentation_SOPHYSM_graph(filepath_input,
+                                filepath_output,
+                                thresholdGray,
+                                thresholdMarker,
+                                min_threshold,
+                                max_threshold)
+                                
+    return filepath_output
 end
 
-"""
-    save_segmentation(segmentation::Array, filepath::AbstractString)
-
-Saves the segmentation mask as an image.
-
-# Arguments:
-- `segmentation`: A 2D array representing the segmentation mask.
-- `filepath`: The path where the image will be saved.
-"""
-function save_segmentation(segmentation::Array, filepath::AbstractString)
-    save(filepath, segmentation)
-    println("Segmentation saved at: ", filepath)
 end
-
-end # module
