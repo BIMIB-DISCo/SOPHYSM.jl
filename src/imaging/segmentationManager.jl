@@ -91,32 +91,34 @@ function apply_segmentation_SOPHYSM_tessellation(filepath_input::AbstractString,
     # add column is_cell
     df_total_labels = add_column_is_cell(df_labels, df_noisy_labels, df_total_labels)
     # build tessellation
-    filepath_total_tess = replace(filepath_output, r"....$" => "_total_tessellation.png")
-    filepath_cell_tess = replace(filepath_output, r"....$" => "_cell_tessellation.png")
+    base_path = splitext(filepath_output)[1]
+    filepath_total_tess = base_path * "_total_tessellation.png"
+    filepath_cell_tess = base_path * "_cell_tessellation.png"
     df_edges, edges = build_graph_from_tessellation(df_labels, df_noisy_labels, df_total_labels, width, height, filepath_total_tess, filepath_cell_tess)
     # save dataframe label as .CSV
-    filepath_dataframe_labels = replace(filepath_output, r"....$" => "_dataframe_labels.csv")
+    filepath_dataframe_labels = base_path * "_dataframe_labels.csv"
     CSV.write(filepath_dataframe_labels, df_labels)
-    filepath_dataframe_total_labels = replace(filepath_output, r"....$" => "_dataframe_total_labels.csv")
+    filepath_dataframe_total_labels = base_path * "_dataframe_total_labels.csv"
     CSV.write(filepath_dataframe_total_labels, df_total_labels)
-    filepath_dataframe_noisy_labels = replace(filepath_output, r"....$" => "_dataframe_noisy_labels.csv")
+    filepath_dataframe_noisy_labels = base_path * "_dataframe_noisy_labels.csv"
     CSV.write(filepath_dataframe_noisy_labels, df_noisy_labels)
     # build and save adjacency matrix
     matrix = tess_dataframe_to_adjacency_matrix_weight(df_total_labels, df_edges, edges)
-    filepath_matrix = replace(filepath_output, r"....$" => ".txt")
+    filepath_matrix = base_path * ".txt"
     save_adjacency_matrix(matrix, filepath_matrix)
     # build and save dataframe edgelist as .CSV
-    filepath_dataframe_edges = replace(filepath_output, r"....$" => "_dataframe_edges.csv")
+    filepath_dataframe_edges = base_path * "_dataframe_edges.csv"
     CSV.write(filepath_dataframe_edges, df_edges)
-    # save segmented slide
-    filepath_seg = replace(filepath_output, r"....$" => "_seg.png")
-    save(filepath_seg, masked_colored_labels)
+    # save segmented slide directly to filepath_output
+    save(filepath_output, masked_colored_labels)
 
-    # build metagraph on images
-    filepath_background = replace(filepath_output, r"....$" => "_seg-0.png")
-    filepath_img_graph_vertex = replace(filepath_output, r"....$" => "_graph_vertex.png")
-    filepath_img_graph_edges = replace(filepath_output, r"....$" => "_graph_edges.png")
-    img_graph = Luxor.readpng(filepath_background)
+    # Derive the correct background file path
+    filepath_background = filepath_output  # Use the same file as the segmented image
+
+    # Generate accessory file paths
+    filepath_img_graph_vertex = base_path * "_graph_vertex.png"
+    filepath_img_graph_edges = base_path * "_graph_edges.png"
+    img_graph = Luxor.readpng(filepath_background)  # Read the segmented image as background
     w = img_graph.width
     h = img_graph.height
     # g_meta_labels = J_Space.spatial_graph(filepath_dataframe_edges, filepath_dataframe_labels)
@@ -128,7 +130,7 @@ function apply_segmentation_SOPHYSM_tessellation(filepath_input::AbstractString,
         Karnak.fontsize(7)
         drawgraph(g_meta_total_labels,
             layout = extract_vertex_position(g_meta_total_labels) .+ Karnak.Point(-w/2, -h/2),
-            vertexlabels = [get_prop(g_meta_total_labels, v, :name) for v in Graphs.vertices(g_meta_total_labels)],
+            vertexlabels = [get_prop(g_meta_total_labels, v, :name) for v in vertices(g_meta_total_labels)],
             vertexfillcolors = extract_vertex_color(g_meta_total_labels),
             edgelines=:none
         )
@@ -140,7 +142,7 @@ function apply_segmentation_SOPHYSM_tessellation(filepath_input::AbstractString,
         Karnak.fontsize(7)
         drawgraph(g_meta_total_labels,
             layout = extract_vertex_position(g_meta_total_labels) .+ Karnak.Point(-w/2, -h/2),
-            vertexlabels = [get_prop(g_meta_total_labels, v, :name) for v in Graphs.vertices(g_meta_total_labels)],
+            vertexlabels = [get_prop(g_meta_total_labels, v, :name) for v in vertices(g_meta_total_labels)],
             vertexfillcolors = extract_vertex_color(g_meta_total_labels),
         )
     end w h filepath_img_graph_edges
@@ -211,23 +213,41 @@ function apply_segmentation_SOPHYSM_graph(filepath_input::AbstractString,
     df_total_labels = compute_centroid_total_cells(segments, df_total_labels, min_threshold)
     df_label = filter_dataframe_cells(df_total_labels, max_threshold)
     # define matrix
+    base_path = splitext(filepath_output)[1]
     matrix = weighted_graph_to_adjacency_matrix(G, nvertices)
-    filepath_matrix = replace(filepath_output, ".tif" => ".txt")
+    filepath_matrix = base_path * ".txt"
     save_adjacency_matrix(matrix, filepath_matrix)
     df_edges = build_dataframe_as_edgelist(matrix, df_label.label)
-    filepath_dataframe_labels = replace(filepath_output, r"....$" => "_dataframe_labels.csv")
+    filepath_dataframe_labels = base_path * "_dataframe_labels.csv"
     CSV.write(filepath_dataframe_labels, df_label)
-    filepath_dataframe_edges = replace(filepath_output, r"....$" => "_dataframe_edges.csv")
+    filepath_dataframe_edges = base_path * "_dataframe_edges.csv"
     CSV.write(filepath_dataframe_edges, df_edges)
-    filepath_seg_png = replace(filepath_output, r"....$" => "_seg.png")
-    filepath_background = replace(filepath_output, r"....$" => "_seg-0.png")
-    filepath_img_graph_vertex = replace(filepath_output, r"....$" => "_graph_vertex.png")
-    filepath_img_graph_edges = replace(filepath_output, r"....$" => "_graph_edges.png")
-    save(filepath_seg_png, masked_colored_labels)
-    img_graph = Luxor.readpng(filepath_background)
+    # save segmented slide directly to filepath_output
+    save(filepath_output, masked_colored_labels)
+
+    # Derive the correct background file path
+    filepath_background = filepath_output  # Use the same file as the segmented image
+
+    # Generate accessory file paths
+    filepath_img_graph_vertex = base_path * "_graph_vertex.png"
+    filepath_img_graph_edges = base_path * "_graph_edges.png"
+    img_graph = Luxor.readpng(filepath_background)  # Read the segmented image as background
     w = img_graph.width
     h = img_graph.height
     g_meta = J_Space.spatial_graph(filepath_dataframe_edges, filepath_dataframe_labels)
+
+    # Verifica che il grafo sia stato costruito correttamente
+    if isempty(Graphs.vertices(g_meta))
+        error("Il grafo costruito è vuoto. Verifica i dati di input e la costruzione del grafo.")
+    end
+
+    # Verifica che i vertici abbiano le proprietà richieste
+    for v in Graphs.vertices(g_meta)
+        if !haskey(g_meta.vprops[v], :centroid)
+            error("Il vertice $v non contiene la proprietà :centroid. Verifica la costruzione del grafo.")
+        end
+    end
+
     # Image with Vertices
     @png begin
         Luxor.placeimage(img_graph, 0, 0, 0.8, centered=true)

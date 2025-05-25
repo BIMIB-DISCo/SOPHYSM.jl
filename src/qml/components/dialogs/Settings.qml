@@ -227,7 +227,7 @@ Item {
                         
                         Image {
                             anchors.centerIn: parent
-                            source: "../../img/image_24dp_E3E3E3_FILL0_wght300_GRAD0_opsz24.png"
+                            source: "../../img/tactic_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.png"
                             width: 16
                             height: 16
                         }

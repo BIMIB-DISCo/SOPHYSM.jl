@@ -435,12 +435,22 @@ associated positions.
 representing the positions of the vertices in `G`.
 """
 function extract_vertex_position(G::MetaGraph)
+    # Verifica che il grafo abbia vertici
+    if isempty(Graphs.vertices(G))
+        error("Il grafo non contiene vertici. Verifica l'inizializzazione del grafo.")
+    end
+
     position_array = Luxor.Point[]
     for v in Graphs.vertices(G)
+        # Verifica che la proprietà :centroid esista per il vertice
+        if !haskey(G.vprops[v], :centroid)
+            error("Il vertice $v non contiene la proprietà :centroid. Verifica la costruzione del grafo.")
+        end
+
         s = get_prop(G, v, :centroid)
         coordinates_str = match(r"\((.*)\)", string(s)).captures[1]
         coordinates = parse.(Int, split(coordinates_str, ", "))
-        x, y ,z = coordinates
+        x, y, z = coordinates
         point = Luxor.Point(y, x)
         push!(position_array, point)
     end
