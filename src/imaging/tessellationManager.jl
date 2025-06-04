@@ -285,7 +285,7 @@ function build_graph_from_tessellation(df_labels::DataFrame,
                     cell_position_array[n][2],
                     Plots.text(nuclei_label_list[n])) for n in 1:cell_slot])
     plot_tessellation = Plots.plot!(tess, legend = :topleft)
-    savefig(plot_tessellation, filepath_total_tess)
+    Plots.savefig(plot_tessellation, filepath_total_tess)
     df_edges = build_dataframe_edges_from_grid(edges, df_total_labels)
 
     # Second tessellation
@@ -297,7 +297,7 @@ function build_graph_from_tessellation(df_labels::DataFrame,
                     cell_position_array[n][2],
                     Plots.text(nuclei_label_list[n])) for n in 1:cell_slot])
     plot_tessellation = Plots.plot!(tess, legend = :topleft)
-    savefig(plot_tessellation, filepath_cell_tess)
+    Plots.savefig(plot_tessellation, filepath_cell_tess)
     return df_edges, edges
 end
 

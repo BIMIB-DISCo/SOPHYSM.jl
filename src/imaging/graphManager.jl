@@ -436,23 +436,36 @@ representing the positions of the vertices in `G`.
 """
 function extract_vertex_position(G::MetaGraph)
     # Verifica che il grafo abbia vertici
-    if isempty(Graphs.vertices(G))
+    if MetaGraphs.nv(G) == 0
         error("Il grafo non contiene vertici. Verifica l'inizializzazione del grafo.")
     end
 
     position_array = Luxor.Point[]
-    for v in Graphs.vertices(G)
+    for v in MetaGraphs.vertices(G)
         # Verifica che la proprietà :centroid esista per il vertice
         if !haskey(G.vprops[v], :centroid)
             error("Il vertice $v non contiene la proprietà :centroid. Verifica la costruzione del grafo.")
         end
 
-        s = get_prop(G, v, :centroid)
+        s = MetaGraphs.get_prop(G, v, :centroid)
         coordinates_str = match(r"\((.*)\)", string(s)).captures[1]
         coordinates = parse.(Int, split(coordinates_str, ", "))
-        x, y, z = coordinates
-        point = Luxor.Point(y, x)
-        push!(position_array, point)
+        
+        # Handle both 2D and 3D coordinates
+        if length(coordinates) >= 2
+            # For 2D coordinates, use only x and y
+            if length(coordinates) == 2
+                x, y = coordinates
+                point = Luxor.Point(y, x)
+            # For 3D or more coordinates, use first three
+            else
+                x, y, z = coordinates
+                point = Luxor.Point(y, x)
+            end
+            push!(position_array, point)
+        else
+            error("Il vertice $v ha un formato di coordinate non valido: $coordinates")
+        end
     end
     return position_array
 end
@@ -471,8 +484,8 @@ information associated with the vertices in `G`.
 """
 function extract_vertex_color(G::MetaGraph)
     color_array = []
-    for v in Graphs.vertices(G)
-        color_float = get_prop(G, v, :color_label)
+    for v in MetaGraphs.vertices(G)
+        color_float = MetaGraphs.get_prop(G, v, :color_label)
         push!(color_array, color_float)
     end
     return color_array

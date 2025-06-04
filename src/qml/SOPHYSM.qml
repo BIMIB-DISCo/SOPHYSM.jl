@@ -6,6 +6,7 @@ import QtQuick.Dialogs
 
 import org.julialang
 import "components/dialogs" as Dialogs
+import "components/common" as Common
 
 ApplicationWindow {
     font.family: "Arial"
@@ -75,7 +76,6 @@ ApplicationWindow {
         onAccepted: {
             var path = imageDialog.selectedFile.toString().slice(7);
             Julia.log_message("@info", "loaded image: " + path);
-            Julia.display_img(jdisp, path);
             Julia.display_img(jdispSegmentation, path);
             propmap.selected_image_path = path;
             this.close();
@@ -152,262 +152,58 @@ ApplicationWindow {
             bottom: parent.bottom
             top: parent.top
         }
-        color: "#282828"
+        color: "#1E1E1E"  // Changed to match About dialog background
 
-        TabBar {
-            id: tabBar
-            width: parent.width
-            height: 40
+        Rectangle {
+            id: segmentationTabContainer
+            color: "#1E1E1E"  // Changed to match About dialog background
+            anchors.fill: parent
 
-            TabButton {
-                id: viewButton
-                width: 120
-                height: 40
-
-                anchors.bottom: parent.bottom
-
-                contentItem: Text {
-                    text: qsTr("View")
-                    opacity: enabled ? 1.0 : 0.3
-                    color: "lightblue"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
+            Column {
+                id: segmentationControls
+                width: 250
+                spacing: 10
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    bottom: parent.bottom
+                    leftMargin: 30
+                    topMargin: 30
                 }
 
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("View Panel")          
-            }
+                Common.Button {
+                    id: imageSelectionButton
+                    text: "Select Image"
+                    buttonWidth: 250
+                    buttonHeight: 40
+                    isHighlighted: !propmap.selected_image_path || propmap.selected_image_path === ""
+                    
+                    // On hover tooltip
+                    hoverEnabled: true
+                    ToolTip.delay: 500
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Open an Image")
 
-            TabButton {
-                id: segmentationButton
-                width: 120
-                height: 40
-
-                anchors.bottom: parent.bottom
-
-                contentItem: Text {
-                    text: qsTr("Segmentation")
-                    opacity: enabled ? 1.0 : 0.3
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Segmentation Panel")          
-            }
-
-            TabButton {
-                id: tessellationButton
-                width: 120 
-                height: 40
-                anchors.bottom: parent.bottom 
-
-                contentItem: Text {
-                    text: qsTr("Tessellation")
-                    opacity: enabled ? 1.0 : 0.3
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Tessellation Panel")
-            }
-
-            TabButton {
-                id: simulationButton
-                width: 120
-                height: 40
-                anchors.bottom: parent.bottom
-
-                contentItem: Text {
-                    text: qsTr("Simulation")
-                    opacity: enabled ? 1.0 : 0.3
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Simulation Panel")
-            }
-        }
-
-        StackLayout {
-            id: stackLayout
-            width: parent.width
-            height: parent.height
-            anchors {
-                bottom: mainViewArea.bottom
-                top: tabBar.bottom
-            }
-            currentIndex: tabBar.currentIndex
-            onCurrentIndexChanged: {
-                switch (currentIndex) {
-                    case 0:
-                        viewButton.contentItem.color = "lightblue";
-                        segmentationButton.contentItem.color = "white";
-                        tessellationButton.contentItem.color = "white";
-                        simulationButton.contentItem.color = "white";
-                        break;
-                    case 1:
-                        viewButton.contentItem.color = "white";
-                        segmentationButton.contentItem.color = "lightblue";
-                        tessellationButton.contentItem.color = "white";
-                        simulationButton.contentItem.color = "white";
-                        break;
-                    case 2:
-                        viewButton.contentItem.color = "white";
-                        segmentationButton.contentItem.color = "white";
-                        tessellationButton.contentItem.color = "lightblue";
-                        simulationButton.contentItem.color = "white";
-                        break;
-                    case 3:
-                        viewButton.contentItem.color = "white";
-                        segmentationButton.contentItem.color = "white";
-                        tessellationButton.contentItem.color = "white";
-                        simulationButton.contentItem.color = "lightblue";
-                        break;
-                }
-            }
-
-            Item {
-                id: viewTab
-                Rectangle {
-                    id: viewTabContainer
-                    anchors.fill: parent
-                    color: "#282828"
-
-                    Rectangle {
-                        id: rectangleViewContainer
-                        width: 572
-                        height: 572
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            topMargin: 30
-                            leftMargin: 30
-                        }
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdisp
-                            width: 512
-                            height: 512
-                            anchors.centerIn: parent
-                        }
+                    onClicked: {
+                        imageDialog.open()
                     }
+                }
 
-                    Button {
-                        id: imageSelectionButton
-                        text: "Select Image"
-                        
-                        width: 120
-                        height: 30
-
-                        anchors {
-                            top: rectangleViewContainer.bottom
-                            topMargin: 10
-                            left: viewTabContainer.left
-                            leftMargin: 30
-                        }
-                        // On hover tooltip
-                        hoverEnabled: true
-                        ToolTip.delay: 500
-                        ToolTip.timeout: 5000
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Open an Image")
-
-                        onClicked: {
-                            imageDialog.open()
-                        }
-                    }
-                }                    
-            }
-
-            Item {
-                id: segmentationTab
-                Rectangle{
-                    id: segmentationTabContainer
-                    color: "#282828"
-                    anchors.fill: parent
-
-                    Rectangle {
-                        id: rectangleSegmentationContainer
-                        width: 572
-                        height: 572
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            topMargin: 30
-                            leftMargin: 30
-                        }
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdispSegmentation
-                            width: 512
-                            height: 512
-                            anchors.centerIn: parent
-                        }
-                    }
-
-                    Rectangle {
-                        id: rectangleSegmentatedContainer
-                        width: 384
-                        height: 384
-                        anchors {
-                            top: parent.top
-                            left: rectangleSegmentationContainer.right
-                            topMargin: 30
-                            leftMargin: 30
-                        }
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdispSegmentated
-                            width: 324
-                            height: 324
-                            anchors.centerIn: parent
-                        }
-                    }
-
-                    Button {
+                Row {
+                    spacing: 10
+                    
+                    Common.Button {
                         id: segmentateButton
                         text: "Segment"
+                        buttonWidth: 120
+                        buttonHeight: 40
                         
-                        width: 120
-                        height: 30
-
-                        anchors {
-                            top: rectangleSegmentationContainer.bottom
-                            topMargin: 10
-                            left: segmentationTabContainer.left
-                            leftMargin: 30
-                        }
-                        // On hover tooltip
                         hoverEnabled: true
                         ToolTip.delay: 500
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Segmentate Image Chosen in View Tab")
+                        ToolTip.text: qsTr("Segmentate Image")
 
                         onClicked: {
                             if (!propmap.segmentation_method || propmap.segmentation_method === "") {
@@ -418,7 +214,6 @@ ApplicationWindow {
                             
                             if (!propmap.selected_image_path || propmap.selected_image_path === "") {
                                 Julia.log_message("@error", "No image selected. Please select an image first.");
-                                propmap.segmentation_update_text = "Please select an image first";
                                 return;
                             }
                             
@@ -431,52 +226,168 @@ ApplicationWindow {
                                 return;
                             }
                             
-                            propmap.segmentation_update_text = "Processing...";
-                            
                             var pathParts = propmap.selected_image_path.split('.');
                             var extension = pathParts.pop();
                             var basePath = pathParts.join('.');
                             var output_path = basePath + "_seg.png";
                             
                             Julia.segment_image(propmap.segmentation_method,
-                                              propmap.model_bson_path, 
-                                              propmap.selected_image_path, 
-                                              output_path);
-                                              
+                                                propmap.model_bson_path, 
+                                                propmap.selected_image_path, 
+                                                output_path);
+                                                
                             Julia.display_img(jdispSegmentated, output_path);
-                            propmap.segmentation_update_text = "Segmentation complete";
+                            
+                            // Display graph images if using graph method
+                            if (propmap.segmentation_method === "graph") {
+                                // Fix: Use basePath + "_seg_graph_vertex.png" instead of basePath + "_graph_vertex.png"
+                                Julia.display_img(jdispGraphVertex, basePath + "_seg_graph_vertex.png");
+                                Julia.display_img(jdispGraphEdges, basePath + "_seg_graph_edges.png");
+                            }
                         }
                     }
+                    
+                    Common.Button {
+                        id: tesselateButton
+                        text: "Tesselate"
+                        buttonWidth: 120
+                        buttonHeight: 40
 
-                    Label {
-                        id: segmentationUpdateText
-                        text: propmap.segmentation_update_text
-                        color: "white"
-                        font.pixelSize: 18
-                        anchors{
-                            top: rectangleSegmentationContainer.bottom
-                            topMargin: 10
-                            left: segmentateButton.right
-                            leftMargin: 30
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Tesselate Image")
+
+                        onClicked: {
+                            if (!propmap.selected_image_path || propmap.selected_image_path === "") {
+                                Julia.log_message("@error", "No image selected. Please select an image first.");
+                                return;
+                            }
+
+                            var pathParts = propmap.selected_image_path.split('.');
+                            var extension = pathParts.pop();
+                            var basePath = pathParts.join('.');
+                            var outputPath = basePath;
+
+                            Julia.start_tessellation(propmap.selected_image_path, outputPath);
+
+                            Julia.display_img(jdispTessellationTotal, outputPath + "_total_tessellation.png");
+                            Julia.display_img(jdispTessellationCells, outputPath + "_cell_tessellation.png");
+                            Julia.display_img(jdispGraphVertex, outputPath + "_seg_graph_vertex.png");
+                            Julia.display_img(jdispGraphEdges, outputPath + "_seg_graph_edges.png");
                         }
                     }
                 }
             }
 
-            Item {
-                Rectangle{
-                    color: "#282828"
-                    anchors.fill: parent
+            ScrollView {
+                id: segmentationScrollView
+                anchors {
+                    left: segmentationControls.right
+                    leftMargin: 120
+                    top: parent.top
+                    topMargin: 30
+                    bottom: parent.bottom
+                    bottomMargin: 30
+                    right: parent.right
+                    rightMargin: 30
                 }
-                id: tessellationTab
-            }
+                clip: true
+                contentWidth: segmentationGrid.width
 
-            Item {
-                Rectangle{
-                    color: "#282828"
-                    anchors.fill: parent
+                GridLayout {
+                    id: segmentationGrid
+                    width: Math.min(parent.width - segmentationControls.width - 180, (500 * 2) + columnSpacing)
+                    columns: 2
+                    rowSpacing: 20
+                    columnSpacing: 20
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    Rectangle {
+                        id: originalImageContainer
+                        width: 500
+                        height: 500
+                        color: "#3f3f3f"
+
+                        JuliaDisplay {
+                            id: jdispSegmentation
+                            width: 460
+                            height: 460
+                            anchors.centerIn: parent
+                        }
+                    }
+
+                    Rectangle {
+                        id: segmentedImageContainer
+                        width: 500
+                        height: 500
+                        color: "#3f3f3f"
+
+                        JuliaDisplay {
+                            id: jdispSegmentated
+                            width: 460
+                            height: 460
+                            anchors.centerIn: parent
+                        }
+                    }
+
+                    Rectangle {
+                        id: placeholder3
+                        width: 500
+                        height: 500
+                        color: "#3f3f3f"
+                        
+                        JuliaDisplay {
+                            id: jdispGraphVertex
+                            width: 460
+                            height: 460
+                            anchors.centerIn: parent
+                        }
+                    }
+
+                    Rectangle {
+                        id: placeholder4
+                        width: 500
+                        height: 500
+                        color: "#3f3f3f"
+                        
+                        JuliaDisplay {
+                            id: jdispGraphEdges
+                            width: 460
+                            height: 460
+                            anchors.centerIn: parent
+                        }
+                    }
+
+                    Rectangle {
+                        id: placeholder1
+                        width: 500
+                        height: 333
+                        color: "#3f3f3f"
+
+                        JuliaDisplay {
+                            id: jdispTessellationTotal
+                            anchors.centerIn: parent
+                            width: 460
+                            height: 307
+                        }
+                    }
+
+                    Rectangle {
+                        id: placeholder2
+                        width: 500
+                        height: 333
+                        color: "#3f3f3f"
+
+                        JuliaDisplay {
+                            id: jdispTessellationCells
+                            anchors.centerIn: parent
+                            width: 460
+                            height: 307
+                        }
+                    }
                 }
-                id: simulationTab
             }
         }
     }

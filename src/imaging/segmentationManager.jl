@@ -128,22 +128,48 @@ function apply_segmentation_SOPHYSM_tessellation(filepath_input::AbstractString,
         Luxor.placeimage(img_graph, 0, 0, 0.8, centered=true)
         sethue("slateblue")
         Karnak.fontsize(7)
-        drawgraph(g_meta_total_labels,
-            layout = extract_vertex_position(g_meta_total_labels) .+ Karnak.Point(-w/2, -h/2),
-            vertexlabels = [get_prop(g_meta_total_labels, v, :name) for v in vertices(g_meta_total_labels)],
-            vertexfillcolors = extract_vertex_color(g_meta_total_labels),
+        
+        # Extract graph information first
+        vertex_positions = extract_vertex_position(g_meta_total_labels)
+        vertex_labels = [MetaGraphs.get_prop(g_meta_total_labels, v, :name) for v in MetaGraphs.vertices(g_meta_total_labels)]
+        vertex_colors = extract_vertex_color(g_meta_total_labels)
+        
+        # Draw the graph with extracted information - use the underlying graph
+        Karnak.drawgraph(
+            Graphs.SimpleGraph(MetaGraphs.nv(g_meta_total_labels)),  # Create empty simple graph with the right number of vertices
+            layout = vertex_positions .+ Karnak.Point(-w/2, -h/2),
+            vertexlabels = vertex_labels,
+            vertexfillcolors = vertex_colors,
             edgelines=:none
         )
     end w h filepath_img_graph_vertex
+    
     # Image with Edges
     @png begin
         Luxor.placeimage(img_graph, 0, 0, 0.8, centered=true)
         sethue("slateblue")
         Karnak.fontsize(7)
-        drawgraph(g_meta_total_labels,
-            layout = extract_vertex_position(g_meta_total_labels) .+ Karnak.Point(-w/2, -h/2),
-            vertexlabels = [get_prop(g_meta_total_labels, v, :name) for v in vertices(g_meta_total_labels)],
-            vertexfillcolors = extract_vertex_color(g_meta_total_labels),
+        
+        # Extract graph information first
+        vertex_positions = extract_vertex_position(g_meta_total_labels)
+        vertex_labels = [MetaGraphs.get_prop(g_meta_total_labels, v, :name) for v in MetaGraphs.vertices(g_meta_total_labels)]
+        vertex_colors = extract_vertex_color(g_meta_total_labels)
+        
+        # Create a graph with the same edges as g_meta_total_labels
+        graph_with_edges = Graphs.SimpleGraph(MetaGraphs.nv(g_meta_total_labels))
+        for e in MetaGraphs.edges(g_meta_total_labels)
+            # Use the edge properties directly instead of Graphs.src/dst
+            src_vertex = e.src
+            dst_vertex = e.dst
+            Graphs.add_edge!(graph_with_edges, src_vertex, dst_vertex)
+        end
+        
+        # Draw the graph with extracted information - now including edges
+        Karnak.drawgraph(
+            graph_with_edges,  # Use the graph with edges instead of empty graph
+            layout = vertex_positions .+ Karnak.Point(-w/2, -h/2),
+            vertexlabels = vertex_labels,
+            vertexfillcolors = vertex_colors
         )
     end w h filepath_img_graph_edges
 end
@@ -237,38 +263,64 @@ function apply_segmentation_SOPHYSM_graph(filepath_input::AbstractString,
     g_meta = J_Space.spatial_graph(filepath_dataframe_edges, filepath_dataframe_labels)
 
     # Verifica che il grafo sia stato costruito correttamente
-    if isempty(Graphs.vertices(g_meta))
+    if MetaGraphs.nv(g_meta) == 0
         error("Il grafo costruito è vuoto. Verifica i dati di input e la costruzione del grafo.")
     end
 
     # Verifica che i vertici abbiano le proprietà richieste
-    for v in Graphs.vertices(g_meta)
+    for v in MetaGraphs.vertices(g_meta)
         if !haskey(g_meta.vprops[v], :centroid)
             error("Il vertice $v non contiene la proprietà :centroid. Verifica la costruzione del grafo.")
         end
     end
 
-    # Image with Vertices
+    # Image with Vertices - graph function
     @png begin
         Luxor.placeimage(img_graph, 0, 0, 0.8, centered=true)
         sethue("slateblue")
         Karnak.fontsize(7)
-        drawgraph(g_meta,
-            layout = extract_vertex_position(g_meta) .+ Karnak.Point(-w/2, -h/2),
-            vertexlabels = [get_prop(g_meta, v, :name) for v in Graphs.vertices(g_meta)],
-            vertexfillcolors = extract_vertex_color(g_meta),
+        
+        # Extract graph information first
+        vertex_positions = extract_vertex_position(g_meta)
+        vertex_labels = [MetaGraphs.get_prop(g_meta, v, :name) for v in MetaGraphs.vertices(g_meta)]
+        vertex_colors = extract_vertex_color(g_meta)
+        
+        # Draw the graph with extracted information - use the underlying graph
+        Karnak.drawgraph(
+            Graphs.SimpleGraph(MetaGraphs.nv(g_meta)),  # Create empty simple graph with the right number of vertices
+            layout = vertex_positions .+ Karnak.Point(-w/2, -h/2),
+            vertexlabels = vertex_labels,
+            vertexfillcolors = vertex_colors,
             edgelines=:none
         )
     end w h filepath_img_graph_vertex
+    
     # Image with Edges
     @png begin
         Luxor.placeimage(img_graph, 0, 0, 0.8, centered=true)
         sethue("slateblue")
         Karnak.fontsize(7)
-        drawgraph(g_meta,
-            layout = extract_vertex_position(g_meta) .+ Karnak.Point(-w/2, -h/2),
-            vertexlabels = [get_prop(g_meta, v, :name) for v in Graphs.vertices(g_meta)],
-            vertexfillcolors = extract_vertex_color(g_meta),
+        
+        # Extract graph information first
+        vertex_positions = extract_vertex_position(g_meta)
+        vertex_labels = [MetaGraphs.get_prop(g_meta, v, :name) for v in MetaGraphs.vertices(g_meta)]
+        vertex_colors = extract_vertex_color(g_meta)
+        
+        # Create a graph with the same edges as g_meta
+        graph_with_edges = Graphs.SimpleGraph(MetaGraphs.nv(g_meta))
+        for e in MetaGraphs.edges(g_meta)
+            # Use the edge properties directly instead of Graphs.src/dst
+            src_vertex = e.src
+            dst_vertex = e.dst
+            Graphs.add_edge!(graph_with_edges, src_vertex, dst_vertex)
+        end
+        
+        # Draw the graph with extracted information - now including edges
+        Karnak.drawgraph(
+            graph_with_edges,  # Use the graph with edges instead of empty graph
+            layout = vertex_positions .+ Karnak.Point(-w/2, -h/2),
+            vertexlabels = vertex_labels,
+            vertexfillcolors = vertex_colors
         )
     end w h filepath_img_graph_edges
 end

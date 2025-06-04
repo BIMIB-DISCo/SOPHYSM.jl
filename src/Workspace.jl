@@ -130,16 +130,35 @@ function set_environment()
 end
 
 """
-    display(d:JuliaDisplay, path::AbstractString)
+    display(d:JuliaDisplay, path::AbstractString, target_width::Int=460)
 
-    display selected image
+    Display selected image resized to specified width while maintaining aspect ratio.
+    
+# Arguments
+- `d::JuliaDisplay`: The display to use
+- `path::AbstractString`: Path to the image file
+- `target_width::Int=460`: Target width for the resized image (default: 460px)
 """
-function display_img(d::JuliaDisplay, path::AbstractString)
+function display_img(d::JuliaDisplay, path::AbstractString, target_width::Int=460)
     if Sys.iswindows() && path[1] == '/'
         path = path[2: end]
     end
     img = ImageMagick.load(path; view = true)
-    display(d, img)
+    
+    # Get original dimensions
+    original_height, original_width = size(img)
+    
+    # Calculate aspect ratio
+    aspect_ratio = original_height / original_width
+    
+    # Calculate new height based on target width while maintaining aspect ratio
+    target_height = round(Int, target_width * aspect_ratio)
+    
+    # Resize the image
+    resized_img = Images.imresize(img, (target_height, target_width))
+    
+    # Display the resized image
+    display(d, resized_img)
 end
 
 end # module SOPHYSM.Workspace

@@ -32,7 +32,6 @@ Item {
             root.segmentationMethod = propmap.segmentation_method
             jnetCheckBox.checked = root.segmentationMethod === "jnet"
             graphCheckBox.checked = root.segmentationMethod === "graph"
-            tessellationCheckBox.checked = root.segmentationMethod === "tessellation"
         }
         
         settingsPopup.open();
@@ -244,7 +243,7 @@ Item {
                         }
                         
                         Label {
-                            text: "Choose between neural network (JNet) or threshold-based segmentation."
+                            text: "Choose between neural network (JNet) or threshold-based graph segmentation."
                             color: "#CCCCCC"
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
@@ -262,9 +261,8 @@ Item {
                                     if (checked) {
                                         root.segmentationMethod = "jnet"
                                         graphCheckBox.checked = false
-                                        tessellationCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!graphCheckBox.checked && !tessellationCheckBox.checked) {
+                                    } else if (!graphCheckBox.checked) {
                                         // Ensure at least one option is selected
                                         root.segmentationMethod = ""
                                     }
@@ -287,9 +285,8 @@ Item {
                                     if (checked) {
                                         root.segmentationMethod = "graph"
                                         jnetCheckBox.checked = false
-                                        tessellationCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!jnetCheckBox.checked && !tessellationCheckBox.checked) {
+                                    } else if (!jnetCheckBox.checked) {
                                         // Ensure at least one option is selected
                                         root.segmentationMethod = ""
                                     }
@@ -301,31 +298,6 @@ Item {
                                     color: "#FFFFFF"
                                     verticalAlignment: Text.AlignVCenter
                                     leftPadding: graphCheckBox.indicator.width + graphCheckBox.spacing
-                                }
-                            }
-                            
-                            Common.CheckBox {
-                                id: tessellationCheckBox
-                                text: "Tessellation Method"
-                                checked: root.segmentationMethod === "tessellation"
-                                onCheckedChanged: {
-                                    if (checked) {
-                                        root.segmentationMethod = "tessellation"
-                                        jnetCheckBox.checked = false
-                                        graphCheckBox.checked = false
-                                        root.hasChanges = true
-                                    } else if (!jnetCheckBox.checked && !graphCheckBox.checked) {
-                                        // Ensure at least one option is selected
-                                        root.segmentationMethod = ""
-                                    }
-                                }
-                                contentItem: Text {
-                                    text: tessellationCheckBox.text
-                                    font: tessellationCheckBox.font
-                                    opacity: enabled ? 1.0 : 0.3
-                                    color: "#FFFFFF"
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: tessellationCheckBox.indicator.width + tessellationCheckBox.spacing
                                 }
                             }
                         }
