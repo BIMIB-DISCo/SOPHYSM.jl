@@ -24,7 +24,8 @@ Item {
     function updateHasSelections() {
         for (var i = 0; i < checkBoxColumn.children.length; i++) {
             var child = checkBoxColumn.children[i];
-            if (child instanceof Common.CheckBox && child.checked) {
+            if (child instanceof Common.CheckBox && 
+                child.checked) {
                 root.hasSelections = true;
                 selectionChanged();
                 return;
@@ -38,7 +39,8 @@ Item {
         var selectedItems = [];
         for (var i = 0; i < checkBoxColumn.children.length; i++) {
             var child = checkBoxColumn.children[i];
-            if (child instanceof Common.CheckBox && child.checked) {
+            if (child instanceof Common.CheckBox && 
+                child.checked) {
                 selectedItems.push(child.objectName);
             }
         }
@@ -65,11 +67,13 @@ Item {
     }
     
     Rectangle {
-        anchors.top: parent.top
-        anchors.topMargin: 50
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors {
+            top: parent.top
+            topMargin: 50
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
         color: "transparent"
         border.width: 1
         border.color: "#2D2D2D" 

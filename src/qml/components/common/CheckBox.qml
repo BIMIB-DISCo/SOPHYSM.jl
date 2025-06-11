@@ -19,7 +19,8 @@ CheckBox {
             height: 10
             anchors.centerIn: parent
             radius: 5
-            color: parent.parent.checked ? "#FF6600" : "transparent"
+            color: parent.parent.checked ? 
+                   "#FF6600" : "transparent"
             visible: parent.parent.checked
         }
     }

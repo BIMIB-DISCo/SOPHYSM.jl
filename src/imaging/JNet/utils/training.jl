@@ -121,11 +121,11 @@ end
 
 """
     train!(model, img_batches, mask_batches, weight_batches;
-            initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
-            warmup_epochs = 5, decay_epochs = 5,
-            early_stopping_start = 25, patience = 7, min_delta = 0.001,
-            epochs = 50,
-            val_img_batches = nothing, val_mask_batches = nothing)
+           initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
+           warmup_epochs = 5, decay_epochs = 5,
+           early_stopping_start = 25, patience = 7, min_delta = 0.001,
+           epochs = 50,
+           val_img_batches = nothing, val_mask_batches = nothing)
 
 Trains the U-Net model on batches of images, masks, and weight maps with
 learning rate warm-up, decay, optional validation, and early stopping.
@@ -151,7 +151,6 @@ learning rate warm-up, decay, optional validation, and early stopping.
 - `val_img_batches`: A list of validation image batches.
 - `val_mask_batches`: A list of validation mask batches.
 """
-
 function train!(model, img_batches, mask_batches, weight_batches;
                 initial_lr = 0.0001, max_lr = 0.001, decay_factor = 0.5,
                 warmup_epochs = 5, decay_epochs = 5,
@@ -182,7 +181,7 @@ function train!(model, img_batches, mask_batches, weight_batches;
         # Learning Rate Warm-up and Decay
         if epoch ≤ warmup_epochs
             lr = initial_lr * exp(epoch / warmup_epochs *
-                                    log(max_lr / initial_lr))
+                                  log(max_lr / initial_lr))
             optimizer = Adam(lr)       
 
             println("Warm-up learning rate: $lr")

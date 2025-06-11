@@ -12,8 +12,8 @@ using JHistint
 ### Included modules
 include("Workspace.jl")
 include("SOPHYSMLogger.jl")
-include("imaging/JNet.jl")
-include("imaging/ThresholdSegmentation.jl")
+include("imaging/JNet/JNet.jl")
+include("imaging/Threshold/ThresholdSegmentation.jl")
 
 ### Exported functions
 export start_GUI, segment_image, start_tessellation
@@ -87,11 +87,11 @@ function segment_image(segmentation_method::AbstractString,
             # Use Graph-based segmentation
             s_log_message("@info", "Using graph-based segmentation")
             
-            # Default thresholds - these could be made configurable through the UI
-            thresholdGray = 0.5
-            thresholdMarker = 0.3
-            min_threshold = Float32(50)
-            max_threshold = Float32(1000)
+            # Get parameters from propmap if available, otherwise use defaults
+            thresholdGray = haskey(propmap, "threshold_gray") ? propmap["threshold_gray"] : 0.5
+            thresholdMarker = haskey(propmap, "threshold_marker") ? propmap["threshold_marker"] : 0.3
+            min_threshold = haskey(propmap, "min_threshold") ? Float32(propmap["min_threshold"]) : Float32(50)
+            max_threshold = haskey(propmap, "max_threshold") ? Float32(propmap["max_threshold"]) : Float32(1000)
             
             s_log_message("@info", string("Processing image with thresholds: Gray=", thresholdGray, 
                                          ", Marker=", thresholdMarker, 
@@ -168,6 +168,10 @@ function start_GUI()
     propmap["segmentation_update_text"] = ""
     propmap["model_bson_path"] = ""
     propmap["segmentation_method"] = ""
+    propmap["threshold_gray"] = 0.5
+    propmap["threshold_marker"] = 0.3
+    propmap["min_threshold"] = 50.0
+    propmap["max_threshold"] = 1000.0
 
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x
@@ -206,13 +210,20 @@ function start_tessellation(img_path::AbstractString, output_path::AbstractStrin
         end
 
         s_log_message("@info", "Starting tessellation...")
+        
+        # Get parameters from propmap if available, otherwise use defaults
+        thresholdGray = haskey(propmap, "threshold_gray") ? propmap["threshold_gray"] : 0.5
+        thresholdMarker = haskey(propmap, "threshold_marker") ? propmap["threshold_marker"] : 0.3
+        min_threshold = haskey(propmap, "min_threshold") ? Float32(propmap["min_threshold"]) : Float32(50)
+        max_threshold = haskey(propmap, "max_threshold") ? Float32(propmap["max_threshold"]) : Float32(1000)
+        
         ThresholdSegmentation.start_segmentation_SOPHYSM_tessellation(
             img_path_str,
             output_path_str,
-            0.5,  # thresholdGray
-            0.3,  # thresholdMarker
-            Float32(50),  # min_threshold
-            Float32(1000)  # max_threshold
+            thresholdGray,
+            thresholdMarker,
+            min_threshold,
+            max_threshold
         )
         
         # Generate paths for graph images

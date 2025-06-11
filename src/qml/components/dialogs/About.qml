@@ -32,12 +32,27 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     
         enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200 }
-            NumberAnimation { property: "scale"; from: 0.9; to: 1.0; duration: 200 }
+            NumberAnimation { 
+                property: "opacity"
+                from: 0.0
+                to: 1.0
+                duration: 200 
+            }
+            NumberAnimation { 
+                property: "scale"
+                from: 0.9
+                to: 1.0
+                duration: 200 
+            }
         }
         
         exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 150 }
+            NumberAnimation { 
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 150 
+            }
         }
         
         background: Rectangle {
@@ -94,7 +109,14 @@ Item {
                 
                 TextArea {
                     id: aboutText
-                    text: "SOPHYSM is software for spatial phylogenetic modeling of solid tumors. It features:\n\n• Image processing for histological slide segmentation\n• Extraction of spatial and morphological information\n• Simulation of cellular spatial dynamics\n• Phylogenetic tree modeling\n• Molecular evolution simulation with various models\n• Support for insertions and deletions (indels)"
+                    text: "SOPHYSM is software for spatial phylogenetic modeling of solid " +
+                          "tumors. It features:\n\n" +
+                          "• Image processing for histological slide segmentation\n" +
+                          "• Extraction of spatial and morphological information\n" +
+                          "• Simulation of cellular spatial dynamics\n" +
+                          "• Phylogenetic tree modeling\n" +
+                          "• Molecular evolution simulation with various models\n" +
+                          "• Support for insertions and deletions (indels)"
                     wrapMode: Text.WordWrap
                     readOnly: true
                     color: "#FFFFFF"

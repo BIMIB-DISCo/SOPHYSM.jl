@@ -5,7 +5,8 @@ export build_graph_from_tessellation
 export tess_dataframe_to_adjacency_matrix_weight
 
 """
-    build_df_label(s::SegmentedImage, min_threshold::Float32, max_threshold::Float32)
+    build_df_label(s::SegmentedImage, min_threshold::Float32, 
+                  max_threshold::Float32)
 
 Builds DataFrames containing information about regions in a segmented image,
 including labels, positions, colors, and areas, and separates them into noisy,
@@ -17,13 +18,15 @@ filtered, and total regions based on pixel count.
 - `max_threshold`: Maximal threshold for considering segments area.
 
 # Return value :
-- `df_label::DataFrame`: A DataFrame containing information about filtered regions
-, regions associated with cell or nuclei.
-- `df_noisy_label::DataFrame`: A DataFrame containing information about noisy regions.
-- `df_total_label::DataFrame`: A DataFrame containing information about all regions.
-
+- `df_label::DataFrame`: A DataFrame containing information about filtered 
+  regions, regions associated with cell or nuclei.
+- `df_noisy_label::DataFrame`: A DataFrame containing information about noisy 
+  regions.
+- `df_total_label::DataFrame`: A DataFrame containing information about all 
+  regions.
 """
-function build_df_label(s::SegmentedImage, min_threshold::Float32, max_threshold::Float32)
+function build_df_label(s::SegmentedImage, min_threshold::Float32, 
+                        max_threshold::Float32)
     # Array to mark the pixels that are already visited
     visited  = fill(false, axes(s.image_indexmap))
     df_label = DataFrame()
@@ -97,26 +100,26 @@ function build_df_label(s::SegmentedImage, min_threshold::Float32, max_threshold
 end
 
 """
-    add_column_is_cell(df_labels::DataFrame, df_noisy_labels::DataFrame, df_total_labels::DataFrame)
+    add_column_is_cell(df_labels::DataFrame, df_noisy_labels::DataFrame, 
+                      df_total_labels::DataFrame)
 
 Adds a boolean column 'is_cell' to the total labels DataFrame,
 indicating whether each region is a cell or not.
 
 # Arguments:
 - `df_labels::DataFrame`: A DataFrame containing information about filtered
-regions (default : areas > 3000 pixels).
+  regions (default : areas > 3000 pixels).
 - `df_noisy_labels::DataFrame`: A DataFrame containing information about
-noisy regions (default : areas between 300 and 3000 pixels).
+  noisy regions (default : areas between 300 and 3000 pixels).
 - `df_total_labels::DataFrame`: A DataFrame containing information about
-all regions (default : areas > 300 pixels).
+  all regions (default : areas > 300 pixels).
 
 # Return value:
 - `df_total_labels::DataFrame`: The `df_total_labels` DataFrame with
-the additional `is_cell` column.
-
-# Notes:
+  the additional `is_cell` column.
 """
-function add_column_is_cell(df_labels::DataFrame, df_noisy_labels::DataFrame, df_total_labels::DataFrame)
+function add_column_is_cell(df_labels::DataFrame, df_noisy_labels::DataFrame, 
+                           df_total_labels::DataFrame)
     nuclei_list = df_labels[!, :label]
     extra_list = df_noisy_labels[!, :label]
     total_list = df_total_labels[!, :label]
@@ -134,22 +137,24 @@ function add_column_is_cell(df_labels::DataFrame, df_noisy_labels::DataFrame, df
 end
 
 """
-    build_dataframe_edges_from_grid(edge_list::Vector{Any}, df_total_labels::DataFrame)
+    build_dataframe_edges_from_grid(edge_list::Vector{Any}, 
+                                   df_total_labels::DataFrame)
 
 Builds a DataFrame containing edge information from a given list of grid-based
 edges and a DataFrame of total region labels.
 
 # Arguments:
 - `edge_list::Vector{Any}`: A list of grid-based edges represented as pairs
-of indices.
+  of indices.
 - `df_total_labels::DataFrame`: A DataFrame containing information about all
-regions, including labels and areas.
+  regions, including labels and areas.
 
 # Return value:
 - `df::DataFrame`: A DataFrame containing information about edges,
-including origin, destination, and edge weight.
+  including origin, destination, and edge weight.
 """
-function build_dataframe_edges_from_grid(edge_list::Vector{Any}, df_total_labels::DataFrame)
+function build_dataframe_edges_from_grid(edge_list::Vector{Any}, 
+                                        df_total_labels::DataFrame)
     # Build edge_list with label identifier
     cell_label_list = df_total_labels[!, :label]
     cell_area_list = df_total_labels[!, :area]
@@ -163,9 +168,11 @@ function build_dataframe_edges_from_grid(edge_list::Vector{Any}, df_total_labels
         destination = cell_label_list[second_value]
         push!(edge_label, (origin, destination))
         if(cell_area_list[first_value] > cell_area_list[second_value])
-            push!(edge_weight, (cell_area_list[first_value] - cell_area_list[second_value]))
+            push!(edge_weight, 
+                 (cell_area_list[first_value] - cell_area_list[second_value]))
         else
-            push!(edge_weight, (cell_area_list[second_value] - cell_area_list[first_value]))
+            push!(edge_weight, 
+                 (cell_area_list[second_value] - cell_area_list[first_value]))
         end
         count = count + 1
     end
@@ -200,22 +207,22 @@ tessellations and saves visualizations.
 
 # Arguments:
 - `df_labels::DataFrame`: A DataFrame containing information about
-nuclei and centroids.
+  nuclei and centroids.
 - `df_noisy_labels::DataFrame`: A DataFrame containing information
-about noisy nuclei centroids.
+  about noisy nuclei centroids.
 - `df_total_labels::DataFrame`: A DataFrame containing information
-about all centroids.
+  about all centroids.
 - `w::Int64`: Width of the tessellation region.
 - `h::Int64`: Height of the tessellation region.
 - `filepath_total_tess::AbstractString`: The file path to save the
-visualization of the total tessellation.
+  visualization of the total tessellation.
 - `filepath_cell_tess::AbstractString`: The file path to save the
-visualization of the cell-based tessellation.
+  visualization of the cell-based tessellation.
 
 # Return value:
 - `df_edges::DataFrame`: A DataFrame containing edge information between regions.
 - `edges::Vector{Any}`: A vector of pairs representing the connected
-regions based on Voronoi edges.
+  regions based on Voronoi edges.
 
 # Notes:
 The `build_graph_from_tessellation` function performs the following steps:
@@ -302,23 +309,27 @@ function build_graph_from_tessellation(df_labels::DataFrame,
 end
 
 """
-    tess_dataframe_to_adjacency_matrix_weight(df_total_labels::DataFrame, df_edges::DataFrame, edges::Vector{Any})
+    tess_dataframe_to_adjacency_matrix_weight(df_total_labels::DataFrame, 
+                                            df_edges::DataFrame, 
+                                            edges::Vector{Any})
 
 Converts a DataFrame representation of edges and region labels
 into an adjacency matrix with weighted edges.
 
 # Arguments:
 - `df_total_labels::DataFrame`: A DataFrame containing information
-about all regions, including labels.
+  about all regions, including labels.
 - `df_edges::DataFrame`: A DataFrame containing edge information,
-including origin, destination, and edge weight.
+  including origin, destination, and edge weight.
 - `edges::Vector{Any}`: A vector of pairs representing the connected regions.
 
 # Return value:
 - `adjacency_matrix::Matrix{Int}`: An adjacency matrix representing the
-connectivity of regions with weighted edges.
+  connectivity of regions with weighted edges.
 """
-function tess_dataframe_to_adjacency_matrix_weight(df_total_labels::DataFrame, df_edges::DataFrame, edges::Vector{Any})
+function tess_dataframe_to_adjacency_matrix_weight(df_total_labels::DataFrame, 
+                                                 df_edges::DataFrame, 
+                                                 edges::Vector{Any})
     cell_label_list = df_total_labels[!, :label]
     # origin_list = df_edges[!, :origin]
     # destination_list = df_edges[!, :destination]
@@ -333,7 +344,7 @@ function tess_dataframe_to_adjacency_matrix_weight(df_total_labels::DataFrame, d
     end
     count = 1
     for label_pair in edges
-        adjacency_matrix[label_pair[1], label_pair[2]] =  weight_list[count]
+        adjacency_matrix[label_pair[1], label_pair[2]] = weight_list[count]
         count = count + 1
     end
     return adjacency_matrix
