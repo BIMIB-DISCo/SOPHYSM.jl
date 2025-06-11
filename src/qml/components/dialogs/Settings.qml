@@ -17,6 +17,12 @@ Item {
     property bool highlightModelButton: false
     property string segmentationMethod: ""
     
+    // Graph segmentation parameters
+    property real thresholdGray: 0.5
+    property real thresholdMarker: 0.3
+    property real minThreshold: 50.0
+    property real maxThreshold: 1000.0
+    
     signal settingsApplied()
     signal settingsCanceled()
     
@@ -32,7 +38,20 @@ Item {
             root.segmentationMethod = propmap.segmentation_method
             jnetCheckBox.checked = root.segmentationMethod === "jnet"
             graphCheckBox.checked = root.segmentationMethod === "graph"
-            tessellationCheckBox.checked = root.segmentationMethod === "tessellation"
+        }
+        
+        // Load graph parameters from propmap if available
+        if (propmap.threshold_gray !== undefined) {
+            root.thresholdGray = propmap.threshold_gray
+        }
+        if (propmap.threshold_marker !== undefined) {
+            root.thresholdMarker = propmap.threshold_marker
+        }
+        if (propmap.min_threshold !== undefined) {
+            root.minThreshold = propmap.min_threshold
+        }
+        if (propmap.max_threshold !== undefined) {
+            root.maxThreshold = propmap.max_threshold
         }
         
         settingsPopup.open();
@@ -91,12 +110,27 @@ Item {
         }
     
         enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200 }
-            NumberAnimation { property: "scale"; from: 0.9; to: 1.0; duration: 200 }
+            NumberAnimation { 
+                property: "opacity"
+                from: 0.0
+                to: 1.0
+                duration: 200 
+            }
+            NumberAnimation { 
+                property: "scale"
+                from: 0.9
+                to: 1.0
+                duration: 200 
+            }
         }
         
         exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 150 }
+            NumberAnimation { 
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 150 
+            }
         }
         
         background: Rectangle {
@@ -151,7 +185,8 @@ Item {
                         }
                         
                         Label {
-                            text: "Choose between dark and light theme for the application interface."
+                            text: "Choose between dark and light theme for the application " +
+                                 "interface."
                             color: "#CCCCCC"
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
@@ -244,7 +279,8 @@ Item {
                         }
                         
                         Label {
-                            text: "Choose between neural network (JNet) or threshold-based segmentation."
+                            text: "Choose between neural network (JNet) or threshold-based " +
+                                 "graph segmentation."
                             color: "#CCCCCC"
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
@@ -262,9 +298,8 @@ Item {
                                     if (checked) {
                                         root.segmentationMethod = "jnet"
                                         graphCheckBox.checked = false
-                                        tessellationCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!graphCheckBox.checked && !tessellationCheckBox.checked) {
+                                    } else if (!graphCheckBox.checked) {
                                         // Ensure at least one option is selected
                                         root.segmentationMethod = ""
                                     }
@@ -275,7 +310,8 @@ Item {
                                     opacity: enabled ? 1.0 : 0.3
                                     color: "#FFFFFF"
                                     verticalAlignment: Text.AlignVCenter
-                                    leftPadding: jnetCheckBox.indicator.width + jnetCheckBox.spacing
+                                    leftPadding: jnetCheckBox.indicator.width + 
+                                               jnetCheckBox.spacing
                                 }
                             }
                             
@@ -287,9 +323,8 @@ Item {
                                     if (checked) {
                                         root.segmentationMethod = "graph"
                                         jnetCheckBox.checked = false
-                                        tessellationCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!jnetCheckBox.checked && !tessellationCheckBox.checked) {
+                                    } else if (!jnetCheckBox.checked) {
                                         // Ensure at least one option is selected
                                         root.segmentationMethod = ""
                                     }
@@ -300,32 +335,465 @@ Item {
                                     opacity: enabled ? 1.0 : 0.3
                                     color: "#FFFFFF"
                                     verticalAlignment: Text.AlignVCenter
-                                    leftPadding: graphCheckBox.indicator.width + graphCheckBox.spacing
+                                    leftPadding: graphCheckBox.indicator.width + 
+                                               graphCheckBox.spacing
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Graph parameters section 
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 24
+                    visible: root.segmentationMethod === "graph"
+                    
+                    Rectangle {
+                        width: 36
+                        height: 36
+                        radius: width / 2
+                        color: "#454545"
+                        Layout.alignment: Qt.AlignTop
+                        Layout.topMargin: 4
+                        
+                        Image {
+                            anchors.centerIn: parent
+                            source: "../../img/settings_applications_24dp_E3E3E3_FILL0_wght300_GRAD0_opsz24.png"
+                            width: 16
+                            height: 16
+                        }
+                    }
+                    
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+                        
+                        Label {
+                            text: "Graph Segmentation Parameters:"
+                            color: "#FFFFFF"
+                            font.bold: true
+                        }
+                        
+                        // Parameter controls in a grid layout for better spacing
+                        GridLayout {
+                            columns: 4
+                            columnSpacing: 25
+                            rowSpacing: 8
+                            Layout.topMargin: 12
+                            Layout.fillWidth: true
+                            
+                            // Headers
+                            Label {
+                                text: "Threshold Gray"
+                                color: "#CCCCCC"
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            Label {
+                                text: "Threshold Marker"
+                                color: "#CCCCCC"
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            Label {
+                                text: "Min Threshold"
+                                color: "#CCCCCC"
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            Label {
+                                text: "Max Threshold"
+                                color: "#CCCCCC"
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            // Controls row 1 - Threshold Gray
+                            RowLayout {
+                                spacing: 2
+                                Layout.alignment: Qt.AlignHCenter
+                                
+                                TextField {
+                                    id: thresholdGrayField
+                                    text: root.thresholdGray.toFixed(2)
+                                    Layout.preferredWidth: 55
+                                    Layout.preferredHeight: 30
+                                    color: "#FFFFFF"
+                                    horizontalAlignment: TextInput.AlignHCenter
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    font.pixelSize: 13
+                                    background: Rectangle { 
+                                        color: "#333333"
+                                        border.color: "#555555"
+                                        border.width: 1
+                                        radius: 4
+                                    }
+                                    
+                                    validator: DoubleValidator {
+                                        bottom: 0.0
+                                        top: 1.0
+                                        decimals: 2
+                                        notation: DoubleValidator.StandardNotation
+                                    }
+                                    
+                                    onTextChanged: {
+                                        if (acceptableInput) {
+                                            root.thresholdGray = parseFloat(text)
+                                            root.hasChanges = true
+                                        }
+                                    }
+                                }
+                                
+                                Column {
+                                    spacing: 1
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "+"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.min(
+                                                1.0, 
+                                                root.thresholdGray + 0.01
+                                            )
+                                            root.thresholdGray = val
+                                            thresholdGrayField.text = val.toFixed(2)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "-"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.max(
+                                                0.0, 
+                                                root.thresholdGray - 0.01
+                                            )
+                                            root.thresholdGray = val
+                                            thresholdGrayField.text = val.toFixed(2)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
                                 }
                             }
                             
-                            Common.CheckBox {
-                                id: tessellationCheckBox
-                                text: "Tessellation Method"
-                                checked: root.segmentationMethod === "tessellation"
-                                onCheckedChanged: {
-                                    if (checked) {
-                                        root.segmentationMethod = "tessellation"
-                                        jnetCheckBox.checked = false
-                                        graphCheckBox.checked = false
-                                        root.hasChanges = true
-                                    } else if (!jnetCheckBox.checked && !graphCheckBox.checked) {
-                                        // Ensure at least one option is selected
-                                        root.segmentationMethod = ""
+                            // Row 2 - Threshold Marker
+                            RowLayout {
+                                spacing: 2
+                                Layout.alignment: Qt.AlignHCenter
+                                
+                                TextField {
+                                    id: thresholdMarkerField
+                                    text: root.thresholdMarker.toFixed(2)
+                                    Layout.preferredWidth: 55
+                                    Layout.preferredHeight: 30
+                                    color: "#FFFFFF"
+                                    horizontalAlignment: TextInput.AlignHCenter
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    font.pixelSize: 13
+                                    background: Rectangle { 
+                                        color: "#333333" 
+                                        border.color: "#555555"
+                                        border.width: 1
+                                        radius: 4
+                                    }
+                                    
+                                    validator: DoubleValidator {
+                                        bottom: 0.0
+                                        top: 1.0
+                                        decimals: 2
+                                        notation: DoubleValidator.StandardNotation
+                                    }
+                                    
+                                    onTextChanged: {
+                                        if (acceptableInput) {
+                                            root.thresholdMarker = parseFloat(text)
+                                            root.hasChanges = true
+                                        }
                                     }
                                 }
-                                contentItem: Text {
-                                    text: tessellationCheckBox.text
-                                    font: tessellationCheckBox.font
-                                    opacity: enabled ? 1.0 : 0.3
+                                
+                                Column {
+                                    spacing: 1
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "+"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.min(
+                                                1.0,
+                                                root.thresholdMarker + 0.01
+                                            )
+                                            root.thresholdMarker = val
+                                            thresholdMarkerField.text = val.toFixed(2)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "-"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.max(
+                                                0.0,
+                                                root.thresholdMarker - 0.01
+                                            )
+                                            root.thresholdMarker = val
+                                            thresholdMarkerField.text = val.toFixed(2)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Row 3 - Min Threshold
+                            RowLayout {
+                                spacing: 2
+                                Layout.alignment: Qt.AlignHCenter
+                                
+                                TextField {
+                                    id: minThresholdField
+                                    text: root.minThreshold.toFixed(0)
+                                    Layout.preferredWidth: 55
+                                    Layout.preferredHeight: 30
                                     color: "#FFFFFF"
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: tessellationCheckBox.indicator.width + tessellationCheckBox.spacing
+                                    horizontalAlignment: TextInput.AlignHCenter
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    font.pixelSize: 13
+                                    background: Rectangle { 
+                                        color: "#333333" 
+                                        border.color: "#555555"
+                                        border.width: 1
+                                        radius: 4
+                                    }
+                                    
+                                    validator: IntValidator {
+                                        bottom: 1
+                                        top: 1000
+                                    }
+                                    
+                                    onTextChanged: {
+                                        if (acceptableInput) {
+                                            root.minThreshold = parseInt(text)
+                                            root.hasChanges = true
+                                        }
+                                    }
+                                }
+                                
+                                Column {
+                                    spacing: 1
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "+"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.min(
+                                                root.maxThreshold - 1,
+                                                root.minThreshold + 1
+                                            )
+                                            root.minThreshold = val
+                                            minThresholdField.text = val.toFixed(0)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "-"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.max(1, root.minThreshold - 1)
+                                            root.minThreshold = val
+                                            minThresholdField.text = val.toFixed(0)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Row 4 - Max Threshold
+                            RowLayout {
+                                spacing: 2
+                                Layout.alignment: Qt.AlignHCenter
+                                
+                                TextField {
+                                    id: maxThresholdField
+                                    text: root.maxThreshold.toFixed(0)
+                                    Layout.preferredWidth: 55
+                                    Layout.preferredHeight: 30
+                                    color: "#FFFFFF"
+                                    horizontalAlignment: TextInput.AlignHCenter
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    font.pixelSize: 13
+                                    background: Rectangle { 
+                                        color: "#333333" 
+                                        border.color: "#555555"
+                                        border.width: 1
+                                        radius: 4
+                                    }
+                                    
+                                    validator: IntValidator {
+                                        bottom: 1
+                                        top: 10000
+                                    }
+                                    
+                                    onTextChanged: {
+                                        if (acceptableInput) {
+                                            root.maxThreshold = parseInt(text)
+                                            root.hasChanges = true
+                                        }
+                                    }
+                                }
+                                
+                                Column {
+                                    spacing: 1
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "+"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.min(
+                                                10000,
+                                                root.maxThreshold + 10
+                                            )
+                                            root.maxThreshold = val
+                                            maxThresholdField.text = val.toFixed(0)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
+                                    
+                                    Button {
+                                        width: 18
+                                        height: 14  // Changed from 16 to 14
+                                        
+                                        contentItem: Text {
+                                            text: "-"
+                                            color: "#FFFFFF"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            font.pointSize: 10
+                                        }
+                                        
+                                        onClicked: {
+                                            var val = Math.max(
+                                                root.minThreshold + 1,
+                                                root.maxThreshold - 10
+                                            )
+                                            root.maxThreshold = val
+                                            maxThresholdField.text = val.toFixed(0)
+                                            root.hasChanges = true
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: parent.pressed ? "#666666" : "#444444"
+                                            radius: 3
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -366,7 +834,8 @@ Item {
                         
                         Label {
                             id: modelPathLabel
-                            text: root.modelBsonPath === "" ? "No model file selected" : root.modelBsonPath
+                            text: root.modelBsonPath === "" ? 
+                                 "No model file selected" : root.modelBsonPath
                             color: "#CCCCCC"
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
@@ -447,10 +916,17 @@ Item {
                     text: "Close"
                     onClicked: {
                         if (root.hasChanges) {
-                            // Salva il path del modello nel propmap quando si chiude il dialog
+                            // Salva il path del modello nel propmap
                             propmap.model_bson_path = root.modelBsonPath
                             // Salva il metodo di segmentazione
                             propmap.segmentation_method = root.segmentationMethod
+                            
+                            // Save graph parameters
+                            propmap.threshold_gray = root.thresholdGray
+                            propmap.threshold_marker = root.thresholdMarker
+                            propmap.min_threshold = root.minThreshold
+                            propmap.max_threshold = root.maxThreshold
+                            
                             root.settingsApplied()
                         }
                         settingsPopup.close()

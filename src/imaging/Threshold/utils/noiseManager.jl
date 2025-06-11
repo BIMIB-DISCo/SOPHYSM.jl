@@ -6,8 +6,8 @@ export filter_dataframe_extras
 
 """
     compute_centroid_total_cells(s::SegmentedImage,
-                                        df_label::DataFrame,
-                                        min_threshold::Float32)
+                                df_label::DataFrame,
+                                min_threshold::Float32)
 
 Computes the centroids of total cells within regions in a segmented image `s`
 and associates them with labels in the provided DataFrame `df_label`.
@@ -15,12 +15,12 @@ and associates them with labels in the provided DataFrame `df_label`.
 # Arguments:
 - `s::SegmentedImage`: The segmented image containing regions.
 - `df_label::DataFrame`: A DataFrame with information about the regions,
-including labels and other attributes.
+  including labels and other attributes.
 - `min_threshold`: Minimal threshold for considering segments area.
 
 # Return value:
 - `df_label::DataFrame`: The input DataFrame `df_label` with an additional
-`centroid` column containing the computed centroids of total cells.
+  `centroid` column containing the computed centroids of total cells.
 
 # Notes:
 The `compute_centroid_total_cells` function iterates through the pixels in the
@@ -29,12 +29,13 @@ It calculates the centroids of these total cells and associates
 them with their corresponding labels in the `df_label` DataFrame.
 The function marks pixels as visited to avoid redundant calculations
 and applies a manual threshold to exclude noise by considering only
-regions with pixel counts greater than the specified threshold (default = 300 pixels).
+regions with pixel counts greater than the specified threshold 
+(default = 300 pixels).
 """
 function compute_centroid_total_cells(s::SegmentedImage,
-                                        df_label::DataFrame,
-                                        min_threshold::Float32)
-    # # Array to mark the pixels that are already visited
+                                     df_label::DataFrame,
+                                     min_threshold::Float32)
+    # Array to mark the pixels that are already visited
     visited  = fill(false, axes(s.image_indexmap))
     df_centroids = CartesianIndex[]
     df_label_list = Int[]
@@ -80,8 +81,8 @@ end
 
 """
     compute_centroid_cells(s::SegmentedImage,
-                                df_label::DataFrame,
-                                max_threshold::Float32)
+                          df_label::DataFrame,
+                          max_threshold::Float32)
 
 Computes the centroids of only cells associated to nuclei
 within regions in a segmented image `s` and associates them with labels
@@ -90,16 +91,16 @@ in the provided DataFrame `df_label`.
 # Arguments:
 - `s::SegmentedImage`: The segmented image containing regions.
 - `df_label::DataFrame`: A DataFrame with information about the regions,
-including labels and other attributes.
+  including labels and other attributes.
 - `max_threshold`: Maximal threshold for considering segments area.
 
 # Return value:
 - `df_label::DataFrame`: The input DataFrame `df_label` with an additional
-`centroid` column containing the computed centroids of cells.
+  `centroid` column containing the computed centroids of cells.
 """
 function compute_centroid_cells(s::SegmentedImage,
-                                df_label::DataFrame,
-                                max_threshold::Float32)
+                               df_label::DataFrame,
+                               max_threshold::Float32)
     # Array to mark the pixels that are already visited
     visited  = fill(false, axes(s.image_indexmap))
     df_centroids = CartesianIndex[]
@@ -146,9 +147,9 @@ end
 
 """
     compute_centroid_noisy_cells(s::SegmentedImage,
-                                        df_label::DataFrame,
-                                        min_threshold::Float32,
-                                        max_threshold::Float32)
+                                df_label::DataFrame,
+                                min_threshold::Float32,
+                                max_threshold::Float32)
 
 Computes the centroids of extra or noisy within regions in a segmented image `s`
 and associates them with labels in the provided DataFrame `df_label`.
@@ -156,19 +157,19 @@ and associates them with labels in the provided DataFrame `df_label`.
 # Arguments:
 - `s::SegmentedImage`: The segmented image containing regions.
 - `df_label::DataFrame`: A DataFrame with information about the regions,
-including labels and other attributes.
+  including labels and other attributes.
 - `min_threshold`: Minimal threshold for considering segments area.
 - `max_threshold`: Maximal threshold for considering segments area.
 
 # Return value:
 - `df_label::DataFrame`: The input DataFrame `df_label` with an additional
-`centroid` column containing the computed centroids of extra cells.
+  `centroid` column containing the computed centroids of extra cells.
 """
 function compute_centroid_noisy_cells(s::SegmentedImage,
-                                        df_label::DataFrame,
-                                        min_threshold::Float32,
-                                        max_threshold::Float32)
-    ## Array to mark the pixels that are already visited
+                                     df_label::DataFrame,
+                                     min_threshold::Float32,
+                                     max_threshold::Float32)
+    # Array to mark the pixels that are already visited
     visited  = fill(false, axes(s.image_indexmap))
     df_centroids = CartesianIndex[]
     df_cells_indices = []
@@ -225,14 +226,15 @@ with areas greater than a specified threshold.
 
 # Return value:
 - `df_filtered::DataFrame`: A filtered DataFrame containing information
-about the retained cells, including labels, positions, colors, areas,
-and centroids.
+  about the retained cells, including labels, positions, colors, areas,
+  and centroids.
 
 # Notes:
 The `filter_dataframe_cells` function takes a DataFrame `df_label` as input,
 which should contain information about regions, including labels, positions,
 colors, areas, and centroids. It filters this DataFrame to retain only those
-regions (cells) with areas greater a specified threshold (default = 3000 pixels).
+regions (cells) with areas greater a specified threshold 
+(default = 3000 pixels).
 """
 function filter_dataframe_cells(df_label::DataFrame, max_threshold::Float32)
     df_label_filtered = Int[]
@@ -265,8 +267,8 @@ end
 
 """
     filter_dataframe_extras(df_label::DataFrame,
-                                    min_threshold::Float32,
-                                    max_threshold::Float32)
+                           min_threshold::Float32,
+                           max_threshold::Float32)
 
 Filters a DataFrame containing information about regions to retain only extra
 elements (not cells) with areas between two specified thresholds.
@@ -279,8 +281,8 @@ In the default case these are 300 and 3000 pixels.
 
 # Return value:
 - `df_filtered::DataFrame`: A filtered DataFrame containing information
-about the retained extra elements, including labels, positions, colors, areas,
-and centroids.
+  about the retained extra elements, including labels, positions, colors, areas,
+  and centroids.
 
 # Notes:
 The `filter_dataframe_extras` function takes a DataFrame `df_label` as input,
@@ -290,8 +292,8 @@ regions that are considered "extras" (not cells) and have areas between
 two specified thresholds.
 """
 function filter_dataframe_extras(df_label::DataFrame,
-                                    min_threshold::Float32,
-                                    max_threshold::Float32)
+                                min_threshold::Float32,
+                                max_threshold::Float32)
     df_label_filtered = Int[]
     df_cartesian_indices_filtered = CartesianIndex[]
     df_color_indices_filtered = []

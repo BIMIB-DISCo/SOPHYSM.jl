@@ -12,11 +12,11 @@ using JHistint
 ### Included modules
 include("Workspace.jl")
 include("SOPHYSMLogger.jl")
-include("imaging/JNet.jl")
-include("imaging/ThresholdSegmentation.jl")
+include("imaging/JNet/JNet.jl")
+include("imaging/Threshold/ThresholdSegmentation.jl")
 
 ### Exported functions
-export start_GUI, segment_image
+export start_GUI, segment_image, start_tessellation
 
 ### Constants
 workspace_dir = Observable(Workspace.get_workspace_dir())
@@ -29,7 +29,7 @@ workspace_dir = Observable(Workspace.get_workspace_dir())
 Segments an input image using the specified segmentation method and saves the predicted mask.
 
 # Arguments:
-- `segmentation_method`: Method to use for segmentation ("jnet", "graph", or "tessellation").
+- `segmentation_method`: Method to use for segmentation ("jnet" or "graph").
 - `model_path`: Path to the BSON file where the U-Net model is saved (used only with "jnet").
 - `img_path`: Path to the input image file to be segmented.
 - `output_path`: Path where the predicted segmentation mask will be saved.
@@ -87,11 +87,11 @@ function segment_image(segmentation_method::AbstractString,
             # Use Graph-based segmentation
             s_log_message("@info", "Using graph-based segmentation")
             
-            # Default thresholds - these could be made configurable through the UI
-            thresholdGray = 0.5
-            thresholdMarker = 0.3
-            min_threshold = Float32(50)
-            max_threshold = Float32(1000)
+            # Get parameters from propmap if available, otherwise use defaults
+            thresholdGray = haskey(propmap, "threshold_gray") ? propmap["threshold_gray"] : 0.5
+            thresholdMarker = haskey(propmap, "threshold_marker") ? propmap["threshold_marker"] : 0.3
+            min_threshold = haskey(propmap, "min_threshold") ? Float32(propmap["min_threshold"]) : Float32(50)
+            max_threshold = haskey(propmap, "max_threshold") ? Float32(propmap["max_threshold"]) : Float32(1000)
             
             s_log_message("@info", string("Processing image with thresholds: Gray=", thresholdGray, 
                                          ", Marker=", thresholdMarker, 
@@ -108,34 +108,12 @@ function segment_image(segmentation_method::AbstractString,
                 max_threshold
             )
             
+            # Generate paths for graph images
+            base_path = splitext(output_path_str)[1]
+            graph_vertex_path = base_path * "_graph_vertex.png"
+            graph_edges_path = base_path * "_graph_edges.png"
+            
             s_log_message("@info", "Graph-based segmentation completed")
-            
-        elseif method_str == "tessellation"
-            # Use Tessellation-based segmentation
-            s_log_message("@info", "Using tessellation-based segmentation")
-            
-            # Default thresholds - these could be made configurable through the UI
-            thresholdGray = 0.5
-            thresholdMarker = 0.3
-            min_threshold = Float32(50)
-            max_threshold = Float32(1000)
-            
-            s_log_message("@info", string("Processing image with thresholds: Gray=", thresholdGray, 
-                                         ", Marker=", thresholdMarker, 
-                                         ", Min=", min_threshold, 
-                                         ", Max=", max_threshold))
-            
-            # Apply tessellation-based segmentation
-            ThresholdSegmentation.start_segmentation_SOPHYSM_tessellation(
-                img_path_str,
-                output_path_str,
-                thresholdGray,
-                thresholdMarker,
-                min_threshold,
-                max_threshold
-            )
-            
-            s_log_message("@info", "Tessellation-based segmentation completed")
             
         else
             s_log_message("@error", string("Unknown segmentation method: ", method_str))
@@ -181,6 +159,7 @@ function start_GUI()
     qmlfunction("log_message", s_log_message)
     qmlfunction("display_img", Workspace.display_img)
     qmlfunction("segment_image", segment_image)
+    qmlfunction("start_tessellation", start_tessellation)
     
     # Propmap
     global propmap = JuliaPropertyMap()
@@ -189,6 +168,10 @@ function start_GUI()
     propmap["segmentation_update_text"] = ""
     propmap["model_bson_path"] = ""
     propmap["segmentation_method"] = ""
+    propmap["threshold_gray"] = 0.5
+    propmap["threshold_marker"] = 0.3
+    propmap["min_threshold"] = 50.0
+    propmap["max_threshold"] = 1000.0
 
     # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x
@@ -204,6 +187,54 @@ function start_GUI()
 
     s_log_message("@info", "Close GUI")
     s_close_logger()
+end
+
+"""
+    start_tessellation(img_path::AbstractString, output_path::AbstractString)
+
+Starts the tessellation process on the input image and saves the results.
+
+# Arguments:
+- `img_path`: Path to the input image file for tessellation.
+- `output_path`: Path where the tessellation results will be saved.
+"""
+function start_tessellation(img_path::AbstractString, output_path::AbstractString)
+    try
+        # Convert QML strings to Julia strings
+        img_path_str = String(img_path)
+        output_path_str = String(output_path)
+
+        if Sys.iswindows() && img_path_str[1] == '/'
+            img_path_str = img_path_str[2:end]
+            output_path_str = output_path_str[2:end]
+        end
+
+        s_log_message("@info", "Starting tessellation...")
+        
+        # Get parameters from propmap if available, otherwise use defaults
+        thresholdGray = haskey(propmap, "threshold_gray") ? propmap["threshold_gray"] : 0.5
+        thresholdMarker = haskey(propmap, "threshold_marker") ? propmap["threshold_marker"] : 0.3
+        min_threshold = haskey(propmap, "min_threshold") ? Float32(propmap["min_threshold"]) : Float32(50)
+        max_threshold = haskey(propmap, "max_threshold") ? Float32(propmap["max_threshold"]) : Float32(1000)
+        
+        ThresholdSegmentation.start_segmentation_SOPHYSM_tessellation(
+            img_path_str,
+            output_path_str,
+            thresholdGray,
+            thresholdMarker,
+            min_threshold,
+            max_threshold
+        )
+        
+        # Generate paths for graph images
+        base_path = splitext(output_path_str)[1]
+        graph_vertex_path = base_path * "_graph_vertex.png"
+        graph_edges_path = base_path * "_graph_edges.png"
+        
+        s_log_message("@info", "Tessellation completed successfully.")
+    catch e
+        s_log_message("@error", string("An error occurred during tessellation: ", e))
+    end
 end
 
 end # SOPHYSM module

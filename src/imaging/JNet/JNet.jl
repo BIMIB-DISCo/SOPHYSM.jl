@@ -13,9 +13,9 @@ using Printf
 using Statistics
 using UnicodePlots
 
-include("dataloader.jl")
-include("model.jl")
-include("training.jl")
+include("utils/dataloader.jl")
+include("utils/model.jl")
+include("utils/training.jl")
 
 export load_model, load_input, prediction, save_prediction
 

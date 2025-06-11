@@ -43,12 +43,27 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     
         enter: Transition {
-            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200 }
-            NumberAnimation { property: "scale"; from: 0.9; to: 1.0; duration: 200 }
+            NumberAnimation { 
+                property: "opacity"
+                from: 0.0
+                to: 1.0
+                duration: 200 
+            }
+            NumberAnimation { 
+                property: "scale"
+                from: 0.9
+                to: 1.0
+                duration: 200 
+            }
         }
         
         exit: Transition {
-            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 150 }
+            NumberAnimation { 
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 150 
+            }
         }
         
         background: Rectangle {
@@ -78,7 +93,8 @@ Item {
             }
             
             Label {
-                text: "Note: Downloads may take a long time depending on the collection size and your internet connection."
+                text: "Note: Downloads may take a long time depending on the " +
+                      "collection size and your internet connection."
                 color: "#F1C40F"
                 font.italic: true
                 Layout.fillWidth: true
@@ -95,7 +111,10 @@ Item {
                 
                 onPrimaryClicked: {
                     downloadPopup.close()
-                    root.downloadRequested(collectionSelector.getSelectedItems(), root.workspaceDir)
+                    root.downloadRequested(
+                        collectionSelector.getSelectedItems(), 
+                        root.workspaceDir
+                    )
                 }
                 
                 onSecondaryClicked: {
