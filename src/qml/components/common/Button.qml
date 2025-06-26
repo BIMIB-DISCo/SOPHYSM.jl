@@ -7,6 +7,7 @@ Button {
     property bool isHighlighted: false
     property int buttonWidth: 120
     property int buttonHeight: 40
+    property string backgroundColor: ""
     
     implicitWidth: buttonWidth
     implicitHeight: buttonHeight
@@ -24,7 +25,9 @@ Button {
         implicitWidth: root.implicitWidth
         implicitHeight: root.implicitHeight
         color: {
-            if (!root.enabled) {
+            if (root.backgroundColor !== "") {
+                return root.backgroundColor
+            } else if (!root.enabled) {
                 return "#202020"
             } else if (root.isHighlighted) {
                 return root.down ? "#A05000" : 

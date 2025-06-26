@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtQuick.Controls.Universal 2.15
 import QtQuick.Dialogs
 
-import org.julialang
+import jlqml
 import "components/dialogs" as Dialogs
 import "components/common" as Common
 
@@ -87,67 +87,89 @@ ApplicationWindow {
         }
     }
 
-    Column {
-        id: verticalBar
+    Rectangle {
+        id: verticalBarBackground
         width: 40
         height: parent.height
+        color: "#1E1E1E"
         
-        // download
-        Button {
-            id: downloadButton
-            icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+        Column {
+            id: verticalBar
             width: parent.width
-            height: parent.width
+            height: parent.height
 
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Download single collection or multiple collections")
-
-            onClicked: {
-                downloadDialog.open();
+            // Add a spacer at the top to align with Select Image button
+            Item {
+                width: parent.width
+                height: 30 // Same as topMargin of segmentationControls
             }
-        }
 
-        Button {
-            id: settingsButton
-            icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
-            width: parent.width
-            height: parent.width
+            // download
+            Button {
+                id: downloadButton
+                icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+                width: parent.width
+                height: parent.width
+                background: Rectangle {
+                    color: "#1E1E1E"
+                }
 
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Settings")
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Download single collection or multiple collections")
 
-            onClicked: settingsDialog.open()
-        }
+                onClicked: {
+                    downloadDialog.open();
+                }
+            }
 
-        Button {
-            id: helpButton
-            icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
-            width: parent.width
-            height: parent.width
+            Button {
+                id: settingsButton
+                icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+                width: parent.width
+                height: parent.width
+                background: Rectangle {
+                    color: "#1E1E1E"
+                }
 
-            // on hover tooltip
-            hoverEnabled: true
-            ToolTip.delay: 500
-            ToolTip.timeout: 5000
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("About")
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Settings")
 
-            onClicked: aboutDialog.open()
+                onClicked: settingsDialog.open()
+            }
+
+            Button {
+                id: helpButton
+                icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+                width: parent.width
+                height: parent.width
+                background: Rectangle {
+                    color: "#1E1E1E"
+                }
+
+                // on hover tooltip
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("About")
+
+                onClicked: aboutDialog.open()
+            }
         }
     }
 
     Rectangle {
         id: mainViewArea
         anchors {
-            left: verticalBar.right
+            left: verticalBarBackground.right
             right: parent.right
             bottom: parent.bottom
             top: parent.top

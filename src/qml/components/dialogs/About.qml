@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtQuick.Controls.Basic
 import Qt.labs.platform
 
-import org.julialang
+import jlqml
 import "../common" as Common
 
 Item {
