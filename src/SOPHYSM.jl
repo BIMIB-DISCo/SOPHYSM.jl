@@ -137,6 +137,22 @@ function async_segment_image(segmentation_method::AbstractString,
     schedule(task)
     return task
 end
+"""
+    async_download_single_slide_from_collection(args...)
+
+    Async function to download a single slide from a collection (mock implementation)
+"""
+
+function async_download_single_slide_from_collection(args...)
+    s_log_message("@info", "Requested download (mock).")
+
+    task = @task begin
+        sleep(0.5)
+        s_log_message("@info", "Mock download completed.")
+    end
+    schedule(task)
+    return task
+end
 
 """
     start_GUI()
