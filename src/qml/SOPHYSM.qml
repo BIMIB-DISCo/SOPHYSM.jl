@@ -23,50 +23,74 @@ ApplicationWindow {
 
     // Helper to force image refresh (bypassing cache)
     function setSource(imageItem, path) {
-        if (path === "") return;
+        if (path === "" || path === undefined) return;
         imageItem.source = "file://" + path + "?t=" + Math.random();
     }
 
-    // Process Timer: Handles the synchronous execution to prevent UI lock-up artifacts
+    // ========================================================================
+    // STARTUP LOGIC: Delayed Warm-up & System Ready Check
+    // ========================================================================
     Timer {
-        id: processTimer
+        id: startupTimer
         interval: 100
+        running: true
         repeat: false
+        onTriggered: {
+            console.log("QML: GUI Loaded. Starting background warm-up...");
+            Julia.perform_warmup(); // Triggers JIT compilation in background
+            readyPoller.start();    // Starts checking if engine is ready
+        }
+    }
+
+    // Checks if the Julia engine has finished warming up
+    Timer {
+        id: readyPoller
+        interval: 500
+        repeat: true
+        running: false
+        onTriggered: {
+            if (Julia.check_system_ready()) {
+                console.log("QML: Engine ready!");
+                segmentateButton.text = "Segment";
+                segmentateButton.enabled = true;
+                readyPoller.stop();
+            }
+        }
+    }
+
+    // ========================================================================
+    // STATUS POLLER: Checks job status periodically
+    // ========================================================================
+    Timer {
+        id: statusPoller
+        interval: 500
+        repeat: true
+        running: false
         
         onTriggered: {
-            console.log("QML: Starting segmentation process...");
+            var result = Julia.check_job_status();
             
-            var pathParts = propmap.selected_image_path.split('.');
-            var extension = pathParts.pop();
-            var basePath = pathParts.join('.');
-            var output_path = basePath + "_seg.png";
-
-            // 1. Call Julia (Pure Calculation)
-            var resultPath = Julia.run_segmentation_pure(
-                propmap.segmentation_method,
-                propmap.model_bson_path, 
-                propmap.selected_image_path, 
-                output_path
-            );
-            
-            // 2. Update UI with Native Image Component
-            if (resultPath !== "") {
-                Julia.log_message("@info", "Loading images...");
+            if (result !== "") {
+                statusPoller.stop();
                 
-                setSource(imgSegmentated, resultPath);
-                
-                if (propmap.segmentation_method === "graph") {
-                     var bp = resultPath.replace("_seg.png", "");
-                     setSource(imgGraphVertex, bp + "_seg_graph_vertex.png");
-                     setSource(imgGraphEdges, bp + "_seg_graph_edges.png");
+                if (result === "ERROR") {
+                    Julia.log_message("@error", "An error occurred during calculation.");
+                } else {
+                    // Update native images
+                    setSource(imgSegmentated, result);
+                    
+                    if (propmap.segmentation_method === "graph") {
+                         var bp = result.replace("_seg.png", "");
+                         setSource(imgGraphVertex, bp + "_seg_graph_vertex.png");
+                         setSource(imgGraphEdges, bp + "_seg_graph_edges.png");
+                    }
+                    Julia.log_message("@info", "Segmentation completed successfully!");
                 }
                 
-                Julia.log_message("@info", "Segmentation completed successfully.");
-            } else {
-                Julia.log_message("@error", "An error occurred during segmentation.");
+                // Re-enable UI
+                segmentateButton.enabled = true;
+                segmentateButton.text = "Segment";
             }
-            
-            segmentateButton.enabled = true;
         }
     }
 
@@ -126,22 +150,46 @@ ApplicationWindow {
             id: verticalBar
             width: parent.width; height: parent.height
             Item { width: parent.width; height: 30 }
+            
             Button {
                 id: downloadButton
                 icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
                 width: parent.width; height: parent.width; background: Rectangle { color: "#1E1E1E" }
+                
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Download Collections")
+                
                 onClicked: { downloadDialog.open(); }
             }
+            
             Button {
                 id: settingsButton
                 icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
                 width: parent.width; height: parent.width; background: Rectangle { color: "#1E1E1E" }
+                
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Settings")
+                
                 onClicked: settingsDialog.open()
             }
+            
             Button {
                 id: helpButton
                 icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
                 width: parent.width; height: parent.width; background: Rectangle { color: "#1E1E1E" }
+                
+                hoverEnabled: true
+                ToolTip.delay: 500
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("About")
+                
                 onClicked: aboutDialog.open()
             }
         }
@@ -167,6 +215,13 @@ ApplicationWindow {
                     text: "Select Image"
                     buttonWidth: 250; buttonHeight: 40
                     isHighlighted: !propmap.selected_image_path
+                    
+                    hoverEnabled: true
+                    ToolTip.delay: 500
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Open an Image")
+                    
                     onClicked: { imageDialog.open() }
                 }
 
@@ -175,8 +230,15 @@ ApplicationWindow {
                     
                     Common.Button {
                         id: segmentateButton
-                        text: "Segment"
+                        text: "Initializing..." // Initial state
+                        enabled: false          // Disabled until Warm-up is done
                         buttonWidth: 120; buttonHeight: 40
+                        
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Segmentate Image")
                         
                         onClicked: {
                             if (!propmap.segmentation_method) { 
@@ -192,9 +254,26 @@ ApplicationWindow {
                                 settingsDialog.open(); return;
                             }
                             
+                            // UI Feedback
                             segmentateButton.enabled = false;
-                            Julia.log_message("@info", "Processing image... (Application will lock briefly)");
-                            processTimer.restart();
+                            segmentateButton.text = "Running...";
+                            Julia.log_message("@info", "Processing image in background...");
+                            
+                            var pathParts = propmap.selected_image_path.split('.');
+                            var extension = pathParts.pop();
+                            var basePath = pathParts.join('.');
+                            var output_path = basePath + "_seg.png";
+                            
+                            // Start Job
+                            Julia.start_async_job(
+                                propmap.segmentation_method,
+                                propmap.model_bson_path, 
+                                propmap.selected_image_path, 
+                                output_path
+                            );
+                            
+                            // Start Polling
+                            statusPoller.start();
                         }
                     }
                     
@@ -202,6 +281,13 @@ ApplicationWindow {
                         id: tesselateButton
                         text: "Tesselate"
                         buttonWidth: 120; buttonHeight: 40
+                        
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Tesselate Image")
+                        
                         onClicked: {
                             if (!propmap.selected_image_path) { Julia.log_message("@error", "No image selected."); return; }
                             var pathParts = propmap.selected_image_path.split('.');
@@ -239,7 +325,9 @@ ApplicationWindow {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     
-                    // Native Image Components (Stable)
+                    // --- NATIVE IMAGE COMPONENTS ---
+                    // Stable approach: Replaced JuliaDisplay with native Image
+                    
                     Rectangle { 
                         width: 500; height: 500; color: "#3f3f3f"
                         Image { id: imgSegmentation; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
