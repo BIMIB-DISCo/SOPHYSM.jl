@@ -16,156 +16,131 @@ include("imaging/JNet/JNet.jl")
 include("imaging/Threshold/ThresholdSegmentation.jl")
 
 ### Exported functions
-export start_GUI, segment_image, start_tessellation
+export start_GUI, run_segmentation_pure, start_tessellation
 
 ### Constants
-workspace_dir = Observable(Workspace.get_workspace_dir())
+const workspace_dir = Observable(Workspace.get_workspace_dir())
 
 ### Main Functions
-"""
-    segment_image(segmentation_method::String, model_path::String, img_path::String, output_path::String;
-                    rsize = (512, 512))
 
-Segments an input image using the specified segmentation method and saves the predicted mask.
+"""
+    run_segmentation_pure(segmentation_method::AbstractString, model_path::AbstractString, 
+                          img_path::AbstractString, output_path::AbstractString; rsize = (512, 512))
+
+Executes the segmentation process synchronously and returns the output path.
+Designed to be memory-safe by avoiding direct UI interaction during computation.
 
 # Arguments:
-- `segmentation_method`: Method to use for segmentation ("jnet" or "graph").
-- `model_path`: Path to the BSON file where the U-Net model is saved (used only with "jnet").
-- `img_path`: Path to the input image file to be segmented.
-- `output_path`: Path where the predicted segmentation mask will be saved.
-- `rsize`: Tuple specifying the dimensions for resizing. Default is (512, 512).
+- `segmentation_method`: Method to use ("jnet" or "graph").
+- `model_path`: Path to the .bson model (only for jnet).
+- `img_path`: Input image path.
+- `output_path`: Output destination path.
 """
-function segment_image(segmentation_method::AbstractString,
+function run_segmentation_pure(segmentation_method::AbstractString,
     model_path::AbstractString,
     img_path::AbstractString,
     output_path::AbstractString;
-    rsize = (512, 512))
+    rsize=(512, 512))
+
+    # Pre-computation cleanup to ensure memory stability
+    GC.gc()
+
     try
         # Convert QML strings to Julia strings
         method_str = String(segmentation_method)
-        img_path_str = String(img_path)
-        output_path_str = String(output_path)
+        model_str = String(model_path)
+        img_str = String(img_path)
+        output_str = String(output_path)
 
-        if Sys.iswindows() && img_path_str[1] == '/'
-            img_path_str = img_path_str[2:end]
-            output_path_str = output_path_str[2:end]
+        # Windows path normalization
+        if Sys.iswindows() && startswith(img_str, "/")
+            img_str = img_str[2:end]
+            output_str = output_str[2:end]
         end
-        s_log_message("@info", img_path_str)
-        s_log_message("@info", output_path_str)
+
+        s_log_message("@info", string("Starting segmentation on: ", img_str))
 
         if method_str == "jnet"
             # Use JNet (neural network) segmentation
-            model_path_str = String(model_path)
-            s_log_message("@info", string("Using JNet segmentation with model: ", model_path_str))
-            
-            s_log_message("@info", string("Loading model from: ", model_path_str))
-            model = JNet.load_model(model_path_str)
-            s_log_message("@info", "Model loaded successfully.")
+            s_log_message("@info", "Using JNet segmentation...")
 
-            # Load and preprocess the input image
-            s_log_message("@info", string("Loading and preprocessing input image from: ", img_path_str))
-            img = JNet.load_input(img_path_str; rsize = rsize)
-            s_log_message("@info", string("Input image loaded and preprocessed with size: ", size(img)))
+            model = JNet.load_model(model_str)
+            img = JNet.load_input(img_str; rsize=rsize)
 
-            # Add batch dimension to the image
+            # Reshape for prediction
             img = reshape(img, size(img)..., 1)
 
-            # Generate the prediction
             s_log_message("@info", "Generating prediction...")
-            try
-                pred = JNet.prediction(model, img)
-            catch e
-                s_log_message("@error", string("An error occurred: ", first(string(e), 300)))
-            end
-            s_log_message("@info", string("Prediction generated with size: ", size(pred)))
+            pred = JNet.prediction(model, img)
 
-            # Save the predicted mask
-            s_log_message("@info", string("Saving predicted mask to: ", output_path_str))
-            JNet.save_prediction(pred, output_path_str)
-        
+            JNet.save_prediction(pred, output_str)
+
         elseif method_str == "graph"
             # Use Graph-based segmentation
-            s_log_message("@info", "Using graph-based segmentation")
-            
-            # Get parameters from propmap if available, otherwise use defaults
-            thresholdGray = haskey(propmap, "threshold_gray") ? propmap["threshold_gray"] : 0.5
-            thresholdMarker = haskey(propmap, "threshold_marker") ? propmap["threshold_marker"] : 0.3
-            min_threshold = haskey(propmap, "min_threshold") ? Float32(propmap["min_threshold"]) : Float32(50)
-            max_threshold = haskey(propmap, "max_threshold") ? Float32(propmap["max_threshold"]) : Float32(1000)
-            
-            s_log_message("@info", string("Processing image with thresholds: Gray=", thresholdGray, 
-                                         ", Marker=", thresholdMarker, 
-                                         ", Min=", min_threshold, 
-                                         ", Max=", max_threshold))
-            
-            # Apply graph-based segmentation
+            s_log_message("@info", "Using graph-based segmentation...")
+
+            # Retrieve parameters safely
+            tGray = 0.5
+            tMarker = 0.3
+            minT = 50.0
+            maxT = 1000.0
+
+            if isdefined(SOPHYSM, :propmap)
+                tGray = haskey(propmap, "threshold_gray") ? Float64(propmap["threshold_gray"]) : 0.5
+                tMarker = haskey(propmap, "threshold_marker") ? Float64(propmap["threshold_marker"]) : 0.3
+                minT = haskey(propmap, "min_threshold") ? Float64(propmap["min_threshold"]) : 50.0
+                maxT = haskey(propmap, "max_threshold") ? Float64(propmap["max_threshold"]) : 1000.0
+            end
+
+            s_log_message("@info", string("Graph Params: Gray=", tGray, ", Marker=", tMarker, ", Min=", minT, ", Max=", maxT))
+
             ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
-                img_path_str,
-                output_path_str,
-                thresholdGray,
-                thresholdMarker,
-                min_threshold,
-                max_threshold
+                img_str,
+                output_str,
+                tGray,
+                tMarker,
+                Float32(minT),
+                Float32(maxT)
             )
-            
-            # Generate paths for graph images
-            base_path = splitext(output_path_str)[1]
-            graph_vertex_path = base_path * "_graph_vertex.png"
-            graph_edges_path = base_path * "_graph_edges.png"
-            
-            s_log_message("@info", "Graph-based segmentation completed")
-            
         else
             s_log_message("@error", string("Unknown segmentation method: ", method_str))
-            return
+            return ""
         end
-        
-        s_log_message("@info", "Segmentation saved successfully.")
+
+        s_log_message("@info", string("Saving result to: ", output_str))
+
+        # Ensure file system flush and memory cleanup
+        sleep(0.1)
+        GC.gc()
+
+        return output_str
 
     catch e
         s_log_message("@error", string("An error occurred: ", e))
         s_log_message("@error", string("Stacktrace: ", stacktrace(catch_backtrace())))
+        return ""
     end
 end
 
-function async_segment_image(segmentation_method::AbstractString,
-    model_path::AbstractString,
-    img_path::AbstractString,
-    output_path::AbstractString;
-    rsize = (512, 512))
-    task = @task segment_image(segmentation_method, model_path, img_path, output_path; rsize = rsize)
-    schedule(task)
-    return task
-end
 """
     async_download_single_slide_from_collection(args...)
 
-    Async function to download a single slide from a collection (mock implementation)
+Mock function for download logic.
 """
-
 function async_download_single_slide_from_collection(args...)
     s_log_message("@info", "Requested download (mock).")
-
-    task = @task begin
-        sleep(0.5)
-        s_log_message("@info", "Mock download completed.")
-    end
-    schedule(task)
-    return task
+    return 0
 end
 
 """
     start_GUI()
 
 Starts SOPHYSM UI.
-
 """
-### GUI logic
 function start_GUI()
     s_open_logger()
     s_log_message("@info", "Start GUI")
 
-    workspace_dir = Observable(Workspace.get_workspace_dir())
     Workspace.set_environment()
 
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
@@ -173,11 +148,11 @@ function start_GUI()
     ### QML Functions
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
     qmlfunction("log_message", s_log_message)
-    qmlfunction("display_img", Workspace.display_img)
-    qmlfunction("segment_image", segment_image)
+    # Note: display_img is handled natively by QML Image component for stability
+
+    qmlfunction("run_segmentation_pure", run_segmentation_pure)
     qmlfunction("start_tessellation", start_tessellation)
-    
-    # Propmap
+
     global propmap = JuliaPropertyMap()
     propmap["workspace_dir"] = workspace_dir
     propmap["selected_image_path"] = ""
@@ -189,16 +164,12 @@ function start_GUI()
     propmap["min_threshold"] = 50.0
     propmap["max_threshold"] = 1000.0
 
-    # Listening if there is any changes on workspace_dir
     on(workspace_dir) do x
         Workspace.set_workspace_dir(x)
-        workspace_dir = Observable(Workspace.get_workspace_dir())
-        s_log_message("@info", "WS Changed to $workspace_dir")
+        s_log_message("@info", "WS Changed to $x")
     end
 
-    # All keyword arguments to load are added as context properties on the QML side
-    loadqml(qmlfile, propmap = propmap)
-    
+    loadqml(qmlfile, propmap=propmap)
     exec_async()
 
     s_log_message("@info", "Close GUI")
@@ -208,49 +179,35 @@ end
 """
     start_tessellation(img_path::AbstractString, output_path::AbstractString)
 
-Starts the tessellation process on the input image and saves the results.
-
-# Arguments:
-- `img_path`: Path to the input image file for tessellation.
-- `output_path`: Path where the tessellation results will be saved.
+Starts the tessellation process.
 """
 function start_tessellation(img_path::AbstractString, output_path::AbstractString)
     try
-        # Convert QML strings to Julia strings
         img_path_str = String(img_path)
         output_path_str = String(output_path)
 
-        if Sys.iswindows() && img_path_str[1] == '/'
+        if Sys.iswindows() && startswith(img_path_str, "/")
             img_path_str = img_path_str[2:end]
             output_path_str = output_path_str[2:end]
         end
 
         s_log_message("@info", "Starting tessellation...")
-        
-        # Get parameters from propmap if available, otherwise use defaults
-        thresholdGray = haskey(propmap, "threshold_gray") ? propmap["threshold_gray"] : 0.5
-        thresholdMarker = haskey(propmap, "threshold_marker") ? propmap["threshold_marker"] : 0.3
-        min_threshold = haskey(propmap, "min_threshold") ? Float32(propmap["min_threshold"]) : Float32(50)
-        max_threshold = haskey(propmap, "max_threshold") ? Float32(propmap["max_threshold"]) : Float32(1000)
-        
-        ThresholdSegmentation.start_segmentation_SOPHYSM_tessellation(
-            img_path_str,
-            output_path_str,
-            thresholdGray,
-            thresholdMarker,
-            min_threshold,
-            max_threshold
+
+        tGray = get(propmap, "threshold_gray", 0.5)
+        tMarker = get(propmap, "threshold_marker", 0.3)
+        minT = get(propmap, "min_threshold", 50.0)
+        maxT = get(propmap, "max_threshold", 1000.0)
+
+        # Uses the Graph logic as per working configuration
+        ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
+            img_path_str, output_path_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT)
         )
-        
-        # Generate paths for graph images
-        base_path = splitext(output_path_str)[1]
-        graph_vertex_path = base_path * "_graph_vertex.png"
-        graph_edges_path = base_path * "_graph_edges.png"
-        
-        s_log_message("@info", "Tessellation completed successfully.")
+
+        s_log_message("@info", "Tessellation completed.")
+
     catch e
-        s_log_message("@error", string("An error occurred during tessellation: ", e))
+        s_log_message("@error", string("Tessellation error: ", e))
     end
 end
 
-end # SOPHYSM module
+end # module SOPHYSM

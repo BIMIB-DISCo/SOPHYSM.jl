@@ -21,6 +21,55 @@ ApplicationWindow {
     visibility: ApplicationWindow.Maximized
     Universal.theme: Universal.Dark
 
+    // Helper to force image refresh (bypassing cache)
+    function setSource(imageItem, path) {
+        if (path === "") return;
+        imageItem.source = "file://" + path + "?t=" + Math.random();
+    }
+
+    // Process Timer: Handles the synchronous execution to prevent UI lock-up artifacts
+    Timer {
+        id: processTimer
+        interval: 100
+        repeat: false
+        
+        onTriggered: {
+            console.log("QML: Starting segmentation process...");
+            
+            var pathParts = propmap.selected_image_path.split('.');
+            var extension = pathParts.pop();
+            var basePath = pathParts.join('.');
+            var output_path = basePath + "_seg.png";
+
+            // 1. Call Julia (Pure Calculation)
+            var resultPath = Julia.run_segmentation_pure(
+                propmap.segmentation_method,
+                propmap.model_bson_path, 
+                propmap.selected_image_path, 
+                output_path
+            );
+            
+            // 2. Update UI with Native Image Component
+            if (resultPath !== "") {
+                Julia.log_message("@info", "Loading images...");
+                
+                setSource(imgSegmentated, resultPath);
+                
+                if (propmap.segmentation_method === "graph") {
+                     var bp = resultPath.replace("_seg.png", "");
+                     setSource(imgGraphVertex, bp + "_seg_graph_vertex.png");
+                     setSource(imgGraphEdges, bp + "_seg_graph_edges.png");
+                }
+                
+                Julia.log_message("@info", "Segmentation completed successfully.");
+            } else {
+                Julia.log_message("@error", "An error occurred during segmentation.");
+            }
+            
+            segmentateButton.enabled = true;
+        }
+    }
+
     Dialogs.Download {
         id: downloadDialog
         workspaceDir: propmap.workspace_dir
@@ -32,28 +81,17 @@ ApplicationWindow {
                 Julia.download_single_slide_from_collection(collections[i], targetDir)
             }
         }
-        
-        onDownloadCanceled: {
-            Julia.log_message("@info", "Download canceled by user")
-        }
+        onDownloadCanceled: { Julia.log_message("@info", "Download canceled") }
     }
     
     Dialogs.Settings {
         id: settingsDialog
         workspaceDir: propmap.workspace_dir
-        
-        onSettingsApplied: {
-            Julia.log_message("@info", "Settings applied")
-        }
-        
-        onSettingsCanceled: {
-            Julia.log_message("@info", "Settings canceled")
-        }
+        onSettingsApplied: { Julia.log_message("@info", "Settings applied") }
+        onSettingsCanceled: { Julia.log_message("@info", "Settings canceled") }
     }
     
-    Dialogs.About {
-        id: aboutDialog
-    }
+    Dialogs.About { id: aboutDialog }
 
     FolderDialog {
         id: folderDialog
@@ -64,103 +102,46 @@ ApplicationWindow {
             settingsDialog.workspaceDir = propmap.workspace_dir;
             Julia.log_message("@info", "Changed workspace directory to: " + propmap.workspace_dir);
         }
-        onRejected: {
-            Julia.log_message("@info", "Canceled new Workspace Folder selection");
-        }
     }
 
     FileDialog {
         id: imageDialog
         title: "Please choose an image"
-
         onAccepted: {
             var path = imageDialog.selectedFile.toString().slice(7);
             Julia.log_message("@info", "loaded image: " + path);
-            Julia.display_img(jdispSegmentation, path);
             propmap.selected_image_path = path;
-            this.close();
-        }
-
-        onRejected: {
-            Julia.log_message("@info", "Canceled Image selection");
+            
+            // Load preview
+            setSource(imgSegmentation, path);
+            
             this.close();
         }
     }
 
     Rectangle {
         id: verticalBarBackground
-        width: 40
-        height: parent.height
-        color: "#1E1E1E"
-        
+        width: 40; height: parent.height; color: "#1E1E1E"
         Column {
             id: verticalBar
-            width: parent.width
-            height: parent.height
-
-            // Add a spacer at the top to align with Select Image button
-            Item {
-                width: parent.width
-                height: 30 // Same as topMargin of segmentationControls
-            }
-
-            // download
+            width: parent.width; height: parent.height
+            Item { width: parent.width; height: 30 }
             Button {
                 id: downloadButton
                 icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
-                width: parent.width
-                height: parent.width
-                background: Rectangle {
-                    color: "#1E1E1E"
-                }
-
-                // on hover tooltip
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Download single collection or multiple collections")
-
-                onClicked: {
-                    downloadDialog.open();
-                }
+                width: parent.width; height: parent.width; background: Rectangle { color: "#1E1E1E" }
+                onClicked: { downloadDialog.open(); }
             }
-
             Button {
                 id: settingsButton
                 icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
-                width: parent.width
-                height: parent.width
-                background: Rectangle {
-                    color: "#1E1E1E"
-                }
-
-                // on hover tooltip
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Settings")
-
+                width: parent.width; height: parent.width; background: Rectangle { color: "#1E1E1E" }
                 onClicked: settingsDialog.open()
             }
-
             Button {
                 id: helpButton
                 icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
-                width: parent.width
-                height: parent.width
-                background: Rectangle {
-                    color: "#1E1E1E"
-                }
-
-                // on hover tooltip
-                hoverEnabled: true
-                ToolTip.delay: 500
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("About")
-
+                width: parent.width; height: parent.width; background: Rectangle { color: "#1E1E1E" }
                 onClicked: aboutDialog.open()
             }
         }
@@ -168,48 +149,25 @@ ApplicationWindow {
 
     Rectangle {
         id: mainViewArea
-        anchors {
-            left: verticalBarBackground.right
-            right: parent.right
-            bottom: parent.bottom
-            top: parent.top
-        }
-        color: "#1E1E1E"  // Changed to match About dialog background
+        anchors { left: verticalBarBackground.right; right: parent.right; bottom: parent.bottom; top: parent.top }
+        color: "#1E1E1E" 
 
         Rectangle {
             id: segmentationTabContainer
-            color: "#1E1E1E"  // Changed to match About dialog background
+            color: "#1E1E1E" 
             anchors.fill: parent
 
             Column {
                 id: segmentationControls
-                width: 250
-                spacing: 10
-                anchors {
-                    left: parent.left
-                    top: parent.top
-                    bottom: parent.bottom
-                    leftMargin: 30
-                    topMargin: 30
-                }
+                width: 250; spacing: 10
+                anchors { left: parent.left; top: parent.top; bottom: parent.bottom; leftMargin: 30; topMargin: 30 }
 
                 Common.Button {
                     id: imageSelectionButton
                     text: "Select Image"
-                    buttonWidth: 250
-                    buttonHeight: 40
-                    isHighlighted: !propmap.selected_image_path || propmap.selected_image_path === ""
-                    
-                    // On hover tooltip
-                    hoverEnabled: true
-                    ToolTip.delay: 500
-                    ToolTip.timeout: 5000
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Open an Image")
-
-                    onClicked: {
-                        imageDialog.open()
-                    }
+                    buttonWidth: 250; buttonHeight: 40
+                    isHighlighted: !propmap.selected_image_path
+                    onClicked: { imageDialog.open() }
                 }
 
                 Row {
@@ -218,86 +176,46 @@ ApplicationWindow {
                     Common.Button {
                         id: segmentateButton
                         text: "Segment"
-                        buttonWidth: 120
-                        buttonHeight: 40
+                        buttonWidth: 120; buttonHeight: 40
                         
-                        hoverEnabled: true
-                        ToolTip.delay: 500
-                        ToolTip.timeout: 5000
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Segmentate Image")
-
                         onClicked: {
-                            if (!propmap.segmentation_method || propmap.segmentation_method === "") {
+                            if (!propmap.segmentation_method) { 
                                 Julia.log_message("@error", "No segmentation method selected. Opening settings dialog.");
-                                settingsDialog.open();
-                                return;
+                                settingsDialog.open(); return; 
                             }
-                            
-                            if (!propmap.selected_image_path || propmap.selected_image_path === "") {
-                                Julia.log_message("@error", "No image selected. Please select an image first.");
-                                return;
+                            if (!propmap.selected_image_path) { 
+                                Julia.log_message("@error", "No image selected. Please select an image first."); return; 
                             }
-                            
-                            if (propmap.segmentation_method === "jnet" && 
-                                (!propmap.model_bson_path || propmap.model_bson_path === "")) {
-                                Julia.log_message("@error", "JNet selected but no model file provided. Opening settings dialog.");
-                                // Highlight the model button in the settings dialog
+                            if (propmap.segmentation_method === "jnet" && (!propmap.model_bson_path || propmap.model_bson_path === "")) {
+                                Julia.log_message("@error", "JNet selected but no model file provided.");
                                 settingsDialog.highlightModelButton = true;
-                                settingsDialog.open();
-                                return;
+                                settingsDialog.open(); return;
                             }
                             
-                            var pathParts = propmap.selected_image_path.split('.');
-                            var extension = pathParts.pop();
-                            var basePath = pathParts.join('.');
-                            var output_path = basePath + "_seg.png";
-                            
-                            Julia.segment_image(propmap.segmentation_method,
-                                                propmap.model_bson_path, 
-                                                propmap.selected_image_path, 
-                                                output_path);
-                                                
-                            Julia.display_img(jdispSegmentated, output_path);
-                            
-                            // Display graph images if using graph method
-                            if (propmap.segmentation_method === "graph") {
-                                // Fix: Use basePath + "_seg_graph_vertex.png" instead of basePath + "_graph_vertex.png"
-                                Julia.display_img(jdispGraphVertex, basePath + "_seg_graph_vertex.png");
-                                Julia.display_img(jdispGraphEdges, basePath + "_seg_graph_edges.png");
-                            }
+                            segmentateButton.enabled = false;
+                            Julia.log_message("@info", "Processing image... (Application will lock briefly)");
+                            processTimer.restart();
                         }
                     }
                     
                     Common.Button {
                         id: tesselateButton
                         text: "Tesselate"
-                        buttonWidth: 120
-                        buttonHeight: 40
-
-                        hoverEnabled: true
-                        ToolTip.delay: 500
-                        ToolTip.timeout: 5000
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Tesselate Image")
-
+                        buttonWidth: 120; buttonHeight: 40
                         onClicked: {
-                            if (!propmap.selected_image_path || propmap.selected_image_path === "") {
-                                Julia.log_message("@error", "No image selected. Please select an image first.");
-                                return;
-                            }
-
+                            if (!propmap.selected_image_path) { Julia.log_message("@error", "No image selected."); return; }
                             var pathParts = propmap.selected_image_path.split('.');
                             var extension = pathParts.pop();
                             var basePath = pathParts.join('.');
                             var outputPath = basePath;
 
                             Julia.start_tessellation(propmap.selected_image_path, outputPath);
-
-                            Julia.display_img(jdispTessellationTotal, outputPath + "_total_tessellation.png");
-                            Julia.display_img(jdispTessellationCells, outputPath + "_cell_tessellation.png");
-                            Julia.display_img(jdispGraphVertex, outputPath + "_seg_graph_vertex.png");
-                            Julia.display_img(jdispGraphEdges, outputPath + "_seg_graph_edges.png");
+                            
+                            // Visualizzazione Tessellazione (Native)
+                            setSource(imgTessellationTotal, outputPath + "_total_tessellation.png");
+                            setSource(imgTessellationCells, outputPath + "_cell_tessellation.png");
+                            setSource(imgGraphVertex, outputPath + "_seg_graph_vertex.png");
+                            setSource(imgGraphEdges, outputPath + "_seg_graph_edges.png");
                         }
                     }
                 }
@@ -306,14 +224,10 @@ ApplicationWindow {
             ScrollView {
                 id: segmentationScrollView
                 anchors {
-                    left: segmentationControls.right
-                    leftMargin: 120
-                    top: parent.top
-                    topMargin: 30
-                    bottom: parent.bottom
-                    bottomMargin: 30
-                    right: parent.right
-                    rightMargin: 30
+                    left: segmentationControls.right; leftMargin: 120
+                    top: parent.top; topMargin: 30
+                    bottom: parent.bottom; bottomMargin: 30
+                    right: parent.right; rightMargin: 30
                 }
                 clip: true
                 contentWidth: segmentationGrid.width
@@ -321,93 +235,34 @@ ApplicationWindow {
                 GridLayout {
                     id: segmentationGrid
                     width: Math.min(parent.width - segmentationControls.width - 180, (500 * 2) + columnSpacing)
-                    columns: 2
-                    rowSpacing: 20
-                    columnSpacing: 20
+                    columns: 2; rowSpacing: 20; columnSpacing: 20
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
-                    Rectangle {
-                        id: originalImageContainer
-                        width: 500
-                        height: 500
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdispSegmentation
-                            width: 460
-                            height: 460
-                            anchors.centerIn: parent
-                        }
+                    
+                    // Native Image Components (Stable)
+                    Rectangle { 
+                        width: 500; height: 500; color: "#3f3f3f"
+                        Image { id: imgSegmentation; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
-
-                    Rectangle {
-                        id: segmentedImageContainer
-                        width: 500
-                        height: 500
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdispSegmentated
-                            width: 460
-                            height: 460
-                            anchors.centerIn: parent
-                        }
+                    Rectangle { 
+                        width: 500; height: 500; color: "#3f3f3f"
+                        Image { id: imgSegmentated; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
-
-                    Rectangle {
-                        id: placeholder3
-                        width: 500
-                        height: 500
-                        color: "#3f3f3f"
-                        
-                        JuliaDisplay {
-                            id: jdispGraphVertex
-                            width: 460
-                            height: 460
-                            anchors.centerIn: parent
-                        }
+                    Rectangle { 
+                        width: 500; height: 500; color: "#3f3f3f"
+                        Image { id: imgGraphVertex; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
-
-                    Rectangle {
-                        id: placeholder4
-                        width: 500
-                        height: 500
-                        color: "#3f3f3f"
-                        
-                        JuliaDisplay {
-                            id: jdispGraphEdges
-                            width: 460
-                            height: 460
-                            anchors.centerIn: parent
-                        }
+                    Rectangle { 
+                        width: 500; height: 500; color: "#3f3f3f"
+                        Image { id: imgGraphEdges; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
-
-                    Rectangle {
-                        id: placeholder1
-                        width: 500
-                        height: 333
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdispTessellationTotal
-                            anchors.centerIn: parent
-                            width: 460
-                            height: 307
-                        }
+                    Rectangle { 
+                        width: 500; height: 333; color: "#3f3f3f"
+                        Image { id: imgTessellationTotal; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
-
-                    Rectangle {
-                        id: placeholder2
-                        width: 500
-                        height: 333
-                        color: "#3f3f3f"
-
-                        JuliaDisplay {
-                            id: jdispTessellationCells
-                            anchors.centerIn: parent
-                            width: 460
-                            height: 307
-                        }
+                    Rectangle { 
+                        width: 500; height: 333; color: "#3f3f3f"
+                        Image { id: imgTessellationCells; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
                 }
             }
