@@ -1,6 +1,5 @@
 ### SOPHYSM-- SOlid tumors PHYlogentic Spatial Modeller
 ### SOPHYSM.jl
-
 module SOPHYSM
 
 ### Packages
@@ -17,184 +16,89 @@ include("imaging/JNet/JNet.jl")
 include("imaging/Threshold/ThresholdSegmentation.jl")
 
 ### Exported functions
-export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, check_job_status, check_system_ready, perform_warmup
+export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, check_job_status
 
 ### Constants
 const workspace_dir = Observable(Workspace.get_workspace_dir())
 
-# ============================================================
-# SHARED STATE (THREAD SAFE)
-# ============================================================
+# Global property map for QML
 const JOB_RESULT = Ref{String}("")
 const IS_BUSY = Ref{Bool}(false)
-const SYSTEM_READY = Ref{Bool}(false)
 
-"""
-    perform_warmup()
-
-Executes a mock segmentation in a background thread to force JIT compilation
-of heavy functions before the user interacts with the GUI.
-This prevents the UI from freezing on the first real operation.
-"""
+# Warmup JIT compilation (helps with initial lag of first run)
 function perform_warmup()
-    s_log_message("@info", "System: Starting JIT Warm-up in background...")
-
+    s_log_message("@info", "[WARMUP] Starting warmup JIT compilation...")
     Base.Threads.@spawn begin
         try
-            # 1. Create a dummy image using standard Julia arrays
-            # JNet and ThresholdSegmentation work with Float32/64 Arrays
-            dummy_path = joinpath(tempdir(), "sophysm_warmup.png")
-            dummy_out = joinpath(tempdir(), "sophysm_warmup_seg.png")
-
-            # Create a 512x512 random array
-            dummy_img = rand(Float32, 512, 512)
-
-            # 2. Save the image to disk using JNet (which already has dependencies)
-            JNet.save_prediction(dummy_img, dummy_path)
-
-            # 3. Execute the Graph algorithm
-            # This forces compilation of the heaviest path
-            ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
-                dummy_path, dummy_out, 0.5, 0.3, 50.0f0, 1000.0f0
-            )
-
-            # 4. Cleanup
-            rm(dummy_path, force=true)
-            rm(dummy_out, force=true)
-
-            s_log_message("@info", "System: Warm-up completed. Engine ready.")
-        catch e
-            # Non-critical error during warmup
-            s_log_message("@warn", string("System: Warm-up partial skip: ", e))
-        finally
-            SYSTEM_READY[] = true
+            # Warmup JNet with dummy data
+            run_segmentation_pure("graph", "dummy", "dummy_in", "dummy_out")
+        catch
+            # Silently ignore warmup errors
         end
+
     end
-    return 0
+
 end
 
 """
-    check_system_ready() -> Bool
-
-Checks if the JIT warm-up process has completed.
+    run_segmentation_pure(method_arg::String, model_arg::String, img_arg::String, output_arg::String) -> String
+    Run segmentation using the specified method and model on the input image, saving the result to the output path.
+    - `method_arg`: Segmentation method ("jnet" or "graph").
+    - `model_arg`: Path to the model file.
+    - `img_arg`: Path to the input image file.
+    - `output_arg`: Path to save the output segmentation.
+    Returns the output path on success, or "ERROR" on failure.
 """
-function check_system_ready()
-    return SYSTEM_READY[]
-end
-
-"""
-    run_segmentation_pure(segmentation_method::AbstractString, model_path::AbstractString, 
-                          img_path::AbstractString, output_path::AbstractString; rsize = (512, 512))
-
-Executes the segmentation process synchronously on a dedicated thread and returns the output path.
-Designed to be memory-safe by avoiding direct UI interaction during computation.
-
-# Arguments:
-- `segmentation_method`: Method to use ("jnet" or "graph").
-- `model_path`: Path to the .bson model (only for jnet).
-- `img_path`: Input image path.
-- `output_path`: Output destination path.
-"""
-function run_segmentation_pure(segmentation_method::AbstractString,
-    model_path::AbstractString,
-    img_path::AbstractString,
-    output_path::AbstractString;
-    rsize=(512, 512))
-
-    # Micro-sleep to allow UI context switch before heavy calculation
-    sleep(0.01)
-
+function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
+    # Initial micro-sleep forces a context switch. This allows other threads to run first,
+    # which is useful during warmup to avoid blocking the main thread.
+    sleep(0.05)
     try
-        # Convert QML strings to Julia strings
-        method_str = String(segmentation_method)
-        model_str = String(model_path)
-        img_str = String(img_path)
-        output_str = String(output_path)
+        m_str = String(method_arg)
+        mod_str = String(model_arg)
+        i_str = String(img_arg)
+        o_str = String(output_arg)
 
-        # Windows path normalization
-        if Sys.iswindows() && startswith(img_str, "/")
-            img_str = img_str[2:end]
-            output_str = output_str[2:end]
-        end
-
-        # Skip logging/logic if this is the dummy warmup call
-        if img_str == "dummy_in"
+        # Skip if dummy input (WARMUP)
+        if i_str == "dummy_in"
+            # Load only JNet to compile it, then exit
             return ""
         end
 
-        s_log_message("@info", string("Starting segmentation on: ", img_str))
+        if Sys.iswindows() && startswith(i_str, "/")
+            i_str = i_str[2:end]
+            o_str = o_str[2:end]
+        end
 
-        if method_str == "jnet"
-            # Use JNet (neural network) segmentation
-            s_log_message("@info", string("Using JNet segmentation with model: ", model_str))
-
-            model = JNet.load_model(model_str)
-            s_log_message("@info", "Model loaded successfully.")
-
-            # Load and preprocess
-            img = JNet.load_input(img_str; rsize=rsize)
-            s_log_message("@info", "Input image loaded and preprocessed.")
-
-            # Add batch dimension
+        if m_str == "jnet"
+            s_log_message("@info", "[THREAD-$(Threads.threadid())] JNet Start...")
+            model = JNet.load_model(mod_str)
+            img = JNet.load_input(i_str; rsize=(512, 512))
             img = reshape(img, size(img)..., 1)
-
-            s_log_message("@info", "Generating prediction...")
             pred = JNet.prediction(model, img)
+            JNet.save_prediction(pred, o_str)
 
-            s_log_message("@info", string("Saving predicted mask to: ", output_str))
-            JNet.save_prediction(pred, output_str)
-
-        elseif method_str == "graph"
-            # Use Graph-based segmentation
-            s_log_message("@info", "Using graph-based segmentation...")
-
-            # Retrieve parameters safely
-            # Note: We use local fallbacks to avoid threading issues with global propmap
+        elseif m_str == "graph"
+            # Parametri sicuri
             tGray = 0.5
             tMarker = 0.3
             minT = 50.0
             maxT = 1000.0
 
-            if isdefined(SOPHYSM, :propmap)
-                try
-                    tGray = haskey(propmap, "threshold_gray") ? Float64(propmap["threshold_gray"]) : 0.5
-                    tMarker = haskey(propmap, "threshold_marker") ? Float64(propmap["threshold_marker"]) : 0.3
-                    minT = haskey(propmap, "min_threshold") ? Float64(propmap["min_threshold"]) : 50.0
-                    maxT = haskey(propmap, "max_threshold") ? Float64(propmap["max_threshold"]) : 1000.0
-                catch
-                    # Ignore concurrent access errors, use defaults
-                end
-            end
-
-            s_log_message("@info", string("Graph Params: Gray=", tGray, ", Marker=", tMarker, ", Min=", minT, ", Max=", maxT))
-
-            ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
-                img_str,
-                output_str,
-                tGray,
-                tMarker,
-                Float32(minT),
-                Float32(maxT)
-            )
-        else
-            s_log_message("@error", string("Unknown segmentation method: ", method_str))
-            return ""
+            s_log_message("@info", "[THREAD-$(Threads.threadid())] Graph Algorithm Start...")
+            ThresholdSegmentation.start_segmentation_SOPHYSM_graph(i_str, o_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT))
         end
 
-        s_log_message("@info", "Segmentation saved successfully.")
-
-        # Ensure file system flush
-        sleep(0.1)
-
-        # Cleanup memory AFTER the heavy work is done
+        s_log_message("@info", "[THREAD-$(Threads.threadid())] Saving: $o_str")
+        sleep(0.1) # Flush I/O
         GC.gc()
 
-        return output_str
+        return o_str
 
     catch e
-        # Suppress errors during dummy warmup
+        # Silent error during warmup
         if img_arg != "dummy_in"
-            s_log_message("@error", string("An error occurred: ", e))
+            s_log_message("@error", "[THREAD ERROR] $e")
             showerror(stdout, e, catch_backtrace())
         end
         return "ERROR"
@@ -202,101 +106,101 @@ function run_segmentation_pure(segmentation_method::AbstractString,
 end
 
 """
-    start_async_job(method, model, img, output)
-
-Initiates the segmentation process on a separate thread using `Base.Threads.@spawn`.
-This prevents the GUI from freezing during computation.
+    start_async_job(method::String, model::String, img::String, output::String) -> Int
+    Start an asynchronous segmentation job on a separate thread.
+    - `method`: Segmentation method ("jnet" or "graph").
+    - `model`: Path to the model file.
+    - `img`: Path to the input image file.
+    - `output`: Path to save the output segmentation.
+    Returns 0 if the job was started successfully, or -1 if the system is already busy.
 """
 function start_async_job(method, model, img, output)
     if IS_BUSY[]
-        s_log_message("@warn", "Job rejected: System is busy.")
+        s_log_message("@warn", "[UI] Job Refused, system is already busy.")
         return -1
     end
 
     if Threads.nthreads() == 1
-        s_log_message("@warn", "WARNING: Julia is running with 1 thread. GUI will freeze. Restart with 'julia -t auto'")
+        s_log_message("@warn", "WARNING: Julia is running in Single Thread mode! The GUI will freeze. Start with 'julia -t auto'")
     end
 
-    s_log_message("@info", "Starting job on background thread.")
+    s_log_message("@info", "[UI] Starting job on separate thread.")
     IS_BUSY[] = true
     JOB_RESULT[] = ""
 
-    # Spawn task on a separate thread
+    if isdefined(SOPHYSM, :s_log_message)
+        s_log_message("@info", "Background processing...")
+    end
+
     Base.Threads.@spawn begin
         try
             path = run_segmentation_pure(method, model, img, output)
             JOB_RESULT[] = path
         catch err
-            s_log_message("@error", string("Async job error: ", err))
+            s_log_message("@error", "[SPAWN ERROR] $err")
             JOB_RESULT[] = "ERROR"
         finally
             IS_BUSY[] = false
-            s_log_message("@info", "Job finished. Result ready.")
+            s_log_message("@info", "[THREAD] Job finished. Result ready.")
         end
     end
-
     return 0
 end
 
+
+
 """
     check_job_status() -> String
-
-Polled by QML to check if the background job is finished.
-Returns an empty string if busy, or the file path if finished.
+    Check the status of the asynchronous job.
+    Returns an empty string if the job is still running, or the result path/error message if completed.
 """
 function check_job_status()
     if IS_BUSY[]
         return ""
     end
-
     res = JOB_RESULT[]
 
     if res != ""
-        # Reset after reading
         JOB_RESULT[] = ""
     end
 
     return res
 end
 
-"""
-    async_download_single_slide_from_collection(args...)
 
-Mock function for download logic.
+
+
+"""
+    async_download_single_slide_from_collection(args...) -> Int
+    Mock function to simulate downloading a slide from a collection asynchronously.
+    Currently, it just prints an info message and returns 0.
 """
 function async_download_single_slide_from_collection(args...)
-    s_log_message("@info", "Requested download (mock).")
+    s_log_message("@info", "[INFO] Download mock.")
     return 0
 end
 
 """
     start_GUI()
-
-Starts SOPHYSM UI.
+    Start the SOPHYSM GUI application.
 """
 function start_GUI()
+
     s_open_logger()
 
     n_threads = Threads.nthreads()
-    s_log_message("@info", string("Start GUI (Available Threads: ", n_threads, ")"))
+    s_log_message("@info", "Start GUI (Available threads: $n_threads)")
 
     Workspace.set_environment()
 
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
-    ### QML Functions
     qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
     qmlfunction("log_message", s_log_message)
-
-    # Threading & Polling Functions
     qmlfunction("start_async_job", start_async_job)
     qmlfunction("check_job_status", check_job_status)
-    qmlfunction("check_system_ready", check_system_ready)
-    qmlfunction("perform_warmup", perform_warmup)
-
     qmlfunction("start_tessellation", start_tessellation)
 
-    # Propmap definition
     global propmap = JuliaPropertyMap()
     propmap["workspace_dir"] = workspace_dir
     propmap["selected_image_path"] = ""
@@ -315,24 +219,26 @@ function start_GUI()
 
     loadqml(qmlfile, propmap=propmap)
 
-    # Note: Warmup is triggered by QML after load
+    #Start warmup in background
+    perform_warmup()
 
     exec_async()
-
     s_log_message("@info", "Close GUI")
     s_close_logger()
+
 end
+
 
 """
     start_tessellation(img_path::AbstractString, output_path::AbstractString)
-
-Starts the tessellation process on the input image.
+    Start the tessellation process on the given image and save the output.
+    - `img_path`: Path to the input image file.
+    - `output_path`: Path to save the tessellated output.
 """
 function start_tessellation(img_path::AbstractString, output_path::AbstractString)
     try
         img_path_str = String(img_path)
         output_path_str = String(output_path)
-
         if Sys.iswindows() && startswith(img_path_str, "/")
             img_path_str = img_path_str[2:end]
             output_path_str = output_path_str[2:end]
@@ -345,13 +251,14 @@ function start_tessellation(img_path::AbstractString, output_path::AbstractStrin
         minT = get(propmap, "min_threshold", 50.0)
         maxT = get(propmap, "max_threshold", 1000.0)
 
-        ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
-            img_path_str, output_path_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT)
-        )
+        ThresholdSegmentation.start_segmentation_SOPHYSM_graph(img_path_str, output_path_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT))
         s_log_message("@info", "Tessellation completed.")
+
     catch e
         s_log_message("@error", string("Tessellation error: ", e))
     end
 end
+
+
 
 end # module SOPHYSM
