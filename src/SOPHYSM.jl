@@ -14,6 +14,7 @@ include("Workspace.jl")
 include("SOPHYSMLogger.jl")
 include("imaging/JNet/JNet.jl")
 include("imaging/Threshold/ThresholdSegmentation.jl")
+include("imaging/Cellpose/CellposeSegmentation.jl")
 
 ### Exported functions
 export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, check_job_status
@@ -87,7 +88,13 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
 
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Graph Algorithm Start...")
             ThresholdSegmentation.start_segmentation_SOPHYSM_graph(i_str, o_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT))
+
+        elseif m_str == "cellpose"
+            s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose Start...")
+            CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
+
         end
+
 
         s_log_message("@info", "[THREAD-$(Threads.threadid())] Saving: $o_str")
         sleep(0.1) # Flush I/O
