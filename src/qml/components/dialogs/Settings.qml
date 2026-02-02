@@ -38,6 +38,7 @@ Item {
             root.segmentationMethod = propmap.segmentation_method
             jnetCheckBox.checked = root.segmentationMethod === "jnet"
             graphCheckBox.checked = root.segmentationMethod === "graph"
+            cellposeCheckBox.checked = root.segmentationMethod === "cellpose"
         }
         
         // Load graph parameters from propmap if available
@@ -298,12 +299,13 @@ Item {
                                     if (checked) {
                                         root.segmentationMethod = "jnet"
                                         graphCheckBox.checked = false
+                                        cellposeCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!graphCheckBox.checked) {
-                                        // Ensure at least one option is selected
+                                    } else if (!graphCheckBox.checked && !cellposeCheckBox.checked) {
                                         root.segmentationMethod = ""
                                     }
                                 }
+
                                 contentItem: Text {
                                     text: jnetCheckBox.text
                                     font: jnetCheckBox.font
@@ -323,12 +325,13 @@ Item {
                                     if (checked) {
                                         root.segmentationMethod = "graph"
                                         jnetCheckBox.checked = false
+                                        cellposeCheckBox.checked = false
                                         root.hasChanges = true
-                                    } else if (!jnetCheckBox.checked) {
-                                        // Ensure at least one option is selected
+                                    } else if (!jnetCheckBox.checked && !cellposeCheckBox.checked) {
                                         root.segmentationMethod = ""
                                     }
                                 }
+
                                 contentItem: Text {
                                     text: graphCheckBox.text
                                     font: graphCheckBox.font
@@ -337,6 +340,32 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                     leftPadding: graphCheckBox.indicator.width + 
                                                graphCheckBox.spacing
+                                }
+                            }
+
+                            Common.CheckBox {
+                                id: cellposeCheckBox
+                                text: "Cellpose Method"
+                                checked: root.segmentationMethod === "cellpose"
+                                onCheckedChanged: {
+                                    if (checked) {
+                                        root.segmentationMethod = "cellpose"
+                                        jnetCheckBox.checked = false
+                                        graphCheckBox.checked = false
+                                        root.hasChanges = true
+                                    } else if (!jnetCheckBox.checked && !graphCheckBox.checked) {
+                                        // Ensure at least one option is selected
+                                        root.segmentationMethod = ""
+                                    }
+                                }
+                                contentItem: Text {
+                                    text: cellposeCheckBox.text
+                                    font: cellposeCheckBox.font
+                                    opacity: enabled ? 1.0 : 0.3
+                                    color: "#FFFFFF"
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: cellposeCheckBox.indicator.width + 
+                                               cellposeCheckBox.spacing
                                 }
                             }
                         }

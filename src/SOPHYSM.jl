@@ -8,7 +8,6 @@ using Observables
 using JSON
 using JHistint
 using Base.Threads
-using CellposeWrapper
 
 ### Included modules
 include("Workspace.jl")
@@ -23,22 +22,35 @@ export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, ch
 ### Constants
 const workspace_dir = Observable(Workspace.get_workspace_dir())
 
-# --- Job state (UI <-> worker thread) ---
-const JOB_RESULT = Ref{String}("")            # path / "ERROR" / "ERROR_TIMEOUT"
+# --- Job state (UI <-> worker) ---
+const JOB_RESULT = Ref{String}("")                # path / "ERROR" / "ERROR_TIMEOUT"
 const IS_BUSY = Threads.Atomic{Bool}(false)
 const JOB_LOCK = ReentrantLock()
 
 # watchdog
-const JOB_START_NS = Threads.Atomic{Int}(0)     # time_ns() at job start, 0 if none
-const JOB_TIMEOUT_S = 120.0                     # seconds
+const JOB_START_NS = Threads.Atomic{Int}(0)         # time_ns() at job start, 0 if none
+const JOB_TIMEOUT_S = 120.0                         # seconds
 
-# track current spawned task (to avoid re-entrancy problems)
+# track current spawned task (graph/jnet)
 const JOB_TASK = Ref{Union{Task,Nothing}}(nothing)
+
+# method tracking
+const JOB_METHOD = Ref{String}("")                  # "graph" / "jnet" / "cellpose"
+const JOB_KIND = Ref{String}("")                  # "spawn" / "cellpose_worker"
+
+const DEBUG_LOGS = Ref(false)
+
+const _LAST_JOB_STATE = Ref{String}("")      # per log-on-change
+const _LAST_POLL_LOG_NS = Ref{Int}(0)        # per rate-limit
+const POLL_LOG_EVERY_S = 2.0                 # ogni 2s al massimo in DEBUG
+
+# (optional) avoid qmlfunction re-registration errors if you restart GUI in same Julia session
+const _QML_FUNCS_REGISTERED = Ref(false)
 
 # Warmup JIT compilation (helps with initial lag of first run)
 function perform_warmup()
     s_log_message("@info", "[WARMUP] Starting warmup JIT compilation...")
-    Base.Threads.@spawn begin
+    Threads.@spawn begin
         try
             run_segmentation_pure("graph", "dummy", "dummy_in", "dummy_out")
         catch
@@ -48,6 +60,9 @@ end
 
 """
     run_segmentation_pure(method_arg, model_arg, img_arg, output_arg) -> String
+
+Esegue davvero l’algoritmo e salva output.
+Questa funzione non fa spawn di per sé (viene chiamata da job thread o sync).
 """
 function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
     # micro sleep per cedere il timeslice durante warmup
@@ -89,7 +104,10 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             )
 
         elseif m_str == "cellpose"
-            s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose Start...")
+            # IMPORTANT: in modalità async "buona", la GUI NON deve chiamare PyCall qui.
+            # Il cellpose async viene gestito dal worker (vedi start_async_job + CellposeSegmentation).
+            # Qui lasciamo solo per eventuali chiamate sync (debug), ma normalmente non verrà usato.
+            s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose (direct) Start...")
             CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
 
         else
@@ -97,9 +115,8 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
         end
 
         s_log_message("@info", "[THREAD-$(Threads.threadid())] Saving: $o_str")
-        sleep(0.1) # Flush I/O
+        sleep(0.1) # flush I/O
         GC.gc()
-
         return o_str
 
     catch e
@@ -116,79 +133,172 @@ end
 
 Ritorna:
 - 0  se avviato
-- -1 se già occupato
+- -1 se già occupato o errore immediato
 """
-
 function start_async_job(method, model, img, output)
-    # Fast refuse
+    # rifiuto veloce
     if IS_BUSY[]
         s_log_message("@warn", "[UI] Job Refused, system is already busy.")
+        _log_state_change("refused_busy")
         return -1
     end
 
-    # In safe-mode monothread non serve atomic_xchg!, ma lo teniamo semplice e deterministico
-    IS_BUSY[] = true
+    # acquisizione atomica (race-safe)
+    if Threads.atomic_xchg!(IS_BUSY, true)
+        s_log_message("@warn", "[UI] Job Refused (race), system is already busy.")
+        _log_state_change("refused_race")
+        return -1
+    end
+
+    # init stato job
+    JOB_METHOD[] = String(method)
+    JOB_KIND[] = ""
+    JOB_TASK[] = nothing
     JOB_START_NS[] = time_ns()
 
     lock(JOB_LOCK) do
         JOB_RESULT[] = ""
     end
 
-    s_log_message("@info", "[UI] Starting job in MONOTHREAD safe-mode (GUI will block).")
+    # log evento "start" UNA volta
+    s_log_message("@info", "[UI] Starting job async. method=$(JOB_METHOD[])")
+    _log_state_change("started")
 
-    try
-        # IMPORTANT: init python sul thread chiamante (stabile)
-        try
-            CellposeWrapper._init_py!()
-        catch e
-            s_log_message("@error", "[UI] Cellpose init failed: $e")
+    # ---------------------------
+    # CELLPOSE: worker Julia separato (stabile, GUI responsive)
+    # ---------------------------
+    if JOB_METHOD[] == "cellpose"
+        JOB_KIND[] = "cellpose_worker"
+        s_log_message("@info", "[UI] Starting Cellpose via Julia worker process.")
+
+        rc = CellposeSegmentation.start_cellpose_job(String(img), String(output))
+        if rc != 0
+            s_log_message("@error", "[UI] Failed to start cellpose worker.")
             lock(JOB_LOCK) do
                 JOB_RESULT[] = "ERROR"
             end
+            IS_BUSY[] = false
+            JOB_START_NS[] = 0
+            JOB_METHOD[] = ""
+            JOB_KIND[] = ""
+            _log_state_change("error_start_cellpose")
             return -1
         end
 
-        # Esegui SINCRONO (nessuno spawn)
-        path = run_segmentation_pure(method, model, img, output)
-
-        lock(JOB_LOCK) do
-            JOB_RESULT[] = path
-        end
-
-        return path == "ERROR" ? -1 : 0
-
-    catch err
-        s_log_message("@error", "[MONOTHREAD ERROR] $err")
-        lock(JOB_LOCK) do
-            JOB_RESULT[] = "ERROR"
-        end
-        return -1
-
-    finally
-        IS_BUSY[] = false
-        JOB_START_NS[] = 0
-        s_log_message("@info", "[UI] Monothread job finished. Result ready.")
+        # job avviato, ritorna subito
+        _log_state_change("running")  # stato iniziale
+        return 0
     end
+
+    # ---------------------------
+    # BONUS: graph/jnet async vero con spawn
+    # ---------------------------
+    JOB_KIND[] = "spawn"
+    s_log_message("@info", "[UI] Spawning background task for $(JOB_METHOD[]).")
+    _log_state_change("running")
+
+    JOB_TASK[] = Threads.@spawn begin
+        try
+            path = run_segmentation_pure(method, model, img, output)
+            lock(JOB_LOCK) do
+                JOB_RESULT[] = path
+            end
+        catch err
+            s_log_message("@error", "[SPAWN ERROR] $err")
+            lock(JOB_LOCK) do
+                JOB_RESULT[] = "ERROR"
+            end
+        finally
+            IS_BUSY[] = false
+            JOB_START_NS[] = 0
+            JOB_METHOD[] = ""
+            JOB_KIND[] = ""
+            s_log_message("@info", "[THREAD] Job finished. Result ready.")
+            # NON chiamare _log_state_change qui: è UI-facing, lasciamolo al poller quando legge JOB_RESULT
+        end
+    end
+
+    return 0
 end
 
 
 """
     check_job_status() -> String
 
-- Se c'è un risultato pronto, lo restituisce subito (anche se IS_BUSY=true).
-- Se il job è ancora running e scatta timeout, mette JOB_RESULT="ERROR_TIMEOUT" (una sola volta),
-  ma NON sblocca IS_BUSY finché il task non termina davvero.
+- Se c'è un risultato pronto, lo restituisce e lo consuma (JOB_RESULT="").
+- Se job ancora running, ritorna "".
+- Se scatta timeout, mette JOB_RESULT="ERROR_TIMEOUT" (una sola volta) ma NON uccide il job.
 """
 function check_job_status()
+    # 0) se siamo busy, logga stato running (solo se cambia) + debug rate-limited
+    if IS_BUSY[]
+        _log_state_change("running")
+
+        t0 = JOB_START_NS[]
+        if t0 != 0
+            elapsed_s = (time_ns() - t0) / 1e9
+            _debug_poll_log("method=$(JOB_METHOD[]) kind=$(JOB_KIND[]) elapsed=$(round(elapsed_s, digits=1))s")
+        end
+    else
+        _log_state_change("idle")
+    end
+
+    # 1) poll cellpose worker (solo se attivo)
+    if IS_BUSY[] && JOB_KIND[] == "cellpose_worker"
+        r = CellposeSegmentation.poll_cellpose_job()
+        if r != ""
+            # r è path oppure "ERROR"
+            lock(JOB_LOCK) do
+                JOB_RESULT[] = r
+            end
+            IS_BUSY[] = false
+            JOB_START_NS[] = 0
+            JOB_METHOD[] = ""
+            JOB_KIND[] = ""
+            # non loggare qui: lo facciamo quando consumiamo JOB_RESULT (punto 3)
+        end
+    end
+
+    # 2) watchdog timeout (una sola volta)
+    if IS_BUSY[]
+        t0 = JOB_START_NS[]
+        if t0 != 0
+            elapsed_s = (time_ns() - t0) / 1e9
+            if elapsed_s > JOB_TIMEOUT_S
+                lock(JOB_LOCK) do
+                    if JOB_RESULT[] == ""
+                        s_log_message("@error", "[UI] Job timeout after $(round(elapsed_s, digits=1))s.")
+                        JOB_RESULT[] = "ERROR_TIMEOUT"
+                        _log_state_change("timeout")
+                    end
+                end
+            end
+        end
+    end
+
+    # 3) se c'è un risultato pronto, restituiscilo e logga UNA volta (evento)
     lock(JOB_LOCK) do
         res = JOB_RESULT[]
         if res != ""
             JOB_RESULT[] = ""
+
+            if res == "ERROR"
+                s_log_message("@error", "[UI] Job failed.")
+                _log_state_change("error")
+            elseif res == "ERROR_TIMEOUT"
+                # già loggato sopra, ma teniamo stato coerente
+                _log_state_change("timeout")
+            else
+                s_log_message("@info", "[UI] Job completed: $res")
+                _log_state_change("completed")
+            end
+
             return res
         end
         return ""
     end
 end
+
 
 """
     async_download_single_slide_from_collection(args...) -> Int
@@ -211,11 +321,15 @@ function start_GUI()
 
     qmlfile = joinpath(@__DIR__, "qml", "SOPHYSM.qml")
 
-    qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
-    qmlfunction("log_message", s_log_message)
-    qmlfunction("start_async_job", start_async_job)
-    qmlfunction("check_job_status", check_job_status)
-    qmlfunction("start_tessellation", start_tessellation)
+    # register QML functions once per Julia session (avoids error if GUI reopened)
+    if !_QML_FUNCS_REGISTERED[]
+        qmlfunction("download_single_slide_from_collection", async_download_single_slide_from_collection)
+        qmlfunction("log_message", s_log_message)
+        qmlfunction("start_async_job", start_async_job)
+        qmlfunction("check_job_status", check_job_status)
+        qmlfunction("start_tessellation", start_tessellation)
+        _QML_FUNCS_REGISTERED[] = true
+    end
 
     global propmap = JuliaPropertyMap()
     propmap["workspace_dir"] = workspace_dir
@@ -270,5 +384,23 @@ function start_tessellation(img_path::AbstractString, output_path::AbstractStrin
         s_log_message("@error", string("Tessellation error: ", e))
     end
 end
+
+function _log_state_change(new_state::String)
+    if new_state != _LAST_JOB_STATE[]
+        s_log_message("@info", "[JOB] state=$new_state method=$(JOB_METHOD[]) kind=$(JOB_KIND[])")
+        _LAST_JOB_STATE[] = new_state
+    end
+end
+
+function _debug_poll_log(msg::String)
+    DEBUG_LOGS[] || return
+    now_ns = time_ns()
+    last = _LAST_POLL_LOG_NS[]
+    if last == 0 || (now_ns - last) / 1e9 >= POLL_LOG_EVERY_S
+        s_log_message("@info", "[POLL] $msg")
+        _LAST_POLL_LOG_NS[] = now_ns
+    end
+end
+
 
 end # module SOPHYSM

@@ -2,28 +2,22 @@ module CellposeSegmentation
 
 using Colors
 using PNGFiles
-import CellposeWrapper
+using JSON
+using Dates
 using Base.Threads
 
+import CellposeWrapper
+
 export start_segmentation_SOPHYSM_cellpose
+export start_cellpose_job, poll_cellpose_job
 
-"""
-    start_segmentation_SOPHYSM_cellpose(input_path, output_path; cache_models=true, max_cached_models=2) -> String
-
-Esegue Cellpose tramite CellposeWrapper (che gestisce init lazy + lock Python interno),
-converte la mask in una mappa RGB e salva un PNG.
-"""
-function start_segmentation_SOPHYSM_cellpose(input_path::String, output_path::String;
-  cache_models::Bool=true,
-  max_cached_models::Int=2
-)
-  # Wrapper gestisce init + lock python internamente: NESSUN lock esterno qui.
-  res = CellposeWrapper.segment_image(
-    input_path;
-    return_flows=false,
-    cache_models=cache_models,
-    max_cached_models=max_cached_models
-  )
+# ------------------------------
+# (A) Sync direct call (debug / fallback)
+# ------------------------------
+function start_segmentation_SOPHYSM_cellpose(input_path::String, output_path::String)
+  # init + call nello stesso thread (safe in sync)
+  CellposeWrapper._init_py!()
+  res = CellposeWrapper.segment_image(input_path; return_flows=false)
 
   masks = Int.(res.masks)
   maxid = maximum(masks)
@@ -39,17 +33,87 @@ function start_segmentation_SOPHYSM_cellpose(input_path::String, output_path::St
     if id == 0
       out[i, j] = RGB{Float32}(0, 0, 0)
     else
-      # wrap-around per sicurezza
       idx = ((id - 1) % length(cols)) + 1
-      c = cols[idx]  # RGB{Float64}
+      c = cols[idx]
       out[i, j] = RGB{Float32}(c.r, c.g, c.b)
     end
   end
 
-  mkpath(dirname(output_path))
   PNGFiles.save(output_path, out)
-
   return output_path
+end
+
+# ------------------------------
+# (B) Async stable mode: Julia worker process
+# ------------------------------
+const _DONE_JSON = Ref{String}("")
+const _STATUS_JSON = Ref{String}("")
+const _OUT_PATH = Ref{String}("")
+const _RUNNING = Threads.Atomic{Bool}(false)
+
+"""
+    start_cellpose_job(input_path, output_path) -> Int
+
+Avvia un worker Julia separato (single-thread) che esegue CellposeWrapper e salva output_path.
+Ritorna 0 se avviato, -1 se già running.
+"""
+function start_cellpose_job(input_path::String, output_path::String)
+  if _RUNNING[]
+    return -1
+  end
+  _RUNNING[] = true
+
+  tmpdir = mktempdir()
+  _STATUS_JSON[] = joinpath(tmpdir, "status.json")
+  _DONE_JSON[] = joinpath(tmpdir, "done.json")
+  _OUT_PATH[] = output_path
+
+  worker = joinpath(@__DIR__, "cellpose_worker.jl")
+
+  # usa lo stesso Julia (julia_cmd) e lo stesso progetto attivo della GUI
+  projfile = Base.active_project()
+  projdir = dirname(projfile)
+
+  cmd = `$(Base.julia_cmd()) -t 1 --project=$(projdir) $worker $input_path $output_path $(_STATUS_JSON[]) $(_DONE_JSON[])`
+
+  # avvio non bloccante
+  run(cmd; wait=false)
+
+  return 0
+end
+
+"""
+    poll_cellpose_job() -> String
+
+Ritorna:
+- "" se job ancora running
+- output_path se ok
+- "ERROR" se fallito
+"""
+function poll_cellpose_job()
+  if _DONE_JSON[] == "" || !isfile(_DONE_JSON[])
+    return ""
+  end
+
+  try
+    obj = JSON.parsefile(_DONE_JSON[])
+    ok = get(obj, "ok", false)
+
+    _RUNNING[] = false
+
+    if ok == true
+      return String(get(obj, "output", _OUT_PATH[]))
+    else
+      # puoi stampare errore se vuoi
+      err = get(obj, "error", "unknown error")
+      println("[CELLPOSE WORKER ERROR] ", err)
+      return "ERROR"
+    end
+  catch e
+    _RUNNING[] = false
+    println("[CELLPOSE POLL ERROR] ", sprint(showerror, e))
+    return "ERROR"
+  end
 end
 
 end # module
