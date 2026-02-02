@@ -8,6 +8,7 @@ using Observables
 using JSON
 using JHistint
 using Base.Threads
+using CellposeWrapper
 
 ### Included modules
 include("Workspace.jl")
@@ -22,38 +23,36 @@ export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, ch
 ### Constants
 const workspace_dir = Observable(Workspace.get_workspace_dir())
 
-# Global property map for QML
-const JOB_RESULT = Ref{String}("")
-const IS_BUSY = Ref{Bool}(false)
+# --- Job state (UI <-> worker thread) ---
+const JOB_RESULT = Ref{String}("")            # path / "ERROR" / "ERROR_TIMEOUT"
+const IS_BUSY = Threads.Atomic{Bool}(false)
+const JOB_LOCK = ReentrantLock()
+
+# watchdog
+const JOB_START_NS = Threads.Atomic{Int}(0)     # time_ns() at job start, 0 if none
+const JOB_TIMEOUT_S = 120.0                     # seconds
+
+# track current spawned task (to avoid re-entrancy problems)
+const JOB_TASK = Ref{Union{Task,Nothing}}(nothing)
 
 # Warmup JIT compilation (helps with initial lag of first run)
 function perform_warmup()
     s_log_message("@info", "[WARMUP] Starting warmup JIT compilation...")
     Base.Threads.@spawn begin
         try
-            # Warmup JNet with dummy data
             run_segmentation_pure("graph", "dummy", "dummy_in", "dummy_out")
         catch
-            # Silently ignore warmup errors
         end
-
     end
-
 end
 
 """
-    run_segmentation_pure(method_arg::String, model_arg::String, img_arg::String, output_arg::String) -> String
-    Run segmentation using the specified method and model on the input image, saving the result to the output path.
-    - `method_arg`: Segmentation method ("jnet" or "graph").
-    - `model_arg`: Path to the model file.
-    - `img_arg`: Path to the input image file.
-    - `output_arg`: Path to save the output segmentation.
-    Returns the output path on success, or "ERROR" on failure.
+    run_segmentation_pure(method_arg, model_arg, img_arg, output_arg) -> String
 """
 function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
-    # Initial micro-sleep forces a context switch. This allows other threads to run first,
-    # which is useful during warmup to avoid blocking the main thread.
+    # micro sleep per cedere il timeslice durante warmup
     sleep(0.05)
+
     try
         m_str = String(method_arg)
         mod_str = String(model_arg)
@@ -62,7 +61,6 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
 
         # Skip if dummy input (WARMUP)
         if i_str == "dummy_in"
-            # Load only JNet to compile it, then exit
             return ""
         end
 
@@ -80,21 +78,23 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             JNet.save_prediction(pred, o_str)
 
         elseif m_str == "graph"
-            # Parametri sicuri
             tGray = 0.5
             tMarker = 0.3
             minT = 50.0
             maxT = 1000.0
 
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Graph Algorithm Start...")
-            ThresholdSegmentation.start_segmentation_SOPHYSM_graph(i_str, o_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT))
+            ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
+                i_str, o_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT)
+            )
 
         elseif m_str == "cellpose"
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose Start...")
             CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
 
+        else
+            error("Unknown segmentation method: $m_str")
         end
-
 
         s_log_message("@info", "[THREAD-$(Threads.threadid())] Saving: $o_str")
         sleep(0.1) # Flush I/O
@@ -103,7 +103,6 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
         return o_str
 
     catch e
-        # Silent error during warmup
         if img_arg != "dummy_in"
             s_log_message("@error", "[THREAD ERROR] $e")
             showerror(stdout, e, catch_backtrace())
@@ -113,74 +112,86 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
 end
 
 """
-    start_async_job(method::String, model::String, img::String, output::String) -> Int
-    Start an asynchronous segmentation job on a separate thread.
-    - `method`: Segmentation method ("jnet" or "graph").
-    - `model`: Path to the model file.
-    - `img`: Path to the input image file.
-    - `output`: Path to save the output segmentation.
-    Returns 0 if the job was started successfully, or -1 if the system is already busy.
+    start_async_job(method, model, img, output) -> Int
+
+Ritorna:
+- 0  se avviato
+- -1 se già occupato
 """
+
 function start_async_job(method, model, img, output)
+    # Fast refuse
     if IS_BUSY[]
         s_log_message("@warn", "[UI] Job Refused, system is already busy.")
         return -1
     end
 
-    if Threads.nthreads() == 1
-        s_log_message("@warn", "WARNING: Julia is running in Single Thread mode! The GUI will freeze. Start with 'julia -t auto'")
-    end
-
-    s_log_message("@info", "[UI] Starting job on separate thread.")
+    # In safe-mode monothread non serve atomic_xchg!, ma lo teniamo semplice e deterministico
     IS_BUSY[] = true
-    JOB_RESULT[] = ""
+    JOB_START_NS[] = time_ns()
 
-    if isdefined(SOPHYSM, :s_log_message)
-        s_log_message("@info", "Background processing...")
+    lock(JOB_LOCK) do
+        JOB_RESULT[] = ""
     end
 
-    Base.Threads.@spawn begin
+    s_log_message("@info", "[UI] Starting job in MONOTHREAD safe-mode (GUI will block).")
+
+    try
+        # IMPORTANT: init python sul thread chiamante (stabile)
         try
-            path = run_segmentation_pure(method, model, img, output)
-            JOB_RESULT[] = path
-        catch err
-            s_log_message("@error", "[SPAWN ERROR] $err")
-            JOB_RESULT[] = "ERROR"
-        finally
-            IS_BUSY[] = false
-            s_log_message("@info", "[THREAD] Job finished. Result ready.")
+            CellposeWrapper._init_py!()
+        catch e
+            s_log_message("@error", "[UI] Cellpose init failed: $e")
+            lock(JOB_LOCK) do
+                JOB_RESULT[] = "ERROR"
+            end
+            return -1
         end
-    end
-    return 0
-end
 
+        # Esegui SINCRONO (nessuno spawn)
+        path = run_segmentation_pure(method, model, img, output)
+
+        lock(JOB_LOCK) do
+            JOB_RESULT[] = path
+        end
+
+        return path == "ERROR" ? -1 : 0
+
+    catch err
+        s_log_message("@error", "[MONOTHREAD ERROR] $err")
+        lock(JOB_LOCK) do
+            JOB_RESULT[] = "ERROR"
+        end
+        return -1
+
+    finally
+        IS_BUSY[] = false
+        JOB_START_NS[] = 0
+        s_log_message("@info", "[UI] Monothread job finished. Result ready.")
+    end
+end
 
 
 """
     check_job_status() -> String
-    Check the status of the asynchronous job.
-    Returns an empty string if the job is still running, or the result path/error message if completed.
+
+- Se c'è un risultato pronto, lo restituisce subito (anche se IS_BUSY=true).
+- Se il job è ancora running e scatta timeout, mette JOB_RESULT="ERROR_TIMEOUT" (una sola volta),
+  ma NON sblocca IS_BUSY finché il task non termina davvero.
 """
 function check_job_status()
-    if IS_BUSY[]
+    lock(JOB_LOCK) do
+        res = JOB_RESULT[]
+        if res != ""
+            JOB_RESULT[] = ""
+            return res
+        end
         return ""
     end
-    res = JOB_RESULT[]
-
-    if res != ""
-        JOB_RESULT[] = ""
-    end
-
-    return res
 end
-
-
-
 
 """
     async_download_single_slide_from_collection(args...) -> Int
-    Mock function to simulate downloading a slide from a collection asynchronously.
-    Currently, it just prints an info message and returns 0.
 """
 function async_download_single_slide_from_collection(args...)
     s_log_message("@info", "[INFO] Download mock.")
@@ -189,10 +200,8 @@ end
 
 """
     start_GUI()
-    Start the SOPHYSM GUI application.
 """
 function start_GUI()
-
     s_open_logger()
 
     n_threads = Threads.nthreads()
@@ -226,21 +235,15 @@ function start_GUI()
 
     loadqml(qmlfile, propmap=propmap)
 
-    #Start warmup in background
     perform_warmup()
 
     exec_async()
     s_log_message("@info", "Close GUI")
     s_close_logger()
-
 end
 
-
 """
-    start_tessellation(img_path::AbstractString, output_path::AbstractString)
-    Start the tessellation process on the given image and save the output.
-    - `img_path`: Path to the input image file.
-    - `output_path`: Path to save the tessellated output.
+    start_tessellation(img_path, output_path)
 """
 function start_tessellation(img_path::AbstractString, output_path::AbstractString)
     try
@@ -258,14 +261,14 @@ function start_tessellation(img_path::AbstractString, output_path::AbstractStrin
         minT = get(propmap, "min_threshold", 50.0)
         maxT = get(propmap, "max_threshold", 1000.0)
 
-        ThresholdSegmentation.start_segmentation_SOPHYSM_graph(img_path_str, output_path_str, Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT))
+        ThresholdSegmentation.start_segmentation_SOPHYSM_graph(
+            img_path_str, output_path_str,
+            Float64(tGray), Float64(tMarker), Float32(minT), Float32(maxT)
+        )
         s_log_message("@info", "Tessellation completed.")
-
     catch e
         s_log_message("@error", string("Tessellation error: ", e))
     end
 end
-
-
 
 end # module SOPHYSM
