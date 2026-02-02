@@ -1,10 +1,18 @@
 # cellpose_worker.jl
 using JSON
 using Dates
-using CellposeWrapper
-using PNGFiles
-using Colors
+using CSV
 
+using CellposeWrapper
+
+include("CellposeGraph.jl")
+using .CellposeGraph
+
+"""
+    write_json_atomic(path::String, obj)
+    Writes a JSON object to a file atomically by first writing to a temporary file
+    and then renaming it to the target path.
+"""
 function write_json_atomic(path::String, obj)
   tmp = path * ".tmp"
   open(tmp, "w") do io
@@ -13,9 +21,15 @@ function write_json_atomic(path::String, obj)
   mv(tmp, path; force=true)
 end
 
+"""
+    main()
+    Main function to run Cellpose segmentation as a worker process.
+    Reads command-line arguments for input/output paths and thresholds,
+    executes segmentation, and writes status and results to JSON files.
+"""
 function main()
-  if length(ARGS) < 4
-    println("Usage: julia cellpose_worker.jl <input> <output_png> <status_json> <done_json>")
+  if length(ARGS) < 6
+    println("Usage: julia cellpose_worker.jl <input> <output_png> <status_json> <done_json> <minT> <maxT>")
     exit(2)
   end
 
@@ -23,6 +37,8 @@ function main()
   output_path = ARGS[2]
   status_path = ARGS[3]
   done_path = ARGS[4]
+  minT = parse(Float32, ARGS[5])
+  maxT = parse(Float32, ARGS[6])
 
   try
     write_json_atomic(status_path, Dict(
@@ -31,7 +47,6 @@ function main()
       "msg" => "Initializing Cellpose/Python..."
     ))
 
-    # init + run
     CellposeWrapper._init_py!()
 
     write_json_atomic(status_path, Dict(
@@ -41,30 +56,54 @@ function main()
     ))
 
     res = CellposeWrapper.segment_image(input_path; return_flows=false)
-
     masks = Int.(res.masks)
-    maxid = maximum(masks)
 
-    cols = maxid > 0 ? distinguishable_colors(maxid) : RGB[]
+    # 1) basic segmented image (output_path)
+    CellposeGraph.save_segmented_png_from_masks(masks, output_path)
+
+    # 2) pipeline CSV + edges + adjacency
+    df_cells, df_noisy, df_total = CellposeGraph.cellpose_masks_to_dataframes(
+      masks; min_threshold=minT, max_threshold=maxT
+    )
+
+    base_path = splitext(output_path)[1]
+    labels_csv = base_path * "_dataframe_labels.csv"
+    total_labels_csv = base_path * "_dataframe_total_labels.csv"
+    noisy_labels_csv = base_path * "_dataframe_noisy_labels.csv"
+    edges_csv = base_path * "_dataframe_edges.csv"
+    adj_txt = base_path * ".txt"
+
+    CSV.write(labels_csv, df_cells)
+    CSV.write(total_labels_csv, df_total)
+    CSV.write(noisy_labels_csv, df_noisy)
 
     h, w = size(masks)
-    out = Matrix{RGB{Float32}}(undef, h, w)
-    @inbounds for i in 1:h, j in 1:w
-      id = masks[i, j]
-      if id == 0
-        out[i, j] = RGB{Float32}(0, 0, 0)
-      else
-        idx = ((id - 1) % length(cols)) + 1
-        c = cols[idx]
-        out[i, j] = RGB{Float32}(c.r, c.g, c.b)
-      end
-    end
+    df_edges, edges = CellposeGraph.build_graph_from_tessellation_cellpose(
+      df_cells, df_noisy, df_total,
+      h, w,
+      base_path * "_total_tessellation.png",
+      base_path * "_cell_tessellation.png"
+    )
+    CSV.write(edges_csv, df_edges)
 
-    PNGFiles.save(output_path, out)
+    mat = CellposeGraph.adjacency_from_edges_weight(df_total, df_edges, edges)
+    CellposeGraph.save_adjacency_matrix(mat, adj_txt)
+
+    # 3) overlay images (vertex + edges)
+    vertex_png, edges_png = CellposeGraph.graph_overlay_paths(output_path)
+    CellposeGraph.render_graph_overlay_images(
+      output_path,
+      edges_csv,
+      total_labels_csv,
+      vertex_png,
+      edges_png
+    )
 
     write_json_atomic(done_path, Dict(
       "ok" => true,
       "output" => output_path,
+      "vertex_png" => vertex_png,
+      "edges_png" => edges_png,
       "time" => string(now())
     ))
 

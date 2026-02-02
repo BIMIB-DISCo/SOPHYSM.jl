@@ -71,24 +71,22 @@ end
 
 """
     start_segmentation_SOPHYSM_graph(filepath_input::AbstractString,
-                              filepath_output::AbstractString,
-                              thresholdGray::Float64,
-                              thresholdMarker::Float64,
-                              min_threshold::Float32,
-                              max_threshold::Float32)
+                                    filepath_output::AbstractString,
+                                    thresholdGray::Float64,
+                                    thresholdMarker::Float64,
+                                    min_threshold::Float32,
+                                    max_threshold::Float32)
 
-Starts the SOPHYSM graph-based segmentation process with given parameters.
-
-# Arguments
-- `filepath_input`: Path to the input image file
-- `filepath_output`: Path where output will be saved
-- `thresholdGray`: Threshold for grayscale conversion
-- `thresholdMarker`: Threshold for marker-based segmentation
-- `min_threshold`: Minimum area threshold for segments
-- `max_threshold`: Maximum area threshold for segments
-
-# Returns
-- The filepath of the generated output
+    Starts the SOPHYSM graph-based segmentation process with given parameters.
+    # Arguments
+    - `filepath_input`: Path to the input image file
+    - `filepath_output`: Path where output will be saved
+    - `thresholdGray`: Threshold for grayscale conversion
+    - `thresholdMarker`: Threshold for marker-based segmentation
+    - `min_threshold`: Minimum area threshold for segments
+    - `max_threshold`: Maximum area threshold for segments
+    # Returns
+    - The filepath of the generated output
 """
 function start_segmentation_SOPHYSM_graph(
     filepath_input::AbstractString,
@@ -105,7 +103,7 @@ function start_segmentation_SOPHYSM_graph(
         thresholdMarker,
         min_threshold,
         max_threshold)
-                                
+
     return filepath_output
 end
 

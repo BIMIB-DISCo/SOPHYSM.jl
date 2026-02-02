@@ -23,31 +23,34 @@ export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, ch
 const workspace_dir = Observable(Workspace.get_workspace_dir())
 
 # --- Job state (UI <-> worker) ---
-const JOB_RESULT = Ref{String}("")                # path / "ERROR" / "ERROR_TIMEOUT"
+const JOB_RESULT = Ref{String}("")   # path / "ERROR" / "ERROR_TIMEOUT"
 const IS_BUSY = Threads.Atomic{Bool}(false)
 const JOB_LOCK = ReentrantLock()
 
 # watchdog
-const JOB_START_NS = Threads.Atomic{Int}(0)         # time_ns() at job start, 0 if none
-const JOB_TIMEOUT_S = 120.0                         # seconds
+const JOB_START_NS = Threads.Atomic{Int}(0)  # time_ns() at job start, 0 if none
+const JOB_TIMEOUT_S = 120.0                  # seconds
 
 # track current spawned task (graph/jnet)
 const JOB_TASK = Ref{Union{Task,Nothing}}(nothing)
 
 # method tracking
-const JOB_METHOD = Ref{String}("")                  # "graph" / "jnet" / "cellpose"
-const JOB_KIND = Ref{String}("")                  # "spawn" / "cellpose_worker"
+const JOB_METHOD = Ref{String}("")  # "graph" / "jnet" / "cellpose"
+const JOB_KIND = Ref{String}("")    # "spawn" / "cellpose_worker"
 
 const DEBUG_LOGS = Ref(false)
 
-const _LAST_JOB_STATE = Ref{String}("")      # per log-on-change
-const _LAST_POLL_LOG_NS = Ref{Int}(0)        # per rate-limit
-const POLL_LOG_EVERY_S = 2.0                 # ogni 2s al massimo in DEBUG
+const _LAST_JOB_STATE = Ref{String}("") # per log-on-change
+const _LAST_POLL_LOG_NS = Ref{Int}(0)   # per rate-limit
+const POLL_LOG_EVERY_S = 2.0            # each 2s in DEBUG
 
 # (optional) avoid qmlfunction re-registration errors if you restart GUI in same Julia session
 const _QML_FUNCS_REGISTERED = Ref(false)
 
-# Warmup JIT compilation (helps with initial lag of first run)
+"""
+    perform_warmup()
+    Performs JIT warmup by running a dummy segmentation in a background thread.
+"""
 function perform_warmup()
     s_log_message("@info", "[WARMUP] Starting warmup JIT compilation...")
     Threads.@spawn begin
@@ -60,9 +63,10 @@ end
 
 """
     run_segmentation_pure(method_arg, model_arg, img_arg, output_arg) -> String
-
-Esegue davvero l’algoritmo e salva output.
-Questa funzione non fa spawn di per sé (viene chiamata da job thread o sync).
+    Segmentation runner for pure (synchronous) calls.
+    Returns:
+    - output path if successful
+    - "ERROR" if an error occurred
 """
 function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
     # micro sleep per cedere il timeslice durante warmup
@@ -104,9 +108,6 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             )
 
         elseif m_str == "cellpose"
-            # IMPORTANT: in modalità async "buona", la GUI NON deve chiamare PyCall qui.
-            # Il cellpose async viene gestito dal worker (vedi start_async_job + CellposeSegmentation).
-            # Qui lasciamo solo per eventuali chiamate sync (debug), ma normalmente non verrà usato.
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose (direct) Start...")
             CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
 
@@ -130,10 +131,11 @@ end
 
 """
     start_async_job(method, model, img, output) -> Int
-
-Ritorna:
-- 0  se avviato
-- -1 se già occupato o errore immediato
+    Starts an asynchronous segmentation job.
+    - method: "graph", "jnet", "cellpose"
+    - model: path to model (for jnet)
+    - img: input image path
+    - output: output path
 """
 function start_async_job(method, model, img, output)
     # rifiuto veloce
@@ -143,14 +145,14 @@ function start_async_job(method, model, img, output)
         return -1
     end
 
-    # acquisizione atomica (race-safe)
+    # atomic race condition check+set
     if Threads.atomic_xchg!(IS_BUSY, true)
         s_log_message("@warn", "[UI] Job Refused (race), system is already busy.")
         _log_state_change("refused_race")
         return -1
     end
 
-    # init stato job
+    # init job state
     JOB_METHOD[] = String(method)
     JOB_KIND[] = ""
     JOB_TASK[] = nothing
@@ -160,18 +162,23 @@ function start_async_job(method, model, img, output)
         JOB_RESULT[] = ""
     end
 
-    # log evento "start" UNA volta
     s_log_message("@info", "[UI] Starting job async. method=$(JOB_METHOD[])")
     _log_state_change("started")
 
-    # ---------------------------
-    # CELLPOSE: worker Julia separato (stabile, GUI responsive)
-    # ---------------------------
+    # Cellpose via worker process
     if JOB_METHOD[] == "cellpose"
         JOB_KIND[] = "cellpose_worker"
         s_log_message("@info", "[UI] Starting Cellpose via Julia worker process.")
 
-        rc = CellposeSegmentation.start_cellpose_job(String(img), String(output))
+        minT = Float32(get(propmap, "min_threshold", 50.0))
+        maxT = Float32(get(propmap, "max_threshold", 1000.0))
+
+        rc = CellposeSegmentation.start_cellpose_job(
+            String(img), String(output);
+            min_threshold=minT,
+            max_threshold=maxT
+        )
+
         if rc != 0
             s_log_message("@error", "[UI] Failed to start cellpose worker.")
             lock(JOB_LOCK) do
@@ -185,14 +192,11 @@ function start_async_job(method, model, img, output)
             return -1
         end
 
-        # job avviato, ritorna subito
-        _log_state_change("running")  # stato iniziale
+        _log_state_change("running")  # initial running state
         return 0
     end
 
-    # ---------------------------
-    # BONUS: graph/jnet async vero con spawn
-    # ---------------------------
+    # Graph / JNet via Threads.@spawn
     JOB_KIND[] = "spawn"
     s_log_message("@info", "[UI] Spawning background task for $(JOB_METHOD[]).")
     _log_state_change("running")
@@ -214,7 +218,6 @@ function start_async_job(method, model, img, output)
             JOB_METHOD[] = ""
             JOB_KIND[] = ""
             s_log_message("@info", "[THREAD] Job finished. Result ready.")
-            # NON chiamare _log_state_change qui: è UI-facing, lasciamolo al poller quando legge JOB_RESULT
         end
     end
 
@@ -224,10 +227,11 @@ end
 
 """
     check_job_status() -> String
-
-- Se c'è un risultato pronto, lo restituisce e lo consuma (JOB_RESULT="").
-- Se job ancora running, ritorna "".
-- Se scatta timeout, mette JOB_RESULT="ERROR_TIMEOUT" (una sola volta) ma NON uccide il job.
+    Checks the status of the current job.
+    Behavior:
+    - If there's result ready, returns it and consumes it (JOB_RESULT="").
+    - If job still running, returns "".
+    - If timeout occurs, sets JOB_RESULT="ERROR_TIMEOUT" (only once) but does NOT kill the job.
 """
 function check_job_status()
     # 0) se siamo busy, logga stato running (solo se cambia) + debug rate-limited
@@ -243,11 +247,11 @@ function check_job_status()
         _log_state_change("idle")
     end
 
-    # 1) poll cellpose worker (solo se attivo)
+    # 1) poll cellpose worker (only if active)
     if IS_BUSY[] && JOB_KIND[] == "cellpose_worker"
         r = CellposeSegmentation.poll_cellpose_job()
         if r != ""
-            # r è path oppure "ERROR"
+            # r is path or "ERROR"
             lock(JOB_LOCK) do
                 JOB_RESULT[] = r
             end
@@ -255,11 +259,10 @@ function check_job_status()
             JOB_START_NS[] = 0
             JOB_METHOD[] = ""
             JOB_KIND[] = ""
-            # non loggare qui: lo facciamo quando consumiamo JOB_RESULT (punto 3)
         end
     end
 
-    # 2) watchdog timeout (una sola volta)
+    # 2) watchdog timeout (only once)
     if IS_BUSY[]
         t0 = JOB_START_NS[]
         if t0 != 0
@@ -276,7 +279,7 @@ function check_job_status()
         end
     end
 
-    # 3) se c'è un risultato pronto, restituiscilo e logga UNA volta (evento)
+    # 3) if there's a result ready, return it and log ONCE (event)
     lock(JOB_LOCK) do
         res = JOB_RESULT[]
         if res != ""
@@ -310,6 +313,7 @@ end
 
 """
     start_GUI()
+    Starts the SOPHYSM graphical user interface.
 """
 function start_GUI()
     s_open_logger()
@@ -385,6 +389,10 @@ function start_tessellation(img_path::AbstractString, output_path::AbstractStrin
     end
 end
 
+"""
+    _log_state_change(new_state)
+    Logs job state changes (only if different from last).
+"""
 function _log_state_change(new_state::String)
     if new_state != _LAST_JOB_STATE[]
         s_log_message("@info", "[JOB] state=$new_state method=$(JOB_METHOD[]) kind=$(JOB_KIND[])")
@@ -392,6 +400,10 @@ function _log_state_change(new_state::String)
     end
 end
 
+"""
+    _debug_poll_log(msg)
+    Logs debug poll messages rate-limited.
+"""
 function _debug_poll_log(msg::String)
     DEBUG_LOGS[] || return
     now_ns = time_ns()
@@ -401,6 +413,5 @@ function _debug_poll_log(msg::String)
         _LAST_POLL_LOG_NS[] = now_ns
     end
 end
-
 
 end # module SOPHYSM

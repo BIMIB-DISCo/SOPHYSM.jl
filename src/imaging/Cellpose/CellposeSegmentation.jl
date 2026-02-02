@@ -5,115 +5,179 @@ using PNGFiles
 using JSON
 using Dates
 using Base.Threads
+using CSV
 
 import CellposeWrapper
 
 export start_segmentation_SOPHYSM_cellpose
 export start_cellpose_job, poll_cellpose_job
 
-# ------------------------------
-# (A) Sync direct call (debug / fallback)
-# ------------------------------
-function start_segmentation_SOPHYSM_cellpose(input_path::String, output_path::String)
-  # init + call nello stesso thread (safe in sync)
-  CellposeWrapper._init_py!()
-  res = CellposeWrapper.segment_image(input_path; return_flows=false)
+include("CellposeGraph.jl")
+using .CellposeGraph
 
-  masks = Int.(res.masks)
-  maxid = maximum(masks)
-  println("[THREAD-$(Threads.threadid())] masks size=$(size(masks)) maxid=$maxid")
+"""
+    start_segmentation_SOPHYSM_cellpose(
+        input_path::String,
+        output_path::String;
+        min_threshold::Float32=50.0f0,
+        max_threshold::Float32=1000.0f0
+    )
+    Starts the SOPHYSM Cellpose-based segmentation process with given parameters.
+    # Arguments
+    - `input_path`: Path to the input image file
+    - `output_path`: Path where output will be saved
+    - `min_threshold`: Minimum area threshold for segments
+    - `max_threshold`: Maximum area threshold for segments
+    # Returns
+    - The filepath of the generated output
+"""
+function start_segmentation_SOPHYSM_cellpose(
+    input_path::String,
+    output_path::String;
+    min_threshold::Float32=50.0f0,
+    max_threshold::Float32=1000.0f0
+)
+    CellposeWrapper._init_py!()
+    res = CellposeWrapper.segment_image(input_path; return_flows=false)
 
-  cols = maxid > 0 ? distinguishable_colors(maxid) : RGB[]
+    masks = Int.(res.masks)
 
-  h, w = size(masks)
-  out = Matrix{RGB{Float32}}(undef, h, w)
+    # save segmented png
+    CellposeGraph.save_segmented_png_from_masks(masks, output_path)
 
-  @inbounds for i in 1:h, j in 1:w
-    id = masks[i, j]
-    if id == 0
-      out[i, j] = RGB{Float32}(0, 0, 0)
-    else
-      idx = ((id - 1) % length(cols)) + 1
-      c = cols[idx]
-      out[i, j] = RGB{Float32}(c.r, c.g, c.b)
+    # dataframe labels
+    df_cells, df_noisy, df_total = CellposeGraph.cellpose_masks_to_dataframes(
+        masks; min_threshold=min_threshold, max_threshold=max_threshold
+    )
+
+    base_path = splitext(output_path)[1]
+    CSV.write(base_path * "_dataframe_labels.csv", df_cells)
+    CSV.write(base_path * "_dataframe_total_labels.csv", df_total)
+    CSV.write(base_path * "_dataframe_noisy_labels.csv", df_noisy)
+
+    # edges + adjacency
+    h, w = size(masks)
+    df_edges, edges = CellposeGraph.build_graph_from_tessellation_cellpose(
+        df_cells, df_noisy, df_total,
+        h, w,
+        base_path * "_total_tessellation.png",
+        base_path * "_cell_tessellation.png"
+    )
+    CSV.write(base_path * "_dataframe_edges.csv", df_edges)
+
+    mat = CellposeGraph.adjacency_from_edges_weight(df_total, df_edges, edges)
+    CellposeGraph.save_adjacency_matrix(mat, base_path * ".txt")
+
+    # overlay images (VERTEX e EDGES)
+    vertex_png, edges_png = CellposeGraph.graph_overlay_paths(output_path)
+    CellposeGraph.render_graph_overlay_images(
+        output_path,
+        base_path * "_dataframe_edges.csv",
+        base_path * "_dataframe_total_labels.csv",
+        vertex_png,
+        edges_png
+    )
+
+    return output_path
+end
+
+"""
+    start_cellpose_job(
+      input_path::String,
+      output_path::String;
+      min_threshold::Float32=50.0f0,
+      max_threshold::Float32=1000.0f0
+    )
+    Starts an asynchronous Cellpose segmentation job.
+    # Arguments
+    - `input_path`: Path to the input image file
+    - `output_path`: Path where output will be saved
+    - `min_threshold`: Minimum area threshold for segments
+    - `max_threshold`: Maximum area threshold for segments
+    # Returns
+    - `0` if the job started successfully, `-1` if a job is already running
+"""
+
+const _DONE_JSON = Ref{String}("")           # path to done.json
+const _STATUS_JSON = Ref{String}("")         # path to status.json
+const _OUT_PATH = Ref{String}("")            # output path
+const _RUNNING = Threads.Atomic{Bool}(false) # is a job running
+
+"""
+    start_cellpose_job(
+        input_path::String,
+        output_path::String;
+        min_threshold::Float32=50.0f0,
+        max_threshold::Float32=1000.0f0
+    )
+    Starts an asynchronous Cellpose segmentation job.
+    # Arguments
+    - `input_path`: Path to the input image file
+    - `output_path`: Path where output will be saved
+    - `min_threshold`: Minimum area threshold for segments
+    - `max_threshold`: Maximum area threshold for segments
+    # Returns
+    - `0` if the job started successfully, `-1` if a job is already running
+"""
+function start_cellpose_job(
+    input_path::String,
+    output_path::String;
+    min_threshold::Float32=50.0f0,
+    max_threshold::Float32=1000.0f0
+)
+    if _RUNNING[]
+        return -1
     end
-  end
+    _RUNNING[] = true
 
-  PNGFiles.save(output_path, out)
-  return output_path
-end
+    tmpdir = mktempdir()
+    _STATUS_JSON[] = joinpath(tmpdir, "status.json")
+    _DONE_JSON[] = joinpath(tmpdir, "done.json")
+    _OUT_PATH[] = output_path
 
-# ------------------------------
-# (B) Async stable mode: Julia worker process
-# ------------------------------
-const _DONE_JSON = Ref{String}("")
-const _STATUS_JSON = Ref{String}("")
-const _OUT_PATH = Ref{String}("")
-const _RUNNING = Threads.Atomic{Bool}(false)
+    worker = joinpath(@__DIR__, "cellpose_worker.jl")
 
-"""
-    start_cellpose_job(input_path, output_path) -> Int
+    projfile = Base.active_project()
+    projdir = dirname(projfile)
 
-Avvia un worker Julia separato (single-thread) che esegue CellposeWrapper e salva output_path.
-Ritorna 0 se avviato, -1 se già running.
-"""
-function start_cellpose_job(input_path::String, output_path::String)
-  if _RUNNING[]
-    return -1
-  end
-  _RUNNING[] = true
+    cmd = `$(Base.julia_cmd()) -t 1 --project=$(projdir) $worker $input_path $output_path $(_STATUS_JSON[]) $(_DONE_JSON[]) $(min_threshold) $(max_threshold)`
 
-  tmpdir = mktempdir()
-  _STATUS_JSON[] = joinpath(tmpdir, "status.json")
-  _DONE_JSON[] = joinpath(tmpdir, "done.json")
-  _OUT_PATH[] = output_path
-
-  worker = joinpath(@__DIR__, "cellpose_worker.jl")
-
-  # usa lo stesso Julia (julia_cmd) e lo stesso progetto attivo della GUI
-  projfile = Base.active_project()
-  projdir = dirname(projfile)
-
-  cmd = `$(Base.julia_cmd()) -t 1 --project=$(projdir) $worker $input_path $output_path $(_STATUS_JSON[]) $(_DONE_JSON[])`
-
-  # avvio non bloccante
-  run(cmd; wait=false)
-
-  return 0
+    run(cmd; wait=false)
+    return 0
 end
 
 """
-    poll_cellpose_job() -> String
-
-Ritorna:
-- "" se job ancora running
-- output_path se ok
-- "ERROR" se fallito
+    poll_cellpose_job()
+    Polls the status of the asynchronous Cellpose segmentation job.
+    # Returns
+    - The output filepath if the job is done successfully
+    - `"ERROR"` if there was an error during processing
+    - An empty string `""` if the job is still running
 """
 function poll_cellpose_job()
-  if _DONE_JSON[] == "" || !isfile(_DONE_JSON[])
-    return ""
-  end
-
-  try
-    obj = JSON.parsefile(_DONE_JSON[])
-    ok = get(obj, "ok", false)
-
-    _RUNNING[] = false
-
-    if ok == true
-      return String(get(obj, "output", _OUT_PATH[]))
-    else
-      # puoi stampare errore se vuoi
-      err = get(obj, "error", "unknown error")
-      println("[CELLPOSE WORKER ERROR] ", err)
-      return "ERROR"
+    if _DONE_JSON[] == "" || !isfile(_DONE_JSON[])
+        return ""
     end
-  catch e
-    _RUNNING[] = false
-    println("[CELLPOSE POLL ERROR] ", sprint(showerror, e))
-    return "ERROR"
-  end
+
+    try
+        obj = JSON.parsefile(_DONE_JSON[])
+        ok = get(obj, "ok", false)
+
+        _RUNNING[] = false
+
+        if ok == true
+            # ritorniamo SEMPRE output base (segmentata)
+            return String(get(obj, "output", _OUT_PATH[]))
+        else
+            err = get(obj, "error", "unknown error")
+            println("[CELLPOSE WORKER ERROR] ", err)
+            return "ERROR"
+        end
+    catch e
+        _RUNNING[] = false
+        println("[CELLPOSE POLL ERROR] ", sprint(showerror, e))
+        return "ERROR"
+    end
 end
 
 end # module

@@ -47,13 +47,28 @@ ApplicationWindow {
                 if (result === "ERROR") {
                     Julia.log_message("@error", "An error occurred during the calculation.");
                 } else {
-                    // Segmentation completed -> loading images
+                    // Segmentation completed -> loading base image
                     setSource(imgSegmentated, result);
+
+                    // Build base path (remove extension only)
+                    // result is something like: /Users/.../out.png  (cellpose) OR ..._seg.png (threshold)
+                    var baseNoExt = result;
+                    // remove ".png" only at the end
+                    baseNoExt = baseNoExt.replace(/\.png$/i, "");
+
                     if (propmap.segmentation_method === "graph") {
-                        var bp = result.replace("_seg.png", "");
-                        setSource(imgGraphVertex, bp + "_seg_graph_vertex.png");
-                        setSource(imgGraphEdges, bp + "_seg_graph_edges.png");
+                        // ThresholdSegmentation GRAPH naming (your current convention)
+                        // Example: .../name_seg.png -> .../name_seg_graph_vertex.png
+                        setSource(imgGraphVertex, baseNoExt + "_graph_vertex.png");
+                        setSource(imgGraphEdges,  baseNoExt + "_graph_edges.png");
+
+                    } else if (propmap.segmentation_method === "cellpose") {
+                        // Cellpose naming (what your CellposeSegmentation currently writes)
+                        // Example: .../out.png -> .../out_graph_vertex.png
+                        setSource(imgGraphVertex, baseNoExt + "_graph_vertex.png");
+                        setSource(imgGraphEdges,  baseNoExt + "_graph_edges.png");
                     }
+
                     Julia.log_message("@info", "Segmentation completed!");
                 }
 
