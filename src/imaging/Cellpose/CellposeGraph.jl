@@ -204,29 +204,27 @@ function build_graph_from_tessellation_cellpose(
   filepath_total_tess::AbstractString,
   filepath_cell_tess::AbstractString
 )
-  # ---- fallback: if df_cells is empty, use df_total to show centroids
-  use_cells = nrow(df_cells) > 0
-  nuclei_df = use_cells ? df_cells : df_total
-
-  nuclei_list = nuclei_df.centroid
-  nuclei_label_list = nuclei_df.label
+  # voronoi built on total (all nuclei), then edges + plotting with highlight di cell vs noisy (subset)
   total_list = df_total.centroid
+  total_label_list = df_total.label
 
   position_array = GeometryBasics.Point2{Float64}[]
-  cell_position_array = GeometryBasics.Point2{Float64}[]
-
-  # TOTAL points
   for v in total_list
     r, c = Tuple(v)
     r, c = _clamp_rc(r, c, h, w)
     push!(position_array, _to_voronoi_point(r, c)) # (c, -r)
   end
 
-  # NUCLEI/CELL points (fallback on df_total if df_cells is empty)
-  for v in nuclei_list
-    r, c = Tuple(v)
-    r, c = _clamp_rc(r, c, h, w)
-    push!(cell_position_array, _to_voronoi_point(r, c))
+  # --- 2) (opzionale) subset da evidenziare SOLO per plotting (df_cells)
+  cell_position_array = GeometryBasics.Point2{Float64}[]
+  cell_label_list = Int[]
+  if nrow(df_cells) > 0
+    for (v, lab) in zip(df_cells.centroid, df_cells.label)
+      r, c = Tuple(v)
+      r, c = _clamp_rc(r, c, h, w)
+      push!(cell_position_array, _to_voronoi_point(r, c))
+      push!(cell_label_list, lab)
+    end
   end
 
   # rect consistent with (x=c in [1..w], y=-r in [-h..-1])
@@ -235,48 +233,50 @@ function build_graph_from_tessellation_cellpose(
     GeometryBasics.Point2(Float64(w), -1.0)
   )
 
-  # --- Total tessellation (edges output) ---
+  # --- 3) Tessellazione + edges: SEMPRE su position_array (tutti i nuclei)
   raw_edges = Any[]
   tess_total = VoronoiCells.voronoicells(position_array, rect; edges=raw_edges)
 
   n = nrow(df_total)
   edges_sane = _sanitize_edges(raw_edges, n)
 
-  dx = 6.0
-  dy = 6.0
+  # df_edges: use edges_sane, not raw
+  df_edges = build_dataframe_edges_from_grid_cellpose(edges_sane, df_total)
 
-  # plot total tessellation + centroids
-  Plots.scatter(cell_position_array, markersize=4, label="Nuclei Centroid")
-  if length(cell_position_array) > 0
+  # --- 4) Plot totale (coerente): tessellazione + tutti i centroidi
+  dx, dy = 6.0, 6.0
+  Plots.scatter(position_array, markersize=3, label="All nuclei centroids")
+  if length(position_array) > 0
     Plots.annotate!([
-      (cell_position_array[k][1] + dx,
-        cell_position_array[k][2] + dy,
-        Plots.text(nuclei_label_list[k], 6, RGBA(1, 1, 1, 0.35)))
-      for k in 1:length(cell_position_array)
+      (position_array[k][1] + dx,
+        position_array[k][2] + dy,
+        Plots.text(total_label_list[k], 6, RGBA(1, 1, 1, 0.25)))
+      for k in 1:length(position_array)
     ])
   end
   p1 = Plots.plot!(tess_total, legend=:topleft)
   Plots.savefig(p1, filepath_total_tess)
 
-  # df_edges: use edges_sane, not raw
-  df_edges = build_dataframe_edges_from_grid_cellpose(edges_sane, df_total)
+  # --- 5) Plot "cell" biologicamente sensato:
+  # riuso della stessa tessellazione (del tessuto) + highlight eventuale di df_cells
+  Plots.plot(tess_total, legend=:topleft, label="Voronoi (all nuclei)")
+  Plots.scatter!(position_array, markersize=2, label="All nuclei")
 
-  # --- Cell tessellation (image only) ---
-  tess_cell = VoronoiCells.voronoicells(cell_position_array, rect)
-  Plots.scatter(cell_position_array, markersize=4, label="Centroids")
   if length(cell_position_array) > 0
+    Plots.scatter!(cell_position_array, markersize=4, label="Highlighted subset (df_cells)")
     Plots.annotate!([
       (cell_position_array[k][1] + dx,
         cell_position_array[k][2] + dy,
-        Plots.text(nuclei_label_list[k], 6, RGBA(1, 1, 1, 0.35)))
+        Plots.text(cell_label_list[k], 6, RGBA(1, 1, 1, 0.45)))
       for k in 1:length(cell_position_array)
     ])
   end
-  p2 = Plots.plot!(tess_cell, legend=:topleft)
-  Plots.savefig(p2, filepath_cell_tess)
+
+  Plots.savefig(filepath_cell_tess)
 
   return df_edges, edges_sane
 end
+
 
 """
     build_dataframe_edges_from_grid_cellpose(edges, df_total) -> DataFrame

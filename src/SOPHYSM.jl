@@ -173,10 +173,32 @@ function start_async_job(method, model, img, output)
         minT = Float32(get(propmap, "min_threshold", 50.0))
         maxT = Float32(get(propmap, "max_threshold", 1000.0))
 
+        diameter = Float64(get(propmap, "cellpose_diameter", 0.0))
+        flow_th = Float64(get(propmap, "cellpose_flow_threshold", 0.4))
+        cellprob = Float64(get(propmap, "cellpose_cellprob_threshold", 0.0))
+        min_size = Int(round(get(propmap, "cellpose_min_size", 15.0)))
+
+        invert = Bool(get(propmap, "cellpose_invert", false))
+        augment = Bool(get(propmap, "cellpose_augment", false))
+
+        cache_models = Bool(get(propmap, "cellpose_cache_models", true))
+        max_cached = Int(round(get(propmap, "cellpose_max_cached_models", 2.0)))
+
+        pretrained = strip(String(get(propmap, "cellpose_pretrained_model", "")))
+
         rc = CellposeSegmentation.start_cellpose_job(
             String(img), String(output);
             min_threshold=minT,
-            max_threshold=maxT
+            max_threshold=maxT,
+            diameter=(diameter <= 0 ? nothing : diameter),
+            flow_threshold=flow_th,
+            cellprob_threshold=cellprob,
+            invert=invert,
+            augment=augment,
+            min_size=min_size,
+            pretrained_model=(pretrained == "" ? nothing : pretrained),
+            cache_models=cache_models,
+            max_cached_models=max_cached
         )
 
         if rc != 0
@@ -345,6 +367,20 @@ function start_GUI()
     propmap["threshold_marker"] = 0.3
     propmap["min_threshold"] = 50.0
     propmap["max_threshold"] = 1000.0
+
+    # ---- Cellpose params (default robusti)
+    propmap["cellpose_diameter"] = 0.0               # 0 = auto
+    propmap["cellpose_flow_threshold"] = 0.4
+    propmap["cellpose_cellprob_threshold"] = 0.0
+    propmap["cellpose_min_size"] = 15.0              # lo tengo double in QML, cast a Int in Julia
+    propmap["cellpose_invert"] = false
+    propmap["cellpose_augment"] = false
+
+    # ---- caching (advanced)
+    propmap["cellpose_cache_models"] = true
+    propmap["cellpose_max_cached_models"] = 2.0      # cast a Int
+    propmap["cellpose_pretrained_model"] = ""        # path opzionale; vuoto = default
+
 
     on(workspace_dir) do x
         Workspace.set_workspace_dir(x)

@@ -8,11 +8,6 @@ using CellposeWrapper
 include("CellposeGraph.jl")
 using .CellposeGraph
 
-"""
-    write_json_atomic(path::String, obj)
-    Writes a JSON object to a file atomically by first writing to a temporary file
-    and then renaming it to the target path.
-"""
 function write_json_atomic(path::String, obj)
   tmp = path * ".tmp"
   open(tmp, "w") do io
@@ -21,15 +16,9 @@ function write_json_atomic(path::String, obj)
   mv(tmp, path; force=true)
 end
 
-"""
-    main()
-    Main function to run Cellpose segmentation as a worker process.
-    Reads command-line arguments for input/output paths and thresholds,
-    executes segmentation, and writes status and results to JSON files.
-"""
 function main()
-  if length(ARGS) < 6
-    println("Usage: julia cellpose_worker.jl <input> <output_png> <status_json> <done_json> <minT> <maxT>")
+  if length(ARGS) < 5
+    println("Usage: julia cellpose_worker.jl <input> <output_png> <status_json> <done_json> <params_json>")
     exit(2)
   end
 
@@ -37,17 +26,40 @@ function main()
   output_path = ARGS[2]
   status_path = ARGS[3]
   done_path = ARGS[4]
-  minT = parse(Float32, ARGS[5])
-  maxT = parse(Float32, ARGS[6])
+  params_path = ARGS[5]
 
   try
     write_json_atomic(status_path, Dict(
       "state" => "starting",
       "time" => string(now()),
-      "msg" => "Initializing Cellpose/Python..."
+      "msg" => "Loading params + initializing Cellpose/Python..."
     ))
 
-    CellposeWrapper._init_py!()
+    # --- read params.json
+    p = JSON.parsefile(params_path)
+
+    # SOPHYSM postprocess thresholds
+    minT = Float32(get(p, "min_threshold", 50.0))
+    maxT = Float32(get(p, "max_threshold", 1000.0))
+
+    cp = get(p, "cellpose", Dict{String,Any}())
+
+    # Wrapper kwargs (solo quelli che il wrapper supporta oggi)
+    diam_val = get(cp, "diameter", nothing)
+    diameter = (diam_val === nothing) ? nothing : Float64(diam_val)
+    pretrained = strip(String(get(cp, "pretrained_model", "")))
+    pretrained_model = (pretrained == "") ? nothing : pretrained
+
+    flow_threshold = Float64(get(cp, "flow_threshold", 0.4))
+    cellprob_threshold = Float64(get(cp, "cellprob_threshold", 0.0))
+    augment = Bool(get(cp, "augment", false))
+    invert = Bool(get(cp, "invert", false))
+    min_size = Int(get(cp, "min_size", 15))
+    cache_models = Bool(get(cp, "cache_models", true))
+    max_cached_models = Int(get(cp, "max_cached_models", 2))
+
+    # init python (lazy)
+    CellposeWrapper.init!()
 
     write_json_atomic(status_path, Dict(
       "state" => "running",
@@ -55,18 +67,41 @@ function main()
       "msg" => "Running segmentation..."
     ))
 
-    res = CellposeWrapper.segment_image(input_path; return_flows=false)
+    res = CellposeWrapper.segment_image(
+      input_path;
+      return_flows=false,
+      diameter=diameter,
+      pretrained_model=pretrained_model,
+      flow_threshold=flow_threshold,
+      cellprob_threshold=cellprob_threshold,
+      augment=augment,
+      invert=invert,
+      min_size=min_size,
+      cache_models=cache_models,
+      max_cached_models=max_cached_models
+    )
+
     masks = Int.(res.masks)
 
-    # 1) basic segmented image (output_path)
+    # 1) segmented image (output_path)
     CellposeGraph.save_segmented_png_from_masks(masks, output_path)
+
+    base_path = splitext(output_path)[1]
+
+    # 1b) save effective params (riproducibilità)
+    try
+      open(base_path * "_cellpose_params.json", "w") do io
+        JSON.print(io, res.params)
+      end
+    catch
+      # non blocchiamo il worker se fallisce il log
+    end
 
     # 2) pipeline CSV + edges + adjacency
     df_cells, df_noisy, df_total = CellposeGraph.cellpose_masks_to_dataframes(
       masks; min_threshold=minT, max_threshold=maxT
     )
 
-    base_path = splitext(output_path)[1]
     labels_csv = base_path * "_dataframe_labels.csv"
     total_labels_csv = base_path * "_dataframe_total_labels.csv"
     noisy_labels_csv = base_path * "_dataframe_noisy_labels.csv"
