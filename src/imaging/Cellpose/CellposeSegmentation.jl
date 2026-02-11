@@ -25,7 +25,6 @@ using .CellposeGraph
         output_path::String;
         min_threshold::Float32=50.0f0,
         max_threshold::Float32=1000.0f0,
-        # CellposeWrapper kwargs:
         diameter=nothing,
         pretrained_model=nothing,
         flow_threshold::Float64=0.4,
@@ -44,7 +43,6 @@ function start_segmentation_SOPHYSM_cellpose(
     output_path::String;
     min_threshold::Float32=50.0f0,
     max_threshold::Float32=1000.0f0,
-    # --- CellposeWrapper kwargs (solo quelli supportati oggi dal wrapper)
     diameter=nothing,
     pretrained_model=nothing,
     flow_threshold::Float64=0.4,
@@ -110,7 +108,7 @@ function start_segmentation_SOPHYSM_cellpose(
     mat = CellposeGraph.adjacency_from_edges_weight(df_total, df_edges, edges)
     CellposeGraph.save_adjacency_matrix(mat, base_path * ".txt")
 
-    # overlay images (VERTEX e EDGES)
+    # overlay images (VERTEX e EDGES) su immagine segmentata
     vertex_png, edges_png = CellposeGraph.graph_overlay_paths(output_path)
     CellposeGraph.render_graph_overlay_images(
         output_path,
@@ -120,6 +118,23 @@ function start_segmentation_SOPHYSM_cellpose(
         edges_png
     )
 
+    # original + edges overlay
+    edges_orig_png = CellposeGraph.graph_edges_overlay_path_original(output_path)
+    CellposeGraph.render_edges_overlay_on_original(
+        input_path,
+        base_path * "_dataframe_edges.csv",
+        base_path * "_dataframe_total_labels.csv",
+        edges_orig_png
+    )
+
+    # original + Voronoi overlay
+    voronoi_orig_png = CellposeGraph.voronoi_overlay_path_original(output_path)
+    CellposeGraph.render_voronoi_overlay_image(
+        input_path,
+        df_total,
+        voronoi_orig_png
+    )
+
     return output_path
 end
 
@@ -127,30 +142,14 @@ end
 # 2) Async job via external Julia worker
 # -----------------------------------
 
-const _DONE_JSON = Ref{String}("")            # path to done.json
-const _STATUS_JSON = Ref{String}("")            # path to status.json
-const _OUT_PATH = Ref{String}("")            # output path
+const _DONE_JSON = Ref{String}("")
+const _STATUS_JSON = Ref{String}("")
+const _OUT_PATH = Ref{String}("")
 const _RUNNING = Threads.Atomic{Bool}(false)
 
 """
-    start_cellpose_job(
-        input_path::String,
-        output_path::String;
-        min_threshold::Float32=50.0f0,
-        max_threshold::Float32=1000.0f0,
-        # CellposeWrapper kwargs:
-        diameter=nothing,
-        pretrained_model=nothing,
-        flow_threshold::Float64=0.4,
-        cellprob_threshold::Float64=0.0,
-        augment::Bool=false,
-        invert::Bool=false,
-        min_size::Int=15,
-        cache_models::Bool=true,
-        max_cached_models::Int=2
-    )
-
-Avvia un worker Julia separato passando parametri via JSON (robusto e compatibile).
+    start_cellpose_job(...)
+Avvia un worker Julia separato passando parametri via JSON.
 Ritorna 0 se parte, -1 se già running.
 """
 function start_cellpose_job(
@@ -158,7 +157,6 @@ function start_cellpose_job(
     output_path::String;
     min_threshold::Float32=50.0f0,
     max_threshold::Float32=1000.0f0,
-    # --- CellposeWrapper kwargs supportati
     diameter=nothing,
     pretrained_model=nothing,
     flow_threshold::Float64=0.4,
@@ -179,10 +177,8 @@ function start_cellpose_job(
     _DONE_JSON[] = joinpath(tmpdir, "done.json")
     _OUT_PATH[] = output_path
 
-    # NEW: params.json passed to worker (keeps CLI short, versionable)
     params_json = joinpath(tmpdir, "params.json")
 
-    # Serializza parametri in modo safe (JSON)
     params = Dict(
         "min_threshold" => min_threshold,
         "max_threshold" => max_threshold,
@@ -208,8 +204,6 @@ function start_cellpose_job(
     projfile = Base.active_project()
     projdir = dirname(projfile)
 
-    # NEW SIGNATURE for worker:
-    #   worker input_path output_path status_json done_json params_json
     cmd = `$(Base.julia_cmd()) -t 1 --project=$(projdir) $worker $input_path $output_path $(_STATUS_JSON[]) $(_DONE_JSON[]) $params_json`
 
     run(cmd; wait=false)

@@ -67,6 +67,8 @@ ApplicationWindow {
                         // Example: .../out.png -> .../out_graph_vertex.png
                         setSource(imgGraphVertex, baseNoExt + "_graph_vertex.png");
                         setSource(imgGraphEdges,  baseNoExt + "_graph_edges.png");
+                        setSource(imgStockEdgesGraph, baseNoExt + "_graph_edges_orig.png");
+                        setSource(imgStockVoronoiCells, baseNoExt + "_voronoi_orig.png");
                     }
 
                     Julia.log_message("@info", "Segmentation completed!");
@@ -233,8 +235,8 @@ ApplicationWindow {
                             var basePath = pathParts.join('.');
                             var outputPath = basePath;
                             Julia.start_tessellation(propmap.selected_image_path, outputPath);
-                            setSource(imgTessellationTotal, outputPath + "_total_tessellation.png");
-                            setSource(imgTessellationCells, outputPath + "_cell_tessellation.png");
+                            setSource(imgStockGraphEdges, outputPath + "_total_tessellation.png");
+                            setSource(imgStockVoronoiCells, outputPath + "_cell_tessellation.png");
                             setSource(imgGraphVertex, outputPath + "_seg_graph_vertex.png");
                             setSource(imgGraphEdges, outputPath + "_seg_graph_edges.png");
                         }
@@ -281,12 +283,12 @@ ApplicationWindow {
 
                     Rectangle { 
                         width: 500; height: 333; color: "#3f3f3f"
-                        Image { id: imgTessellationTotal; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
+                        Image { id: imgStockEdgesGraph; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
 
                     Rectangle { 
                         width: 500; height: 333; color: "#3f3f3f"
-                        Image { id: imgTessellationCells; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
+                        Image { id: imgStockVoronoiCells; anchors.fill: parent; fillMode: Image.PreserveAspectFit; cache: false } 
                     }
                 }
             }

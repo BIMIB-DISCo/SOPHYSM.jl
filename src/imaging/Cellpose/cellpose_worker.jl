@@ -35,18 +35,16 @@ function main()
       "msg" => "Loading params + initializing Cellpose/Python..."
     ))
 
-    # --- read params.json
     p = JSON.parsefile(params_path)
 
-    # SOPHYSM postprocess thresholds
     minT = Float32(get(p, "min_threshold", 50.0))
     maxT = Float32(get(p, "max_threshold", 1000.0))
 
     cp = get(p, "cellpose", Dict{String,Any}())
 
-    # Wrapper kwargs (solo quelli che il wrapper supporta oggi)
     diam_val = get(cp, "diameter", nothing)
     diameter = (diam_val === nothing) ? nothing : Float64(diam_val)
+
     pretrained = strip(String(get(cp, "pretrained_model", "")))
     pretrained_model = (pretrained == "") ? nothing : pretrained
 
@@ -58,7 +56,6 @@ function main()
     cache_models = Bool(get(cp, "cache_models", true))
     max_cached_models = Int(get(cp, "max_cached_models", 2))
 
-    # init python (lazy)
     CellposeWrapper.init!()
 
     write_json_atomic(status_path, Dict(
@@ -88,13 +85,12 @@ function main()
 
     base_path = splitext(output_path)[1]
 
-    # 1b) save effective params (riproducibilità)
+    # 1b) save effective params
     try
       open(base_path * "_cellpose_params.json", "w") do io
         JSON.print(io, res.params)
       end
     catch
-      # non blocchiamo il worker se fallisce il log
     end
 
     # 2) pipeline CSV + edges + adjacency
@@ -121,10 +117,13 @@ function main()
     )
     CSV.write(edges_csv, df_edges)
 
+    jspace_path = base_path * "_jspace_adj.txt"
+    CellposeGraph.save_jspace_adjacency_matrix(df_total, df_edges, jspace_path)
+
     mat = CellposeGraph.adjacency_from_edges_weight(df_total, df_edges, edges)
     CellposeGraph.save_adjacency_matrix(mat, adj_txt)
 
-    # 3) overlay images (vertex + edges)
+    # 3) overlay images (vertex + edges) su immagine segmentata
     vertex_png, edges_png = CellposeGraph.graph_overlay_paths(output_path)
     CellposeGraph.render_graph_overlay_images(
       output_path,
@@ -134,11 +133,29 @@ function main()
       edges_png
     )
 
+    # 4) NEW: overlay su ORIGINALE
+    edges_orig_png = CellposeGraph.graph_edges_overlay_path_original(output_path)
+    CellposeGraph.render_edges_overlay_on_original(
+      input_path,
+      edges_csv,
+      total_labels_csv,
+      edges_orig_png
+    )
+
+    voronoi_orig_png = CellposeGraph.voronoi_overlay_path_original(output_path)
+    CellposeGraph.render_voronoi_overlay_image(
+      input_path,
+      df_total,
+      voronoi_orig_png
+    )
+
     write_json_atomic(done_path, Dict(
       "ok" => true,
       "output" => output_path,
       "vertex_png" => vertex_png,
       "edges_png" => edges_png,
+      "edges_orig_png" => edges_orig_png,
+      "voronoi_orig_png" => voronoi_orig_png,
       "time" => string(now())
     ))
 
