@@ -15,6 +15,8 @@ using Graphs
 using MetaGraphs
 using FileIO
 
+using J_Space
+
 export cellpose_masks_to_dataframes,
   build_graph_from_tessellation_cellpose,
   adjacency_from_edges_weight,
