@@ -1,6 +1,5 @@
 module JNet
 
-using Augmentor
 using BSON: @save, @load
 using CUDA
 using FileIO
