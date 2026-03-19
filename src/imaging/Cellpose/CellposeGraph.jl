@@ -6,7 +6,8 @@ using Colors
 using PNGFiles
 using Images
 using IndirectArrays
-using VoronoiCells
+# using VoronoiCells
+using DelaunayTriangulation
 using GeometryBasics
 using Plots
 using Luxor
@@ -94,36 +95,6 @@ end
 end
 
 """
-  _edge_segment(e)
-  Attempts to extract the endpoints of an edge from a given edge object.
-  The function tries multiple approaches to find the endpoints, including:
-    1) Checking if the edge is a Tuple or AbstractVector with at least 2 elements (e[1], e[2]).
-    2) Checking for common property names that might contain the endpoints (e.g., :p1, :p2 or :a, :b).
-  Returns a tuple (a, b) if the endpoints are successfully extracted, or nothing if no suitable endpoints are found.
-  Note: This function is designed to be robust against different edge object structures that may arise from VoronoiCells or other libraries
-"""
-function _edge_segment(e)
-  if e isa Tuple || e isa AbstractVector
-    if length(e) >= 2
-      return e[1], e[2]
-    end
-  end
-  try
-    a = getproperty(e, :p1)
-    b = getproperty(e, :p2)
-    return a, b
-  catch
-  end
-  try
-    a = getproperty(e, :a)
-    b = getproperty(e, :b)
-    return a, b
-  catch
-  end
-  return nothing
-end
-
-"""
   Normalize a point to GeometryBasics.Point2{Float64} if possible.
   Accepts:
     - GeometryBasics.Point2{Float64} (returns as is)
@@ -185,117 +156,6 @@ function _luxor_read_any_image(path::AbstractString)
   return Luxor.readpng(tmp_png), tmp_png
 end
 
-"""
-  _tess_cells(tess)
-  Attempts to extract the cells (polygons) from a Voronoi tessellation object.
-  The function tries multiple approaches to find the cells, including:
-    1) Checking for a direct property (e.g., tess.Cells).
-    2) Checking for known functions in VoronoiCells that might return cells.
-    3) Checking for common property names that might contain the cells.
-    4) As a last resort, iterating over all properties of the tessellation to find any that contain a vector of polygons.
-  Returns the cells as an AbstractVector if found, or nothing if no suitable cells are found.
-  Note: This function is designed to be robust against different versions of VoronoiCells or different tessellation object structures.
-"""
-function _tess_cells(tess)
-  try
-    v = getproperty(tess, :Cells)
-    if v isa AbstractVector
-      return v
-    end
-  catch
-  end
-
-  for f in (
-    () -> VoronoiCells.cells(tess),
-    () -> VoronoiCells.polygons(tess),
-    () -> VoronoiCells.cellpolygons(tess),
-  )
-    try
-      v = f()
-      if v isa AbstractVector || v isa Tuple
-        return v
-      end
-    catch
-    end
-  end
-
-  for name in (:Cells, :cells, :polygons, :cellpolygons, :cell_polygons, :cellpolygon)
-    try
-      v = getproperty(tess, name)
-      if v isa AbstractVector || v isa Tuple
-        return v
-      end
-    catch
-    end
-  end
-
-  try
-    for name in propertynames(tess)
-      name in (:rect, :bbox, :rectangle, :edges, :sites, :points) && continue
-      v = getproperty(tess, name)
-
-      if v isa AbstractVector && !isempty(v)
-        return v
-      end
-      if v isa Tuple
-        for vv in v
-          if vv isa AbstractVector && !isempty(vv)
-            return vv
-          end
-        end
-      end
-    end
-  catch
-  end
-
-  return nothing
-end
-
-"""
-  _cell_vertices(cell)
-  Attempts to extract the vertices of a Voronoi cell from a given cell object.
-  The function tries multiple approaches to find the vertices, including:
-    1) Checking for known functions in VoronoiCells that might return vertices.
-    2) Checking for common property names that might contain the vertices.
-    3) As a last resort, iterating over all properties of the cell to find any that contain a vector of points.
-  Returns the vertices as an AbstractVector if found, or nothing if no suitable vertices are found.
-  Note: This function is designed to be robust against different versions of VoronoiCells or different cell object structures.
-"""
-function _cell_vertices(cell)
-  for f in (
-    () -> VoronoiCells.vertices(cell),
-  )
-    try
-      v = f()
-      if v isa AbstractVector
-        return v
-      end
-    catch
-    end
-  end
-
-  for name in (:vertices, :polygon, :poly, :points, :coords)
-    try
-      v = getproperty(cell, name)
-      if v isa AbstractVector
-        return v
-      end
-    catch
-    end
-  end
-
-  try
-    for name in propertynames(cell)
-      v = getproperty(cell, name)
-      if v isa AbstractVector && length(v) >= 2
-        return v
-      end
-    end
-  catch
-  end
-
-  return nothing
-end
 
 """
   graph_overlay_paths(output_png::AbstractString) -> (vertex_path, edges_path)
@@ -549,46 +409,79 @@ function build_graph_from_tessellation_cellpose(
     end
   end
 
-  rect = VoronoiCells.Rectangle(
-    GeometryBasics.Point2(1.0, -Float64(h)),
-    GeometryBasics.Point2(Float64(w), -1.0)
-  )
+  tri = triangulate(position_array)
+  vorn_total = voronoi(tri)
+
+  bbox_total = (1.0, Float64(w), -Float64(h), -1.0)
 
   raw_edges = Any[]
-  tess_total = VoronoiCells.voronoicells(position_array, rect; edges=raw_edges)
+  for e in get_edges(tri)
+    u, v = DelaunayTriangulation.initial(e), DelaunayTriangulation.terminal(e)
+    if u > 0 && v > 0
+      push!(raw_edges, (u, v))
+    end
+  end
 
   n = nrow(df_total)
   edges_sane = _sanitize_edges(raw_edges, n)
-
   df_edges = build_dataframe_edges_from_grid_cellpose(edges_sane, df_total)
 
   dx, dy = 6.0, 6.0
-  Plots.scatter(position_array, markersize=3, label="All nuclei centroids")
+  # --- PLOT P1 (Tessellation total) ---
+  p1 = Plots.scatter(position_array, markersize=3, label="All nuclei centroids")
   if length(position_array) > 0
-    Plots.annotate!([
-      (position_array[k][1] + dx,
-        position_array[k][2] + dy,
+    Plots.annotate!(p1, [
+      (position_array[k][1] + dx, position_array[k][2] + dy,
         Plots.text(total_label_list[k], 6, RGBA(1, 1, 1, 0.25)))
       for k in 1:length(position_array)
     ])
   end
-  p1 = Plots.plot!(tess_total, legend=:topleft)
+
+  for i in each_generator(vorn_total)
+    poly = get_polygon_coordinates(vorn_total, i, bbox_total)
+    xs = [p[1] for p in poly]
+    ys = [p[2] for p in poly]
+
+    # Chiudiamo il poligono copiando il primo punto alla fine
+    if xs[1] != xs[end] || ys[1] != ys[end]
+      push!(xs, xs[1])
+      push!(ys, ys[1])
+    end
+
+    # Usiamo Shape per avere i poligoni chiusi e leggermente colorati, come VoronoiCells
+    Plots.plot!(p1, Plots.Shape(xs, ys), fillcolor=RGBA(0.2, 0.5, 0.8, 0.1), linecolor=:black, linewidth=0.5, label="")
+  end
+  # FORZIAMO LE DIMENSIONI DELL'IMMAGINE NEL PLOT
+  Plots.plot!(p1, xlims=(1, w), ylims=(-h, -1))
   Plots.savefig(p1, filepath_total_tess)
 
-  Plots.plot(tess_total, legend=:topleft, label="Voronoi (all nuclei)")
-  Plots.scatter!(position_array, markersize=2, label="All nuclei")
+
+  # --- PLOT P2 (Tessellation cells) ---
+  p2 = Plots.plot(legend=:topleft, label="Voronoi (all nuclei)")
+  for i in each_generator(vorn_total)
+    poly = get_polygon_coordinates(vorn_total, i, bbox_total)
+    xs = [p[1] for p in poly]
+    ys = [p[2] for p in poly]
+
+    if xs[1] != xs[end] || ys[1] != ys[end]
+      push!(xs, xs[1])
+      push!(ys, ys[1])
+    end
+    Plots.plot!(p2, Plots.Shape(xs, ys), fillcolor=RGBA(0.2, 0.5, 0.8, 0.1), linecolor=:black, linewidth=0.5, label="")
+  end
+  Plots.scatter!(p2, position_array, markersize=2, label="All nuclei")
 
   if length(cell_position_array) > 0
-    Plots.scatter!(cell_position_array, markersize=4, label="Highlighted subset (df_cells)")
-    Plots.annotate!([
-      (cell_position_array[k][1] + dx,
-        cell_position_array[k][2] + dy,
+    Plots.scatter!(p2, cell_position_array, markersize=4, label="Highlighted subset (df_cells)")
+    Plots.annotate!(p2, [
+      (cell_position_array[k][1] + dx, cell_position_array[k][2] + dy,
         Plots.text(cell_label_list[k], 6, RGBA(1, 1, 1, 0.45)))
       for k in 1:length(cell_position_array)
     ])
   end
 
-  Plots.savefig(filepath_cell_tess)
+  Plots.plot!(p2, xlims=(1, w), ylims=(-h, -1))
+  Plots.savefig(p2, filepath_cell_tess)
 
   return df_edges, edges_sane
 end
@@ -755,36 +648,30 @@ function render_voronoi_overlay_image(
     push!(position_array, _to_voronoi_point(r, c))
   end
 
-  rect = VoronoiCells.Rectangle(
-    GeometryBasics.Point2(1.0, -Float64(H)),
-    GeometryBasics.Point2(Float64(W), -1.0)
-  )
+  tri = triangulate(position_array)
+  vorn = voronoi(tri)
 
-  tess = VoronoiCells.voronoicells(position_array, rect)
-
-  cells = _tess_cells(tess)
-  cells === nothing && error("VoronoiCells: cannot extract cells from tessellation (try tess.Cells).")
+  bbox = (1.0, Float64(W), -Float64(H), -1.0)
 
   @png begin
     Luxor.placeimage(img, 0, 0, 1.0, centered=true)
-
     Luxor.setline(line_width)
     Luxor.sethue(RGBA(1, 1, 1, line_alpha))
 
-    for poly in cells
-      if !(poly isa AbstractVector) || length(poly) < 2
+    for i in each_generator(vorn)
+      poly = get_polygon_coordinates(vorn, i, bbox)
+
+      if length(poly) < 3
         continue
       end
 
-      p1 = _as_point2(poly[1])
-      p1 === nothing && continue
-
       Luxor.newpath()
+      # poly[1] è una tupla (x, y), la convertiamo in Point2 per compatibilità con la tua funzione
+      p1 = GeometryBasics.Point2(poly[1][1], poly[1][2])
       Luxor.move(_to_luxor_from_voronoi(p1, W, H))
 
       for k in 2:length(poly)
-        pk = _as_point2(poly[k])
-        pk === nothing && continue
+        pk = GeometryBasics.Point2(poly[k][1], poly[k][2])
         Luxor.line(_to_luxor_from_voronoi(pk, W, H))
       end
 

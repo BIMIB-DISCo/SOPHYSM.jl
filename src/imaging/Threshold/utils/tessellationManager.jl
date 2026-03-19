@@ -282,30 +282,67 @@ function build_graph_from_tessellation(df_labels::DataFrame,
     
     h = h + 1
     w = w + 1
-    # First tessellation
-    rect = VoronoiCells.Rectangle(GeometryBasics.Point2(0, 0),
-                                  GeometryBasics.Point2(h, -w))
-    edges = []
-    tess = VoronoiCells.voronoicells(position_array, rect; edges)
-    Plots.scatter(cell_position_array, markersize = 4, label = "Nuclei Centroid")
-    Plots.annotate!([(cell_position_array[n][1],
-                    cell_position_array[n][2],
-                    Plots.text(nuclei_label_list[n])) for n in 1:cell_slot])
-    plot_tessellation = Plots.plot!(tess, legend = :topleft)
-    Plots.savefig(plot_tessellation, filepath_total_tess)
-    df_edges = build_dataframe_edges_from_grid(edges, df_total_labels)
 
-    # Second tessellation
-    rect = VoronoiCells.Rectangle(GeometryBasics.Point2(0, 0),
-                                  GeometryBasics.Point2(h, -w))
-    tess = VoronoiCells.voronoicells(cell_position_array, rect)
-    Plots.scatter(cell_position_array, markersize = 4, label = "Nuclei Centroid")
-    Plots.annotate!([(cell_position_array[n][1],
-                    cell_position_array[n][2],
-                    Plots.text(nuclei_label_list[n])) for n in 1:cell_slot])
-    plot_tessellation = Plots.plot!(tess, legend = :topleft)
-    Plots.savefig(plot_tessellation, filepath_cell_tess)
-    return df_edges, edges
+  # --- first tessellation ---
+  tri_total = triangulate(position_array)
+  vorn_total = voronoi(tri_total)
+
+  bbox_total = (0.0, Float64(h), -Float64(w), 0.0)
+
+  edges = Any[]
+  for e in get_edges(tri_total)
+    u, v = DelaunayTriangulation.initial(e), DelaunayTriangulation.terminal(e)
+    if u > 0 && v > 0
+      push!(edges, (u, v))
+    end
+  end
+
+  plot_tessellation = Plots.scatter(cell_position_array, markersize=4, label="Nuclei Centroid")
+  Plots.annotate!(plot_tessellation, [(cell_position_array[n][1],
+    cell_position_array[n][2],
+    Plots.text(nuclei_label_list[n])) for n in 1:cell_slot])
+
+  for i in each_generator(vorn_total)
+    poly = get_polygon_coordinates(vorn_total, i, bbox_total)
+    xs = [p[1] for p in poly]
+    ys = [p[2] for p in poly]
+    if xs[1] != xs[end] || ys[1] != ys[end]
+      push!(xs, xs[1])
+      push!(ys, ys[1])
+    end
+    Plots.plot!(plot_tessellation, Plots.Shape(xs, ys), fillcolor=RGBA(0.2, 0.5, 0.8, 0.1), linecolor=:black, linewidth=0.5, label="")
+  end
+  # Forziamo il canvas
+  Plots.plot!(plot_tessellation, xlims=(0, h), ylims=(-w, 0))
+  Plots.savefig(plot_tessellation, filepath_total_tess)
+
+  df_edges = build_dataframe_edges_from_grid(edges, df_total_labels)
+
+  # --- SECONDA TESSELLAZIONE E PLOTTING ---
+  tri_cells = triangulate(cell_position_array)
+  vorn_cells = voronoi(tri_cells)
+
+  bbox_cells = (0.0, Float64(h), -Float64(w), 0.0)
+
+  plot_tess_cells = Plots.scatter(cell_position_array, markersize=4, label="Nuclei Centroid")
+  Plots.annotate!(plot_tess_cells, [(cell_position_array[n][1],
+    cell_position_array[n][2],
+    Plots.text(nuclei_label_list[n])) for n in 1:cell_slot])
+
+  for i in each_generator(vorn_cells)
+    poly = get_polygon_coordinates(vorn_cells, i, bbox_cells)
+    xs = [p[1] for p in poly]
+    ys = [p[2] for p in poly]
+    if xs[1] != xs[end] || ys[1] != ys[end]
+      push!(xs, xs[1])
+      push!(ys, ys[1])
+    end
+    Plots.plot!(plot_tess_cells, Plots.Shape(xs, ys), fillcolor=RGBA(0.2, 0.5, 0.8, 0.1), linecolor=:black, linewidth=0.5, label="")
+  end
+  Plots.plot!(plot_tess_cells, xlims=(0, h), ylims=(-w, 0))
+  Plots.savefig(plot_tess_cells, filepath_cell_tess)
+
+  return df_edges, edges
 end
 
 """

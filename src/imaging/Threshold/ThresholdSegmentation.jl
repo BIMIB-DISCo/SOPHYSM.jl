@@ -16,7 +16,8 @@ using Luxor
 using Karnak
 using MetaGraphs
 using Plots
-using VoronoiCells
+# using VoronoiCells
+using DelaunayTriangulation
 using GeometryBasics
 
 ### Exported Functions
