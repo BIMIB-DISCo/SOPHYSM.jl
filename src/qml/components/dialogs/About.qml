@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Controls.Basic
-import Qt.labs.platform
 
 import jlqml
 import "../common" as Common
