@@ -125,10 +125,9 @@ Item {
         }
     }
 
-    FileDialog {
+    FolderDialog {
         id: folderDialog
         title: "Select Workspace Directory"
-        fileMode: FileDialog.OpenFolder
 
         onAccepted: {
             var path = folderDialog.selectedFolder.toString().slice(7)

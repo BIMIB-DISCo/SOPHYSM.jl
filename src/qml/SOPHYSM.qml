@@ -257,7 +257,7 @@ ApplicationWindow {
                 
                 GridLayout {
                     id: segmentationGrid
-                    width: Math.min(parent.width - segmentationControls.width - 180, (500 * 2) + columnSpacing)
+                    width: Math.min(segmentationScrollView.availableWidth, (500 * 2) + columnSpacing)
                     columns: 2; rowSpacing: 20; columnSpacing: 20
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
