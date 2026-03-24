@@ -29,7 +29,7 @@ const JOB_LOCK = ReentrantLock()
 
 # watchdog
 const JOB_START_NS = Threads.Atomic{Int}(0)  # time_ns() at job start, 0 if none
-const JOB_TIMEOUT_S = 120.0                  # seconds
+const JOB_TIMEOUT_S = 999999                  # seconds
 
 # track current spawned task (graph/jnet)
 const JOB_TASK = Ref{Union{Task,Nothing}}(nothing)
@@ -386,7 +386,8 @@ function start_GUI()
         Workspace.set_workspace_dir(x)
         s_log_message("@info", "WS Changed to $x")
     end
-
+    
+    ENV["QT_QUICK_CONTROLS_STYLE"] = "Basic"
     loadqml(qmlfile, propmap=propmap)
 
     perform_warmup()
