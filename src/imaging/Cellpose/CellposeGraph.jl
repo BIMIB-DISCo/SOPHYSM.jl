@@ -415,7 +415,7 @@ function build_graph_from_tessellation_cellpose(
   bbox_total = (1.0, Float64(w), -Float64(h), -1.0)
 
   raw_edges = Any[]
-  for e in get_edges(tri)
+  for e in DelaunayTriangulation.get_edges(tri)
     u, v = DelaunayTriangulation.initial(e), DelaunayTriangulation.terminal(e)
     if u > 0 && v > 0
       push!(raw_edges, (u, v))

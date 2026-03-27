@@ -290,7 +290,7 @@ function build_graph_from_tessellation(df_labels::DataFrame,
   bbox_total = (0.0, Float64(h), -Float64(w), 0.0)
 
   edges = Any[]
-  for e in get_edges(tri_total)
+  for e in DelaunayTriangulation.get_edges(tri_total)
     u, v = DelaunayTriangulation.initial(e), DelaunayTriangulation.terminal(e)
     if u > 0 && v > 0
       push!(edges, (u, v))
