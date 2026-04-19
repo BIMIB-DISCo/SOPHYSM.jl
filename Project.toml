@@ -1,12 +1,13 @@
 name = "SOPHYSM"
 uuid = "82861e0c-66b1-4426-b4e9-698ff18f2abe"
-authors = ["Gioosu <g.formisano2@campus.unimib.it>"]
 version = "0.1.0"
+authors = ["Gioosu <g.formisano2@campus.unimib.it>"]
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Cellpose = "e08dab56-dd01-460f-9bee-6157708a84df"
 CellposeWrapper = "5e162cc7-81ee-4364-8b50-7fd1be3e50be"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -42,6 +43,7 @@ cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [compat]
 CSV = "0.10"
+Cellpose = "0.1.0"
 CellposeWrapper = "0.1.0"
 Colors = "0.12"
 DataFrames = "1.7"

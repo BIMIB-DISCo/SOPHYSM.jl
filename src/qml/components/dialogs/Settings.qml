@@ -59,6 +59,7 @@ Item {
         jnetCheckBox.checked = root.segmentationMethod === "jnet"
         graphCheckBox.checked = root.segmentationMethod === "graph"
         cellposeCheckBox.checked = root.segmentationMethod === "cellpose"
+        cellposeJLCheckBox.checked = root.segmentationMethod === "cellpose_jl"
 
         // Restore graph parameters
         if (propmap.threshold_gray !== undefined) root.thresholdGray = propmap.threshold_gray
@@ -417,6 +418,33 @@ Item {
                                         leftPadding: cellposeCheckBox.indicator.width + cellposeCheckBox.spacing
                                     }
                                 }
+                                Common.CheckBox {
+                                    id: cellposeJLCheckBox
+                                    text: "Cellpose.jl (Native)"
+                                    checked: root.segmentationMethod === "cellpose_jl"
+                                    onCheckedChanged: {
+                                        if (checked) {
+                                            root.segmentationMethod = "cellpose_jl"
+                                            jnetCheckBox.checked = false
+                                            graphCheckBox.checked = false
+                                            cellposeCheckBox.checked = false
+                                            root.hasChanges = true
+                                        } else if (!jnetCheckBox.checked && !graphCheckBox.checked && !cellposeCheckBox.checked) {
+                                            root.segmentationMethod = ""
+                                        }
+                                    }
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: "Native Julia implementation. Requires path to ONNX model file in Settings."
+                                    
+                                    contentItem: Text {
+                                        text: cellposeJLCheckBox.text
+                                        font: cellposeJLCheckBox.font
+                                        opacity: enabled ? 1.0 : 0.3
+                                        color: "#FFFFFF"
+                                        verticalAlignment: Text.AlignVCenter
+                                        leftPadding: cellposeJLCheckBox.indicator.width + cellposeJLCheckBox.spacing
+                                    }
+                                }
                             }
                         }
                     }
@@ -664,8 +692,17 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 24
-                        visible: root.segmentationMethod === "cellpose"
-
+                        visible: root.segmentationMethod === "cellpose" || root.segmentationMethod === "cellpose_jl"
+                        
+                        Label {
+                            text: "⚠ Advanced params (flow/cellprob/min_size) are hardcoded in Cellpose.jl internals."
+                            color: "#FFA726"
+                            font.italic: true
+                            font.pixelSize: 11
+                            visible: root.segmentationMethod === "cellpose_jl"
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+}
                         Rectangle {
                             width: 36
                             height: 36

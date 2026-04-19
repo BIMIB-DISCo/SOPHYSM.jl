@@ -15,6 +15,7 @@ include("SOPHYSMLogger.jl")
 include("imaging/JNet/JNet.jl")
 include("imaging/Threshold/ThresholdSegmentation.jl")
 include("imaging/Cellpose/CellposeSegmentation.jl")
+include("imaging/CellposeJL/CellposeJLSegmentation.jl")
 
 ### Exported functions
 export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, check_job_status
@@ -111,6 +112,37 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose (direct) Start...")
             CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
 
+                elseif m_str == "cellpose_jl"
+            s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose.jl (Native) Start...")
+            
+            minT = Float32(get(propmap, "min_threshold", 50.0))
+            maxT = Float32(get(propmap, "max_threshold", 1000.0))
+            diameter = get(propmap, "cellpose_diameter", 0.0)
+            diameter_val = diameter <= 0 ? nothing : Float64(diameter)
+            
+            # Parametri UI mantenuti per compatibilità, ma ignorati da Cellpose.jl
+            flow_th = Float64(get(propmap, "cellpose_flow_threshold", 0.4))
+            cellprob = Float64(get(propmap, "cellpose_cellprob_threshold", 0.0))
+            invert = Bool(get(propmap, "cellpose_invert", false))
+            augment = Bool(get(propmap, "cellpose_augment", false))
+            min_size = Int(round(get(propmap, "cellpose_min_size", 15.0)))
+            
+            # Model path: deve essere un file .onnx valido
+            pretrained_raw = strip(String(get(propmap, "cellpose_pretrained_model", "")))
+            model_path = pretrained_raw == "" ? nothing : String(pretrained_raw)
+
+            CellposeJLSegmentation.start_segmentation_SOPHYSM_cellpose_jl(
+                i_str, o_str;
+                min_threshold=minT, max_threshold=maxT,
+                diameter=diameter_val,
+                pretrained_model=model_path,
+                # Parametri mantenuti per compatibilità signature
+                flow_threshold=flow_th,
+                cellprob_threshold=cellprob,
+                invert=invert,
+                augment=augment,
+                min_size=min_size
+            )
         else
             error("Unknown segmentation method: $m_str")
         end
