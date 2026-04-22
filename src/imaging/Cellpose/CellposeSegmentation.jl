@@ -91,29 +91,35 @@ function start_segmentation_SOPHYSM_cellpose(
         masks; min_threshold=min_threshold, max_threshold=max_threshold
     )
 
-    CSV.write(base_path * "_dataframe_labels.csv", df_cells)
-    CSV.write(base_path * "_dataframe_total_labels.csv", df_total)
-    CSV.write(base_path * "_dataframe_noisy_labels.csv", df_noisy)
+    base_clean = base
+    if endswith(base_clean, "_seg")
+        base_clean = base_clean[1:end-4]
+    end
+
+    CSV.write(base_clean * "_dataframe_labels.csv", df_cells)
+    CSV.write(base_clean * "_dataframe_edges.csv", df_edges)
+    CSV.write(base_clean * "_dataframe_total_labels.csv", df_total)
+    CSV.write(base_clean * "_dataframe_noisy_labels.csv", df_noisy)
 
     # edges + adjacency
     h, w = size(masks)
     df_edges, edges = CellposeGraph.build_graph_from_tessellation_cellpose(
         df_cells, df_noisy, df_total,
         h, w,
-        base_path * "_total_tessellation.png",
-        base_path * "_cell_tessellation.png"
+        base_clean * "_total_tessellation.png",
+        base_clean * "_cell_tessellation.png"
     )
-    CSV.write(base_path * "_dataframe_edges.csv", df_edges)
+    CSV.write(base_clean * "_dataframe_edges.csv", df_edges)
 
     mat = CellposeGraph.adjacency_from_edges_weight(df_total, df_edges, edges)
-    CellposeGraph.save_adjacency_matrix(mat, base_path * ".txt")
+    CellposeGraph.save_adjacency_matrix(mat, base_clean * ".txt")
 
     # overlay images (VERTEX e EDGES) su immagine segmentata
     vertex_png, edges_png = CellposeGraph.graph_overlay_paths(output_path)
     CellposeGraph.render_graph_overlay_images(
         output_path,
-        base_path * "_dataframe_edges.csv",
-        base_path * "_dataframe_total_labels.csv",
+        base_clean * "_dataframe_edges.csv",
+        base_clean * "_dataframe_total_labels.csv",
         vertex_png,
         edges_png
     )
@@ -122,8 +128,8 @@ function start_segmentation_SOPHYSM_cellpose(
     edges_orig_png = CellposeGraph.graph_edges_overlay_path_original(output_path)
     CellposeGraph.render_edges_overlay_on_original(
         input_path,
-        base_path * "_dataframe_edges.csv",
-        base_path * "_dataframe_total_labels.csv",
+        base_clean * "_dataframe_edges.csv",
+        base_clean * "_dataframe_total_labels.csv",
         edges_orig_png
     )
 

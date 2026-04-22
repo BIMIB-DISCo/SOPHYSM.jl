@@ -8,6 +8,12 @@ using Observables
 using JSON
 using JHistint
 using Base.Threads
+using FileIO 
+using ImageIO 
+using Colors
+using PNGFiles
+using SHA
+using FixedPointNumbers
 
 ### Included modules
 include("Workspace.jl")
@@ -366,6 +372,182 @@ function async_download_single_slide_from_collection(args...)
 end
 
 """
+    create_project_dir(name) -> String
+    Accetta sia String che QStringAllocated da QML
+"""
+function create_project_dir(name)
+    name_str = String(name)  # ✅ Conversione esplicita
+    wd = String(workspace_dir[])
+    path = joinpath(wd, name_str)
+    mkpath(path)
+    s_log_message("@info", "Project created: $path")
+    return path
+end
+
+"""
+    scan_project_images(proj_path) -> Vector{String}
+    Accetta sia String che QStringAllocated da QML
+"""
+function scan_project_images(proj_path)
+    path_str = String(proj_path)  # ✅ Conversione esplicita
+    images = String[]
+    for f in readdir(path_str)
+        if endswith(lowercase(f), r"\.(png|jpg|jpeg|tif|tiff|bmp)$")
+            push!(images, joinpath(path_str, f))
+        end
+    end
+    return images
+end
+
+"""
+    get_base_output_path(img_path, suffix) -> String
+"""
+function get_base_output_path(img_path, suffix)
+    img_str = String(img_path)    # ✅ Conversione esplicita
+    suffix_str = String(suffix)   # ✅ Conversione esplicita
+    base = splitext(img_str)[1]
+    return base * suffix_str
+end
+
+"""
+    copy_image_to_project(image_path, project_dir) -> String
+    Copia un'immagine nella cartella del progetto.
+    NOTA: Niente "::String" nella signature per accettare QStringAllocated da QML.
+"""
+function copy_image_to_project(image_path, project_dir)
+    # ✅ Conversione esplicita da QStringAllocated a String Julia
+    img_path = String(image_path)
+    proj_dir = String(project_dir)
+    
+    filename = basename(img_path)
+    dest_path = joinpath(proj_dir, filename)
+    
+    # Gestione nomi duplicati
+    if isfile(dest_path)
+        base, ext = splitext(filename)
+        counter = 1
+        while isfile(dest_path)
+            new_name = "$(base)_$(counter)$(ext)"
+            dest_path = joinpath(proj_dir, new_name)
+            counter += 1
+        end
+    end
+    
+    # Copia il file
+    cp(img_path, dest_path; force=false)
+    s_log_message("@info", "Image copied to project: $dest_path")
+    
+    return dest_path
+end
+
+"""
+    resolve_image_for_qml(image_path::AbstractString) -> String
+    VERSIONE CON DEBUG: Converte TIFF→PNG con logging dettagliato
+"""
+function resolve_image_for_qml(image_path::AbstractString)
+    path = String(image_path)
+    s_log_message("@debug", "[resolve_image_for_qml] Input: $path")
+    
+    # Se già PNG, restituisci così com'è
+    if endswith(lowercase(path), ".png")
+        s_log_message("@debug", "[resolve_image_for_qml] Already PNG, returning as-is")
+        return path
+    end
+    
+    # Verifica che il file esista
+    if !isfile(path)
+        s_log_message("@error", "[resolve_image_for_qml] File not found: $path")
+        return path  # Fallback
+    end
+    
+    cache_dir = joinpath(dirname(path), ".sophysm_cache")
+    mkpath(cache_dir)
+    
+    path_hash = bytes2hex(sha256(path))[1:16]
+    source_mtime = mtime(path)
+    mtime_int = floor(Int, source_mtime)
+    cache_path = joinpath(cache_dir, "$(path_hash)_$(mtime_int).png")
+    
+    s_log_message("@debug", "[resolve_image_for_qml] Cache path: $cache_path")
+    
+    # Se cache valida, usala
+    if isfile(cache_path) && mtime(cache_path) >= source_mtime
+        s_log_message("@debug", "[resolve_image_for_qml] Using cached: $cache_path")
+        return cache_path
+    end
+    
+    # Altrimenti: carica, converti, salva
+    try
+        s_log_message("@info", "[resolve_image_for_qml] Converting: $path")
+        
+        # Caricamento
+        img = load(path)
+        s_log_message("@debug", "[resolve_image_for_qml] Loaded, size: $(size(img)), eltype: $(eltype(img))")
+        
+        # Conversione a RGBA8
+        img_rgba = convert.(RGBA{N0f8}, img)
+        s_log_message("@debug", "[resolve_image_for_qml] Converted to RGBA{N0f8}")
+        
+        # Salvataggio PNG
+        save(cache_path, img_rgba)
+        
+        # ✅ VALIDAZIONE: controlla che il PNG sia stato creato e sia leggibile
+        if isfile(cache_path) && filesize(cache_path) > 0
+            s_log_message("@info", "[resolve_image_for_qml] ✅ Saved: $cache_path ($(filesize(cache_path)) bytes)")
+            return cache_path
+        else
+            s_log_message("@error", "[resolve_image_for_qml] ❌ Failed to save PNG: $cache_path")
+            return path  # Fallback
+        end
+        
+    catch e
+        s_log_message("@error", "[resolve_image_for_qml] ❌ Conversion error: $e")
+        showerror(stdout, e, catch_backtrace())
+        return path  # Fallback: Qt proverà nativamente
+    end
+end
+
+"""
+    get_image_for_expanded_view(image_path::AbstractString) -> String
+    Wrapper con logging specifico per expanded view
+"""
+function get_image_for_expanded_view(image_path::AbstractString)
+    s_log_message("@info", "[EXPAND] Requested for: $image_path")
+    result = resolve_image_for_qml(image_path)
+    s_log_message("@info", "[EXPAND] Returning: $result")
+    return result
+end
+
+"""
+    check_existing_outputs(img_path::AbstractString) -> Dict{String, String}
+    Controlla quali file di output esistono già per una data immagine.
+    Restituisce un Dict con i percorsi dei file trovati (chiavi: segmented, graphVertex, etc.)
+"""
+function check_existing_outputs(img_path::AbstractString)
+    base = splitext(String(img_path))[1]
+    outputs = Dict{String, String}()
+    
+    # Mappa suffissi output → chiave Dict
+    suffixes = Dict(
+        "segmented"   => "_seg.png",
+        "graphVertex" => "_graph_vertex.png", 
+        "graphEdges"  => "_graph_edges.png",
+        "overlay"     => "_graph_edges_orig.png",
+        "voronoi"     => "_voronoi_orig.png"
+    )
+    
+    for (key, suffix) in suffixes
+        candidate = base * suffix
+        if isfile(candidate)
+            outputs[key] = candidate
+            s_log_message("@debug", "Found existing output: $candidate")
+        end
+    end
+    
+    return outputs
+end
+
+"""
     start_GUI()
     Starts the SOPHYSM graphical user interface.
 """
@@ -386,6 +568,14 @@ function start_GUI()
         qmlfunction("start_async_job", start_async_job)
         qmlfunction("check_job_status", check_job_status)
         qmlfunction("start_tessellation", start_tessellation)
+
+        qmlfunction("create_project_dir", create_project_dir)
+        qmlfunction("scan_project_images", scan_project_images)
+        qmlfunction("get_base_output_path", get_base_output_path)
+        qmlfunction("copy_image_to_project", copy_image_to_project)
+        qmlfunction("resolve_image_for_qml", resolve_image_for_qml)
+        qmlfunction("get_image_for_expanded_view", get_image_for_expanded_view)
+        qmlfunction("check_existing_outputs", check_existing_outputs)
         _QML_FUNCS_REGISTERED[] = true
     end
 

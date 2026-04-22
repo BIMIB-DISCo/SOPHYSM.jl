@@ -84,6 +84,9 @@ function main()
     CellposeGraph.save_segmented_png_from_masks(masks, output_path)
 
     base_path = splitext(output_path)[1]
+    if endswith(base_path, "_seg")
+        base_path = base_path[1:end-4]
+    end
 
     # 1b) save effective params
     try

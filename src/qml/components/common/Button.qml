@@ -1,53 +1,61 @@
+// file: qml/components/common/Button.qml
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Basic
 
 Button {
     id: root
     
+    // ================= PROPRIETÀ PERSONALIZZATE (per compatibilità) =================
     property bool isHighlighted: false
-    property int buttonWidth: 120
-    property int buttonHeight: 40
-    property string backgroundColor: ""
+    property bool isDarkTheme: true
+    property int buttonWidth: 100      // ✅ Aggiunto: larghezza personalizzata
+    property int buttonHeight: 36      // ✅ Aggiunto: altezza personalizzata
+    property string buttonTextColor: "" // ✅ Opzionale: colore testo personalizzato
     
-    implicitWidth: buttonWidth
-    implicitHeight: buttonHeight
+    // ================= DIMENSIONI =================
+    implicitWidth: buttonWidth > 0 ? buttonWidth : 100
+    implicitHeight: buttonHeight > 0 ? buttonHeight : 36
     
+    // ================= STILE BASE =================
+    flat: false
+    padding: 8
+    
+    // ================= TESTO =================
     contentItem: Text {
         text: root.text
         font: root.font
-        color: root.enabled ? "#FFFFFF" : "#888888"
+        opacity: enabled ? 1.0 : 0.3
+        color: {
+            if (root.buttonTextColor !== "") return root.buttonTextColor
+            if (root.isHighlighted) return "#FFFFFF"
+            if (root.isDarkTheme) return "#FFFFFF"
+            return "#333333"
+        }
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
     
+    // ================= SFONDO =================
     background: Rectangle {
         implicitWidth: root.implicitWidth
         implicitHeight: root.implicitHeight
         color: {
-            if (root.backgroundColor !== "") {
-                return root.backgroundColor
-            } else if (!root.enabled) {
-                return "#202020"
-            } else if (root.isHighlighted) {
-                return root.down ? "#A05000" : 
-                       (root.hovered ? "#FF7D1A" : "#FF6600")
-            } else {
-                return root.down ? "#353535" : 
-                       (root.hovered ? "#454545" : "#252525")
-            }
+            if (root.isHighlighted) return "#FF8C42"  // Arancione per step attivo
+            if (root.pressed) return isDarkTheme ? "#555555" : "#cccccc"
+            if (root.hovered) return isDarkTheme ? "#444444" : "#e0e0e0"
+            return isDarkTheme ? "#333333" : "#ffffff"
         }
-        radius: 5
         border.color: {
-            if (!root.enabled) {
-                return "#444444"
-            } else if (root.isHighlighted) {
-                return "#FF6600"
-            } else {
-                return "#333333"
-            }
+            if (root.isHighlighted) return "#FF6B2B"
+            return isDarkTheme ? "#555555" : "#cccccc"
         }
         border.width: 1
-        opacity: root.enabled ? 1.0 : 0.7
+        radius: 6
+        
+        // Animazione fluida
+        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on border.color { ColorAnimation { duration: 150 } }
     }
 }

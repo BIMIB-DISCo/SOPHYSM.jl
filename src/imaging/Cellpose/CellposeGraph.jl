@@ -165,7 +165,12 @@ end
     - edges_path: path to the PNG image for graph edges
 """
 function graph_overlay_paths(output_png::AbstractString)
-  base = splitext(String(output_png))[1]
+  base = splitext(String(output_png))[1]  # es: "/path/h1_seg"
+  
+  if endswith(base, "_seg")
+    base = base[1:end-4]
+  end
+  
   return (base * "_graph_vertex.png", base * "_graph_edges.png")
 end
 
@@ -177,6 +182,11 @@ end
 """
 function graph_edges_overlay_path_original(output_png::AbstractString)
   base = splitext(String(output_png))[1]
+  
+  if endswith(base, "_seg")
+    base = base[1:end-4]
+  end
+  
   return base * "_graph_edges_orig.png"
 end
 
@@ -188,6 +198,11 @@ end
 """
 function voronoi_overlay_path_original(output_png::AbstractString)
   base = splitext(String(output_png))[1]
+  
+  if endswith(base, "_seg")
+    base = base[1:end-4]
+  end
+  
   return base * "_voronoi_orig.png"
 end
 

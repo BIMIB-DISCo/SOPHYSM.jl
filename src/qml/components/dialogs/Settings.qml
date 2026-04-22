@@ -1119,37 +1119,30 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                Common.Button {
-                    text: "Close"
-                    onClicked: {
-                        if (root.hasChanges) {
-                            // Save model + method
-                            propmap.model_bson_path = root.modelBsonPath
-                            propmap.segmentation_method = root.segmentationMethod
-
-                            // Save graph
-                            propmap.threshold_gray = root.thresholdGray
-                            propmap.threshold_marker = root.thresholdMarker
-                            propmap.min_threshold = root.minThreshold
-                            propmap.max_threshold = root.maxThreshold
-
-                            // Save cellpose
-                            propmap.cellpose_diameter = root.cellposeDiameter
-                            propmap.cellpose_flow_threshold = root.cellposeFlowThreshold
-                            propmap.cellpose_cellprob_threshold = root.cellposeCellprobThreshold
-                            propmap.cellpose_min_size = root.cellposeMinSize
-                            propmap.cellpose_invert = root.cellposeInvert
-                            propmap.cellpose_augment = root.cellposeAugment
-                            propmap.cellpose_cache_models = root.cellposeCacheModels
-                            propmap.cellpose_max_cached_models = root.cellposeMaxCachedModels
-                            propmap.cellpose_pretrained_model = root.cellposePretrainedModel
-
-                            root.settingsApplied()
+                                    Common.Button {
+                        text: "Close"
+                        onClicked: {
+                            // ✅ Sincronizza parametri verso Julia
+                            propmap["segmentation_method"] = root.segmentationMethod;
+                            propmap["model_bson_path"] = root.modelBsonPath;
+                            propmap["threshold_gray"] = root.thresholdGray;
+                            propmap["threshold_marker"] = root.thresholdMarker;
+                            propmap["min_threshold"] = root.minThreshold;
+                            propmap["max_threshold"] = root.maxThreshold;
+                            propmap["cellpose_diameter"] = root.cellposeDiameter;
+                            propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold;
+                            propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold;
+                            propmap["cellpose_min_size"] = root.cellposeMinSize;
+                            propmap["cellpose_invert"] = root.cellposeInvert;
+                            propmap["cellpose_augment"] = root.cellposeAugment;
+                            propmap["cellpose_cache_models"] = root.cellposeCacheModels;
+                            propmap["cellpose_max_cached_models"] = root.cellposeMaxCachedModels;
+                            propmap["cellpose_pretrained_model"] = root.cellposePretrainedModel;
+                            Julia.log_message("@info", "Settings saved to propmap.");
+                            settingsPopup.close();
                         }
-                        settingsPopup.close()
                     }
                 }
             }
         }
-    }
 }
