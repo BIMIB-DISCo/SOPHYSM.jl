@@ -10,7 +10,8 @@ Item {
     id: root
 
     property string segmentationMethod: ""
-    property string modelBsonPath: ""
+    property string modelBsonPath: ""          // JNet model
+    property string cellposeJlOnnxPath: ""     // ✅ EXTRA: solo per cellpose_jl
 
     // GRAPH
     property real thresholdGray: 0.5
@@ -18,7 +19,7 @@ Item {
     property real minThreshold: 50
     property real maxThreshold: 1000
 
-    // CELLPOSE
+    // CELLPOSE / CELLPOSE.JL - PARAMETRI CONDIVISI
     property real cellposeDiameter: 0
     property real cellposeFlowThreshold: 0.4
     property real cellposeCellprobThreshold: 0
@@ -37,12 +38,23 @@ Item {
         settingsPopup.open()
     }
 
+    // FileDialog per JNet (BSON)
     FileDialog {
-        id: modelFileDialog
+        id: bsonFileDialog
+        title: "Select JNet Model File"
         nameFilters: ["BSON files (*.bson)"]
-
         onAccepted: {
             root.modelBsonPath = selectedFile.toString().slice(7)
+        }
+    }
+
+    // FileDialog per cellpose_jl (ONNX) - SOLO QUESTO AGGIUNGE IL PATH EXTRA
+    FileDialog {
+        id: onnxFileDialog
+        title: "Select Cellpose.jl ONNX Model"
+        nameFilters: ["ONNX files (*.onnx)", "All files (*)"]
+        onAccepted: {
+            root.cellposeJlOnnxPath = selectedFile.toString().slice(7)
         }
     }
 
@@ -77,7 +89,7 @@ Item {
                     width: parent.width
                     spacing: 20
 
-                    // METHOD
+                    // === METHOD SELECTION ===
                     RowLayout {
                         spacing: 20
 
@@ -98,9 +110,15 @@ Item {
                             checked: root.segmentationMethod === "cellpose"
                             onCheckedChanged: if (checked) root.segmentationMethod = "cellpose"
                         }
+
+                        Common.CheckBox {
+                            text: "Cellpose.jl"
+                            checked: root.segmentationMethod === "cellpose_jl"
+                            onCheckedChanged: if (checked) root.segmentationMethod = "cellpose_jl"
+                        }
                     }
 
-                    // GRAPH
+                    // === GRAPH PARAMETERS ===
                     Common.ParamCard {
                         visible: root.segmentationMethod === "graph"
                         title: "Graph Segmentation"
@@ -117,7 +135,7 @@ Item {
                             label: "Marker Threshold"
                             value: root.thresholdMarker
                             from: 0; to: 1
-                            onValueChanged: root.thresholdMarker = v
+                            onValueChanged: root.thresholdMarker = value
                         }
 
                         Common.ParamSlider {
@@ -125,7 +143,7 @@ Item {
                             value: root.minThreshold
                             from: 1; to: 1000
                             decimals: 0
-                            onValueChanged: root.minThreshold = v
+                            onValueChanged: root.minThreshold = value
                         }
 
                         Common.ParamSlider {
@@ -133,22 +151,22 @@ Item {
                             value: root.maxThreshold
                             from: 1; to: 10000
                             decimals: 0
-                            onValueChanged: root.maxThreshold = v
+                            onValueChanged: root.maxThreshold = value
                         }
                     }
 
-                    // CELLPOSE WRAPPER
+                    // === CELLPOSE (Python) PARAMETERS ===
                     Common.ParamCard {
                         visible: root.segmentationMethod === "cellpose"
                         title: "Cellpose"
-                        description: "Deep-learning based segmentation"
+                        description: "Deep-learning based segmentation (Python backend)"
 
                         Common.ParamSlider {
                             label: "Diameter"
                             value: root.cellposeDiameter
                             from: 0; to: 200
                             decimals: 0
-                            onValueChanged: root.cellposeDiameter = value   // ⚠ FIX
+                            onValueChanged: root.cellposeDiameter = value
                         }
 
                         Common.ParamSlider {
@@ -190,22 +208,41 @@ Item {
                         }
                     }
 
+                    // === CELLPOSE.JL PARAMETERS (stessi slider + ONNX path) ===
                     Common.ParamCard {
                         visible: root.segmentationMethod === "cellpose_jl"
                         title: "Cellpose.jl"
-                        description: "Julia backend (ONNX)"
+                        description: "Julia native backend with ONNX model"
 
-                        Label {
-                            text: "⚠ Advanced parameters handled internally"
-                            color: "#FFA726"
-                        }
-
+                        // ✅ STESSI PARAMETRI DI CELLPOSE
                         Common.ParamSlider {
                             label: "Diameter"
                             value: root.cellposeDiameter
                             from: 0; to: 200
                             decimals: 0
                             onValueChanged: root.cellposeDiameter = value
+                        }
+
+                        Common.ParamSlider {
+                            label: "Flow Threshold"
+                            value: root.cellposeFlowThreshold
+                            from: 0; to: 2
+                            onValueChanged: root.cellposeFlowThreshold = value
+                        }
+
+                        Common.ParamSlider {
+                            label: "Cellprob Threshold"
+                            value: root.cellposeCellprobThreshold
+                            from: -10; to: 10
+                            onValueChanged: root.cellposeCellprobThreshold = value
+                        }
+
+                        Common.ParamSlider {
+                            label: "Min Size"
+                            value: root.cellposeMinSize
+                            from: 0; to: 10000
+                            decimals: 0
+                            onValueChanged: root.cellposeMinSize = value
                         }
 
                         RowLayout {
@@ -224,47 +261,71 @@ Item {
                             }
                         }
 
+                        // ✅ EXTRA: ONNX MODEL PATH (solo per cellpose_jl)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Layout.topMargin: 8
+
+                            Label {
+                                text: "ONNX Model:"
+                                color: "#CCCCCC"
+                                font.pixelSize: 12
+                                Layout.preferredWidth: 100
+                            }
+
+                            Label {
+                                text: root.cellposeJlOnnxPath || "No model selected"
+                                color: "#AAAAAA"
+                                Layout.fillWidth: true
+                                elide: Text.ElideMiddle
+                                font.pixelSize: 12
+                            }
+
+                            Common.Button {
+                                text: "Browse"
+                                buttonHeight: 28
+                                onClicked: onnxFileDialog.open()
+                            }
+                        }
+                    }
+
+                    // === JNET MODEL PATH ===
+                    Common.ParamCard {
+                        visible: root.segmentationMethod === "jnet"
+                        title: "Model"
+                        description: "Select trained JNet model (.bson)"
+
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 10
 
                             Label {
-                                text: root.cellposePretrainedModel || "No ONNX model selected"
+                                text: "Model file:"
+                                color: "#CCCCCC"
+                                font.pixelSize: 12
+                                Layout.preferredWidth: 100
+                            }
+
+                            Label {
+                                text: root.modelBsonPath || "No model selected"
                                 color: "#AAAAAA"
                                 Layout.fillWidth: true
                                 elide: Text.ElideMiddle
+                                font.pixelSize: 12
                             }
 
                             Common.Button {
                                 text: "Browse"
-                                onClicked: modelFileDialog.open()
-                            }
-                        }
-                    }
-
-                    // MODEL (JNET)
-                    Common.ParamCard {
-                        visible: root.segmentationMethod === "jnet"
-                        title: "Model"
-                        description: "Select trained model"
-
-                        RowLayout {
-                            Label {
-                                text: root.modelBsonPath || "No model selected"
-                                color: "#aaa"
-                                Layout.fillWidth: true
-                            }
-
-                            Common.StyledButton {
-                                text: "Browse"
-                                isPrimary: true
-                                onClicked: modelFileDialog.open()
+                                buttonHeight: 28
+                                onClicked: bsonFileDialog.open()
                             }
                         }
                     }
                 }
             }
 
+            // === APPLY BUTTON ===
             RowLayout {
                 Layout.fillWidth: true
                 Item { Layout.fillWidth: true }
@@ -274,33 +335,29 @@ Item {
                     isHighlighted: true
                     onClicked: {
                         propmap["segmentation_method"] = root.segmentationMethod
-                        propmap["model_bson_path"] = root.modelBsonPath
 
-                        // GRAPH
+                        // GRAPH params
                         propmap["threshold_gray"] = root.thresholdGray
                         propmap["threshold_marker"] = root.thresholdMarker
                         propmap["min_threshold"] = root.minThreshold
                         propmap["max_threshold"] = root.maxThreshold
 
-                        // CELLPOSE
+                        // CELLPOSE / CELLPOSE.JL - PARAMETRI CONDIVISI
                         propmap["cellpose_diameter"] = root.cellposeDiameter
+                        propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold
+                        propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold
+                        propmap["cellpose_min_size"] = root.cellposeMinSize
                         propmap["cellpose_invert"] = root.cellposeInvert
                         propmap["cellpose_augment"] = root.cellposeAugment
+                        propmap["cellpose_cache_models"] = root.cellposeCacheModels
+                        propmap["cellpose_max_cached"] = root.cellposeMaxCachedModels
+                        propmap["cellpose_pretrained"] = root.cellposePretrainedModel
 
-                        if (root.segmentationMethod === "cellpose") {
-                            propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold
-                            propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold
-                            propmap["cellpose_min_size"] = root.cellposeMinSize
-                            propmap["cellpose_cache_models"] = root.cellposeCacheModels
-                            propmap["cellpose_max_cached"] = root.cellposeMaxCachedModels
-                            propmap["cellpose_pretrained"] = root.cellposePretrainedModel
-                        }
+                        // CELLPOSE.JL - PARAMETRO EXTRA
+                        propmap["cellpose_jl_onnx_path"] = root.cellposeJlOnnxPath
 
-                        if (root.segmentationMethod === "cellpose_jl") {
-                            propmap["cellpose_jl_diameter"] = root.cellposeDiameter
-                            propmap["cellpose_jl_invert"] = root.cellposeInvert
-                            propmap["cellpose_jl_augment"] = root.cellposeAugment
-                        }
+                        // JNet model path
+                        propmap["model_bson_path"] = root.modelBsonPath
 
                         root.settingsApplied()
                         settingsPopup.close()
