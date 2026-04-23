@@ -201,7 +201,7 @@ ApplicationWindow {
                             ToolTip.text: "Configure parameters"
                             enabled: methodComboBox.currentIndex >= 0
                             isHighlighted: workflowStep === 2
-                            onClicked: settingsDialog.open()
+                            onClicked: segmentationDialog.open()
                         }
                     }
                     Common.Button {
@@ -253,9 +253,60 @@ ApplicationWindow {
                     Layout.preferredHeight: 40
                     spacing: 8
                     Item { Layout.fillWidth: true }
-                    Common.IconButton { source: "./img/settings_24dp.png"; size: 24; isDarkTheme: root.isDarkTheme; ToolTip.text: "Settings"; onClicked: settingsDialog.open() }
-                    Common.IconButton { source: "./img/download_24dp.png"; size: 24; isDarkTheme: root.isDarkTheme; ToolTip.text: "Download TCGA"; onClicked: downloadDialog.open() }
-                    Common.IconButton { source: "./img/info_24dp.png"; size: 24; isDarkTheme: root.isDarkTheme; ToolTip.text: "About SOPHYSM"; onClicked: aboutDialog.open() }
+
+                    // Bottone Settings con icona
+                    Button {
+                        id: settingsBtn
+                        icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"  // ✅ Percorso relativo a src/qml/
+                        icon.width: 24
+                        icon.height: 24
+                        icon.color: isDarkTheme ? "#fff" : "#333"
+                        width: 40
+                        height: 40
+                        flat: true  // rimuove stile default, usa solo il tuo background
+                        
+                        // Background personalizzato per il tema
+                        background: Rectangle {
+                            color: "transparent"
+                            radius: 6
+                            border.color: parent.hovered ? (root.isDarkTheme ? "#666" : "#ccc") : "transparent"
+                        }
+                        
+                        // Tooltip
+                        hoverEnabled: true
+                        ToolTip.delay: 500
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Settings"
+                        
+                        onClicked: settingsDialog.open()
+                    }
+
+                    // Bottone Download
+                    Button {
+                        icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+                        icon.width: 24; icon.height: 24
+                        width: 40; height: 40
+                        icon.color: isDarkTheme ? "#fff" : "#333"
+                        flat: true
+                        background: Rectangle { color: "transparent"; radius: 6; border.color: parent.hovered ? (root.isDarkTheme ? "#666" : "#ccc") : "transparent" }
+                        hoverEnabled: true
+                        ToolTip.visible: hovered; ToolTip.text: "Download TCGA"; ToolTip.delay: 500; ToolTip.timeout: 5000
+                        onClicked: downloadDialog.open()
+                    }
+
+                    // Bottone Info
+                    Button {
+                        icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+                        icon.width: 24; icon.height: 24
+                        width: 40; height: 40
+                        icon.color: isDarkTheme ? "#fff" : "#333"
+                        flat: true
+                        background: Rectangle { color: "transparent"; radius: 6; border.color: parent.hovered ? (root.isDarkTheme ? "#666" : "#ccc") : "transparent" }
+                        hoverEnabled: true
+                        ToolTip.visible: hovered; ToolTip.text: "About SOPHYSM"; ToolTip.delay: 500; ToolTip.timeout: 5000
+                        onClicked: aboutDialog.open()
+                    }
                 }
             }
         }
@@ -355,7 +406,9 @@ ApplicationWindow {
         id: settingsDialog
         workspaceDir: root.workspaceDir
         isDarkTheme: root.isDarkTheme
-        segmentationMethod: root.segmentationMethod
+        Component.onCompleted: {
+            segmentationMethod = root.segmentationMethod
+        }
         onSettingsApplied: { Julia.log_message("@info", "Settings applied") }
     }
     Dialogs.About { id: aboutDialog }
@@ -611,6 +664,17 @@ ApplicationWindow {
         id: imageSourceMenu
         MenuItem { text: "📁 From Local File"; onTriggered: addImageDialog.open() }
         MenuItem { text: "☁️ From TCGA Collection"; onTriggered: downloadDialog.open() }
+    }
+
+    Dialogs.SegmentationParams {
+        id: segmentationDialog
+        segmentationMethod: root.segmentationMethod
+
+        onSettingsApplied: {
+            root.segmentationMethod = segmentationMethod
+            propmap.segmentation_method = segmentationMethod
+            updateWorkflowStep()
+        }
     }
     
     // ================= FUNZIONI OPERATIVE =================
