@@ -45,6 +45,6 @@ ColumnLayout {
         to: root.to
         value: root.value
 
-        onMoved: root.value = value   // ✅ QUI è corretto
+        onMoved: root.value = value
     }
 }

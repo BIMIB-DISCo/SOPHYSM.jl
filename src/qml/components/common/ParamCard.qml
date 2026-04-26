@@ -40,7 +40,6 @@ Rectangle {
 
         Item { height: 6 }
 
-        // SLOT
         ColumnLayout {
             id: contentArea
             Layout.fillWidth: true

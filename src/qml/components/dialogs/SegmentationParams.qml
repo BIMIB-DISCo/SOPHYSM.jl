@@ -10,16 +10,16 @@ Item {
     id: root
 
     property string segmentationMethod: ""
-    property string modelBsonPath: ""          // JNet model
-    property string cellposeJlOnnxPath: ""     // ✅ EXTRA: solo per cellpose_jl
+    property string modelBsonPath: ""
+    property string cellposeJlOnnxPath: ""
 
-    // GRAPH
+    // graph parameters
     property real thresholdGray: 0.5
     property real thresholdMarker: 0.3
     property real minThreshold: 50
     property real maxThreshold: 1000
 
-    // CELLPOSE / CELLPOSE.JL - PARAMETRI CONDIVISI
+    // cellpose / cellpose_jl parameters
     property real cellposeDiameter: 0
     property real cellposeFlowThreshold: 0.4
     property real cellposeCellprobThreshold: 0
@@ -38,7 +38,7 @@ Item {
         settingsPopup.open()
     }
 
-    // FileDialog per JNet (BSON)
+    // FileDialog for JNet (BSON)
     FileDialog {
         id: bsonFileDialog
         title: "Select JNet Model File"
@@ -48,7 +48,7 @@ Item {
         }
     }
 
-    // FileDialog per cellpose_jl (ONNX) - SOLO QUESTO AGGIUNGE IL PATH EXTRA
+    // FileDialog for cellpose_jl (ONNX)
     FileDialog {
         id: onnxFileDialog
         title: "Select Cellpose.jl ONNX Model"
@@ -208,13 +208,12 @@ Item {
                         }
                     }
 
-                    // === CELLPOSE.JL PARAMETERS (stessi slider + ONNX path) ===
+                    // === CELLPOSE.JL PARAMETERS ===
                     Common.ParamCard {
                         visible: root.segmentationMethod === "cellpose_jl"
                         title: "Cellpose.jl"
                         description: "Julia native backend with ONNX model"
 
-                        // ✅ STESSI PARAMETRI DI CELLPOSE
                         Common.ParamSlider {
                             label: "Diameter"
                             value: root.cellposeDiameter
@@ -261,7 +260,6 @@ Item {
                             }
                         }
 
-                        // ✅ EXTRA: ONNX MODEL PATH (solo per cellpose_jl)
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 10
@@ -342,7 +340,7 @@ Item {
                         propmap["min_threshold"] = root.minThreshold
                         propmap["max_threshold"] = root.maxThreshold
 
-                        // CELLPOSE / CELLPOSE.JL - PARAMETRI CONDIVISI
+                        // CELLPOSE / CELLPOSE.JL
                         propmap["cellpose_diameter"] = root.cellposeDiameter
                         propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold
                         propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold
@@ -353,7 +351,7 @@ Item {
                         propmap["cellpose_max_cached"] = root.cellposeMaxCachedModels
                         propmap["cellpose_pretrained"] = root.cellposePretrainedModel
 
-                        // CELLPOSE.JL - PARAMETRO EXTRA
+                        // CELLPOSE.JL ONNX path
                         propmap["cellpose_jl_onnx_path"] = root.cellposeJlOnnxPath
 
                         // JNet model path

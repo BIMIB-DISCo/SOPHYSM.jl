@@ -19,7 +19,7 @@ ApplicationWindow {
     title: "SOPHYSM"
     visibility: ApplicationWindow.Maximized
     
-    // ================= TEMA E STATO =================
+    // ================= THEME AND STATE =================
     property bool isDarkTheme: true
     property string workspaceDir: propmap.workspace_dir || ""
     property string currentProject: ""
@@ -28,7 +28,7 @@ ApplicationWindow {
     property int workflowStep: 0
     property var projectImages: []
     
-    // ================= PROPRIETÀ GLOBALI PER EXPAND IMAGE =================
+    // ================= PROPERTIES AND FUNCTIONS =================
     property string expandImagePath: ""
     property string expandImageTitleBase: "Preview"
     
@@ -90,6 +90,17 @@ ApplicationWindow {
                     Label { text: "🧬 SOPHYSM"; font.bold: true; font.pixelSize: 16; color: isDarkTheme ? "#fff" : "#333"; elide: Text.ElideRight }
                     Label { text: workspaceDir ? "📁 " + workspaceDir : "⚠ No workspace"; font.pixelSize: 9; color: isDarkTheme ? "#aaa" : "#666"; wrapMode: Text.WordWrap; elide: Text.ElideMiddle; Layout.fillWidth: true; maximumLineCount: 2 }
                     Common.Button { text: "Change Workspace"; buttonWidth: parent.width; buttonHeight: 26; font.pixelSize: 10; onClicked: workspaceDialog.open() }
+                    Button {
+                        icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
+                        icon.width: 24; icon.height: 24
+                        width: parent.width; height: 26
+                        text: "Download TCGA"
+                        icon.color: isDarkTheme ? "#fff" : "#333"
+                        flat: true
+                        background: Rectangle { color: "transparent"; radius: 6; border.color: parent.hovered ? (root.isDarkTheme ? "#666" : "#ccc") : "transparent" }
+                        hoverEnabled: true
+                        onClicked: downloadDialog.open()
+                    }
                 }
                 Rectangle { Layout.fillWidth: true; height: 1; color: isDarkTheme ? "#333" : "#ddd" }
                 
@@ -254,18 +265,18 @@ ApplicationWindow {
                     spacing: 8
                     Item { Layout.fillWidth: true }
 
-                    // Bottone Settings con icona
+                    // Settings button
                     Button {
                         id: settingsBtn
-                        icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"  // ✅ Percorso relativo a src/qml/
+                        icon.source: "img/settings_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
                         icon.width: 24
                         icon.height: 24
                         icon.color: isDarkTheme ? "#fff" : "#333"
                         width: 40
                         height: 40
-                        flat: true  // rimuove stile default, usa solo il tuo background
+                        flat: true
                         
-                        // Background personalizzato per il tema
+                        // Custom background with hover effect
                         background: Rectangle {
                             color: "transparent"
                             radius: 6
@@ -282,20 +293,7 @@ ApplicationWindow {
                         onClicked: settingsDialog.open()
                     }
 
-                    // Bottone Download
-                    Button {
-                        icon.source: "img/download_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
-                        icon.width: 24; icon.height: 24
-                        width: 40; height: 40
-                        icon.color: isDarkTheme ? "#fff" : "#333"
-                        flat: true
-                        background: Rectangle { color: "transparent"; radius: 6; border.color: parent.hovered ? (root.isDarkTheme ? "#666" : "#ccc") : "transparent" }
-                        hoverEnabled: true
-                        ToolTip.visible: hovered; ToolTip.text: "Download TCGA"; ToolTip.delay: 500; ToolTip.timeout: 5000
-                        onClicked: downloadDialog.open()
-                    }
-
-                    // Bottone Info
+                    // Info button
                     Button {
                         icon.source: "img/info_512dp_E3E3E3_FILL0_wght300_GRAD0_opsz48.png"
                         icon.width: 24; icon.height: 24
@@ -496,9 +494,6 @@ ApplicationWindow {
         }
     }
     
-    // =====================================================
-    // ✅ DIALOG EXPAND IMAGE - ROOT LEVEL (CORRETTO)
-    // =====================================================
     Dialog {
         id: expandImageDialog
         modal: true
@@ -542,27 +537,24 @@ ApplicationWindow {
             color: isDarkTheme ? "#121212" : "#fafafa"
             radius: 4
             
-            // ✅ Image con fix per caricamento locale
             Image {
                 id: expandedImage
                 anchors.fill: parent
-                anchors.margins: 12  // ✅ Usa anchors.margins invece di padding
+                anchors.margins: 12  
                 fillMode: Image.PreserveAspectFit
                 
-                // ✅ FIX CRITICI:
                 asynchronous: false
                 cache: true
                 clip: true
                 smooth: true
                 
-                // ✅ Monitoraggio stato caricamento
                 onStatusChanged: {
                     if (status === Image.Error) {
                         console.error("❌ Image load ERROR:", expandedImage.source);
                         Julia.log_message("@error", "QML Image Error: " + expandedImage.source);
                     } else if (status === Image.Ready) {
                         console.log("✅ Image loaded:", expandedImage.source, 
-                                   "Size:", expandedImage.paintedWidth, "x", expandedImage.paintedHeight);
+                                    "Size:", expandedImage.paintedWidth, "x", expandedImage.paintedHeight);
                     } else if (status === Image.Loading) {
                         console.log("⏳ Loading:", expandedImage.source);
                     }
@@ -583,16 +575,14 @@ ApplicationWindow {
                 }
             }
             
-            // ✅ Overlay con istruzioni - FIX: usa anchors invece di padding
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.right: parent.right
-                anchors.margins: 16  // ✅ anchors.margins funziona su Rectangle
+                anchors.margins: 16
                 color: isDarkTheme ? "#333333cc" : "#ffffffcc"
                 radius: 6
-                // padding: 8  ← ❌ RIMOSSO: non valido per Rectangle
                 Label {
-                    anchors.margins: 8  // ✅ Margine interno al Label
+                    anchors.margins: 8
                     text: "🔍 Click per zoom 1:1 / fit"
                     font.pixelSize: 10
                     color: isDarkTheme ? "#ddd" : "#333"
@@ -600,7 +590,6 @@ ApplicationWindow {
             }
         }
         
-        // ✅ onOpened con debug e fix percorso macOS
         onOpened: {
             if (!expandImagePath || expandImagePath === "") {
                 console.error("❌ expandImagePath is empty!");
@@ -614,18 +603,16 @@ ApplicationWindow {
                 var resolved = Julia.get_image_for_expanded_view(expandImagePath);
                 console.log("🔍 Julia returned:", resolved);
                 
-                // ✅ FIX MACOS: Assicurati che il percorso sia un URL file:// valido
                 var finalSource = resolved;
                 if (!resolved.startsWith("file://")) {
                     finalSource = Qt.resolvedUrl(resolved).toString();
                     console.log("🔍 Converted to Qt URL:", finalSource);
                 }
                 
-                // Cache-busting
                 finalSource = finalSource + "?t=" + Date.now();
                 console.log("🔍 Setting source:", finalSource);
                 
-                expandedImage.source = "";  // Reset per forzare reload
+                expandedImage.source = "";  // Reset to trigger reload
                 expandedImage.source = finalSource;
                 
                 expandImageTitle.text = expandImageTitleBase + " — " + expandImagePath.split('/').pop();
@@ -641,11 +628,6 @@ ApplicationWindow {
             console.log("🔍 Dialog closed, image source cleared");
         }
     }
-    // ✅ FINE expandImageDialog - NESSUNA PARENTESI EXTRA QUI
-    
-    // =====================================================
-    // ALTRI DIALOG E FUNZIONI
-    // =====================================================
     
     FolderDialog {
         id: openProjectDialog
@@ -677,7 +659,7 @@ ApplicationWindow {
         }
     }
     
-    // ================= FUNZIONI OPERATIVE =================
+    // ================= FUNCTIONS =================
     function createProject(name) {
         if (!workspaceDir) { Julia.log_message("@error", "Set workspace first!"); return; }
         var projPath = Julia.create_project_dir(name);
@@ -697,7 +679,6 @@ ApplicationWindow {
         projectImages = newImages;
         currentImage = "";
         
-        // ✅ AUTO-LOAD OUTPUT ESISTENTI
         if (newImages.length > 0) {
             var firstPath = newImages[0].path;
             var outputs = Julia.check_existing_outputs(firstPath);
@@ -780,4 +761,3 @@ ApplicationWindow {
         expandImageDialog.open();
     }
 }
-// ✅ FINE ApplicationWindow - UNA SOLA PARENTESI DI CHIUSURA

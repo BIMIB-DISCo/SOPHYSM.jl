@@ -365,6 +365,8 @@ end
 
 """
     async_download_single_slide_from_collection(args...) -> Int
+    Placeholder async function for downloading a single slide from a collection.
+    Currently just logs a message and returns 0.
 """
 function async_download_single_slide_from_collection(args...)
     s_log_message("@info", "[INFO] Download mock.")
@@ -373,10 +375,12 @@ end
 
 """
     create_project_dir(name) -> String
-    Accetta sia String che QStringAllocated da QML
+    Creates a new project directory with the given name inside the workspace.
+        - name: String or QStringAllocated (QML)
+    Returns the path of the created directory.
 """
 function create_project_dir(name)
-    name_str = String(name)  # ✅ Conversione esplicita
+    name_str = String(name)
     wd = String(workspace_dir[])
     path = joinpath(wd, name_str)
     mkpath(path)
@@ -386,10 +390,12 @@ end
 
 """
     scan_project_images(proj_path) -> Vector{String}
-    Accetta sia String che QStringAllocated da QML
+    Scans the given project directory for image files and returns their paths.
+    - proj_path: String or QStringAllocated (QML)
+    Supported image formats: PNG, JPG, JPEG, TIFF, BMP (case-insensitive)
 """
 function scan_project_images(proj_path)
-    path_str = String(proj_path)  # ✅ Conversione esplicita
+    path_str = String(proj_path) 
     images = String[]
     for f in readdir(path_str)
         if endswith(lowercase(f), r"\.(png|jpg|jpeg|tif|tiff|bmp)$")
@@ -401,28 +407,31 @@ end
 
 """
     get_base_output_path(img_path, suffix) -> String
+    Given an image path and a suffix, returns the base output path by removing the original extension and appending the suffix.
+    - img_path: String or QStringAllocated (QML)
+    - suffix: String or QStringAllocated (QML), e.g. "_seg.png"
 """
 function get_base_output_path(img_path, suffix)
-    img_str = String(img_path)    # ✅ Conversione esplicita
-    suffix_str = String(suffix)   # ✅ Conversione esplicita
+    img_str = String(img_path)
+    suffix_str = String(suffix)
     base = splitext(img_str)[1]
     return base * suffix_str
 end
 
 """
     copy_image_to_project(image_path, project_dir) -> String
-    Copia un'immagine nella cartella del progetto.
-    NOTA: Niente "::String" nella signature per accettare QStringAllocated da QML.
+    Copies an image file to the given project directory, handling potential name conflicts by appending a counter.
+    - image_path: String or QStringAllocated (QML)
+    - project_dir: String or QStringAllocated (QML)
+    Returns the path of the copied image in the project directory.
 """
 function copy_image_to_project(image_path, project_dir)
-    # ✅ Conversione esplicita da QStringAllocated a String Julia
     img_path = String(image_path)
     proj_dir = String(project_dir)
     
     filename = basename(img_path)
     dest_path = joinpath(proj_dir, filename)
     
-    # Gestione nomi duplicati
     if isfile(dest_path)
         base, ext = splitext(filename)
         counter = 1
@@ -433,7 +442,6 @@ function copy_image_to_project(image_path, project_dir)
         end
     end
     
-    # Copia il file
     cp(img_path, dest_path; force=false)
     s_log_message("@info", "Image copied to project: $dest_path")
     
@@ -442,22 +450,23 @@ end
 
 """
     resolve_image_for_qml(image_path::AbstractString) -> String
-    VERSIONE CON DEBUG: Converte TIFF→PNG con logging dettagliato
+    Ensures the given image path is in PNG format for QML display.
+    If the input image is not a PNG, it attempts to convert it to PNG and cache the result.
+    Caching is based on a hash of the original path and its modification time, stored in a .sophysm_cache subdirectory.
+    If conversion fails, it returns the original path, allowing QML to attempt loading it natively (which may or may not work).
 """
 function resolve_image_for_qml(image_path::AbstractString)
     path = String(image_path)
     s_log_message("@debug", "[resolve_image_for_qml] Input: $path")
     
-    # Se già PNG, restituisci così com'è
     if endswith(lowercase(path), ".png")
         s_log_message("@debug", "[resolve_image_for_qml] Already PNG, returning as-is")
         return path
     end
     
-    # Verifica che il file esista
     if !isfile(path)
         s_log_message("@error", "[resolve_image_for_qml] File not found: $path")
-        return path  # Fallback
+        return path     # fallback, QML will handle error display
     end
     
     cache_dir = joinpath(dirname(path), ".sophysm_cache")
@@ -470,28 +479,24 @@ function resolve_image_for_qml(image_path::AbstractString)
     
     s_log_message("@debug", "[resolve_image_for_qml] Cache path: $cache_path")
     
-    # Se cache valida, usala
     if isfile(cache_path) && mtime(cache_path) >= source_mtime
         s_log_message("@debug", "[resolve_image_for_qml] Using cached: $cache_path")
         return cache_path
     end
     
-    # Altrimenti: carica, converti, salva
     try
         s_log_message("@info", "[resolve_image_for_qml] Converting: $path")
         
-        # Caricamento
         img = load(path)
         s_log_message("@debug", "[resolve_image_for_qml] Loaded, size: $(size(img)), eltype: $(eltype(img))")
         
-        # Conversione a RGBA8
+        # Conversion to RGBA{N0f8} for QML compatibility
         img_rgba = convert.(RGBA{N0f8}, img)
         s_log_message("@debug", "[resolve_image_for_qml] Converted to RGBA{N0f8}")
         
-        # Salvataggio PNG
+        # Saving PNG
         save(cache_path, img_rgba)
         
-        # ✅ VALIDAZIONE: controlla che il PNG sia stato creato e sia leggibile
         if isfile(cache_path) && filesize(cache_path) > 0
             s_log_message("@info", "[resolve_image_for_qml] ✅ Saved: $cache_path ($(filesize(cache_path)) bytes)")
             return cache_path
@@ -503,13 +508,14 @@ function resolve_image_for_qml(image_path::AbstractString)
     catch e
         s_log_message("@error", "[resolve_image_for_qml] ❌ Conversion error: $e")
         showerror(stdout, e, catch_backtrace())
-        return path  # Fallback: Qt proverà nativamente
+        return path  # Fallback, QML will handle error display
     end
 end
 
 """
     get_image_for_expanded_view(image_path::AbstractString) -> String
-    Wrapper con logging specifico per expanded view
+    Function called by QML when an image is requested for the expanded view.
+    It logs the request, resolves the image for QML (ensuring PNG format), and logs the result before returning it.
 """
 function get_image_for_expanded_view(image_path::AbstractString)
     s_log_message("@info", "[EXPAND] Requested for: $image_path")
@@ -520,14 +526,21 @@ end
 
 """
     check_existing_outputs(img_path::AbstractString) -> Dict{String, String}
-    Controlla quali file di output esistono già per una data immagine.
-    Restituisce un Dict con i percorsi dei file trovati (chiavi: segmented, graphVertex, etc.)
+    Given an input image path, checks for the existence of expected output files (segmentation, graph vertices, edges, overlay, voronoi).
+    Returns a dictionary mapping output types to their paths if they exist.
+    Expected output suffixes:
+        - "_seg.png" for segmentation
+        - "_graph_vertex.png" for graph vertices
+        - "_graph_edges.png" for graph edges
+        - "_graph_edges_orig.png" for overlay
+        - "_voronoi_orig.png" for voronoi diagram
+    This allows the UI to quickly determine which outputs are already available for a given input image.
 """
 function check_existing_outputs(img_path::AbstractString)
     base = splitext(String(img_path))[1]
     outputs = Dict{String, String}()
     
-    # Mappa suffissi output → chiave Dict
+    # Dict of expected suffixes and their corresponding output types
     suffixes = Dict(
         "segmented"   => "_seg.png",
         "graphVertex" => "_graph_vertex.png", 
@@ -590,18 +603,17 @@ function start_GUI()
     propmap["min_threshold"] = 50.0
     propmap["max_threshold"] = 1000.0
 
-    # ---- Cellpose params (default robusti)
-    propmap["cellpose_diameter"] = 0.0               # 0 = auto
+    # Cellpose params (default values)
+    propmap["cellpose_diameter"] = 0.0
     propmap["cellpose_flow_threshold"] = 0.4
     propmap["cellpose_cellprob_threshold"] = 0.0
-    propmap["cellpose_min_size"] = 15.0              # lo tengo double in QML, cast a Int in Julia
+    propmap["cellpose_min_size"] = 15.0
     propmap["cellpose_invert"] = false
     propmap["cellpose_augment"] = false
 
-    # ---- caching (advanced)
     propmap["cellpose_cache_models"] = true
-    propmap["cellpose_max_cached_models"] = 2.0      # cast a Int
-    propmap["cellpose_pretrained_model"] = ""        # path opzionale; vuoto = default
+    propmap["cellpose_max_cached_models"] = 2.0
+    propmap["cellpose_pretrained_model"] = ""
 
 
     on(workspace_dir) do x

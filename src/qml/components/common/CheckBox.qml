@@ -4,7 +4,6 @@ import QtQuick.Controls
 CheckBox {
     id: root
 
-    // 🔤 TESTO
     contentItem: Text {
         text: root.text
         color: root.enabled ? "#FFFFFF" : "#777777"
@@ -13,7 +12,6 @@ CheckBox {
         font.pixelSize: 13
     }
 
-    // ☑️ BOX
     indicator: Rectangle {
         implicitWidth: 18
         implicitHeight: 18
@@ -22,7 +20,6 @@ CheckBox {
         border.color: root.checked ? "#FF6600" : "#777"
         color: root.checked ? "#FF6600" : "transparent"
 
-        // ✔ TICK
         Canvas {
             anchors.fill: parent
             visible: root.checked

@@ -1,4 +1,3 @@
-// Common/StyledTextField.qml
 import QtQuick
 import QtQuick.Controls
 
