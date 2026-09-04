@@ -8,8 +8,8 @@ using Observables
 using JSON
 using JHistint
 using Base.Threads
-using FileIO 
-using ImageIO 
+using FileIO
+using ImageIO
 using Colors
 using PNGFiles
 using SHA
@@ -118,31 +118,28 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose (direct) Start...")
             CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
 
-                elseif m_str == "cellpose_jl"
+        elseif m_str == "cellpose_jl"
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose.jl (Native) Start...")
-            
+
             minT = Float32(get(propmap, "min_threshold", 50.0))
             maxT = Float32(get(propmap, "max_threshold", 1000.0))
             diameter = get(propmap, "cellpose_diameter", 0.0)
             diameter_val = diameter <= 0 ? nothing : Float64(diameter)
-            
-            # Parametri UI mantenuti per compatibilità, ma ignorati da Cellpose.jl
+
             flow_th = Float64(get(propmap, "cellpose_flow_threshold", 0.4))
             cellprob = Float64(get(propmap, "cellpose_cellprob_threshold", 0.0))
             invert = Bool(get(propmap, "cellpose_invert", false))
             augment = Bool(get(propmap, "cellpose_augment", false))
             min_size = Int(round(get(propmap, "cellpose_min_size", 15.0)))
-            
-            # Model path: deve essere un file .onnx valido
-            pretrained_raw = strip(String(get(propmap, "cellpose_pretrained_model", "")))
-            model_path = pretrained_raw == "" ? nothing : String(pretrained_raw)
 
+            pretrained_raw = strip(String(get(propmap, "cellpose_jl_onnx_path", "")))
+            model_path = pretrained_raw == "" ? nothing : String(pretrained_raw)
+            println("Path ONNX ricevuto da QML: ", String(model_arg))
             CellposeJLSegmentation.start_segmentation_SOPHYSM_cellpose_jl(
                 i_str, o_str;
                 min_threshold=minT, max_threshold=maxT,
                 diameter=diameter_val,
                 pretrained_model=model_path,
-                # Parametri mantenuti per compatibilità signature
                 flow_threshold=flow_th,
                 cellprob_threshold=cellprob,
                 invert=invert,
@@ -220,9 +217,8 @@ function start_async_job(method, model, img, output)
         augment = Bool(get(propmap, "cellpose_augment", false))
 
         cache_models = Bool(get(propmap, "cellpose_cache_models", true))
-        max_cached = Int(round(get(propmap, "cellpose_max_cached_models", 2.0)))
-
-        pretrained = strip(String(get(propmap, "cellpose_pretrained_model", "")))
+        max_cached = Int(round(get(propmap, "cellpose_max_cached", 2.0)))
+        pretrained = strip(String(get(propmap, "cellpose_pretrained", "")))
 
         rc = CellposeSegmentation.start_cellpose_job(
             String(img), String(output);
@@ -395,7 +391,7 @@ end
     Supported image formats: PNG, JPG, JPEG, TIFF, BMP (case-insensitive)
 """
 function scan_project_images(proj_path)
-    path_str = String(proj_path) 
+    path_str = String(proj_path)
     images = String[]
     for f in readdir(path_str)
         if endswith(lowercase(f), r"\.(png|jpg|jpeg|tif|tiff|bmp)$")
@@ -428,10 +424,10 @@ end
 function copy_image_to_project(image_path, project_dir)
     img_path = String(image_path)
     proj_dir = String(project_dir)
-    
+
     filename = basename(img_path)
     dest_path = joinpath(proj_dir, filename)
-    
+
     if isfile(dest_path)
         base, ext = splitext(filename)
         counter = 1
@@ -441,10 +437,10 @@ function copy_image_to_project(image_path, project_dir)
             counter += 1
         end
     end
-    
+
     cp(img_path, dest_path; force=false)
     s_log_message("@info", "Image copied to project: $dest_path")
-    
+
     return dest_path
 end
 
@@ -458,45 +454,45 @@ end
 function resolve_image_for_qml(image_path::AbstractString)
     path = String(image_path)
     s_log_message("@debug", "[resolve_image_for_qml] Input: $path")
-    
+
     if endswith(lowercase(path), ".png")
         s_log_message("@debug", "[resolve_image_for_qml] Already PNG, returning as-is")
         return path
     end
-    
+
     if !isfile(path)
         s_log_message("@error", "[resolve_image_for_qml] File not found: $path")
         return path     # fallback, QML will handle error display
     end
-    
+
     cache_dir = joinpath(dirname(path), ".sophysm_cache")
     mkpath(cache_dir)
-    
+
     path_hash = bytes2hex(sha256(path))[1:16]
     source_mtime = mtime(path)
     mtime_int = floor(Int, source_mtime)
     cache_path = joinpath(cache_dir, "$(path_hash)_$(mtime_int).png")
-    
+
     s_log_message("@debug", "[resolve_image_for_qml] Cache path: $cache_path")
-    
+
     if isfile(cache_path) && mtime(cache_path) >= source_mtime
         s_log_message("@debug", "[resolve_image_for_qml] Using cached: $cache_path")
         return cache_path
     end
-    
+
     try
         s_log_message("@info", "[resolve_image_for_qml] Converting: $path")
-        
+
         img = load(path)
         s_log_message("@debug", "[resolve_image_for_qml] Loaded, size: $(size(img)), eltype: $(eltype(img))")
-        
+
         # Conversion to RGBA{N0f8} for QML compatibility
         img_rgba = convert.(RGBA{N0f8}, img)
         s_log_message("@debug", "[resolve_image_for_qml] Converted to RGBA{N0f8}")
-        
+
         # Saving PNG
         save(cache_path, img_rgba)
-        
+
         if isfile(cache_path) && filesize(cache_path) > 0
             s_log_message("@info", "[resolve_image_for_qml] ✅ Saved: $cache_path ($(filesize(cache_path)) bytes)")
             return cache_path
@@ -504,7 +500,7 @@ function resolve_image_for_qml(image_path::AbstractString)
             s_log_message("@error", "[resolve_image_for_qml] ❌ Failed to save PNG: $cache_path")
             return path  # Fallback
         end
-        
+
     catch e
         s_log_message("@error", "[resolve_image_for_qml] ❌ Conversion error: $e")
         showerror(stdout, e, catch_backtrace())
@@ -538,17 +534,17 @@ end
 """
 function check_existing_outputs(img_path::AbstractString)
     base = splitext(String(img_path))[1]
-    outputs = Dict{String, String}()
-    
+    outputs = Dict{String,String}()
+
     # Dict of expected suffixes and their corresponding output types
     suffixes = Dict(
-        "segmented"   => "_seg.png",
-        "graphVertex" => "_graph_vertex.png", 
-        "graphEdges"  => "_graph_edges.png",
-        "overlay"     => "_graph_edges_orig.png",
-        "voronoi"     => "_voronoi_orig.png"
+        "segmented" => "_seg.png",
+        "graphVertex" => "_graph_vertex.png",
+        "graphEdges" => "_graph_edges.png",
+        "overlay" => "_graph_edges_orig.png",
+        "voronoi" => "_voronoi_orig.png"
     )
-    
+
     for (key, suffix) in suffixes
         candidate = base * suffix
         if isfile(candidate)
@@ -556,7 +552,7 @@ function check_existing_outputs(img_path::AbstractString)
             s_log_message("@debug", "Found existing output: $candidate")
         end
     end
-    
+
     return outputs
 end
 
@@ -612,15 +608,16 @@ function start_GUI()
     propmap["cellpose_augment"] = false
 
     propmap["cellpose_cache_models"] = true
-    propmap["cellpose_max_cached_models"] = 2.0
-    propmap["cellpose_pretrained_model"] = ""
+    propmap["cellpose_max_cached"] = 2.0
+    propmap["cellpose_pretrained"] = ""
+    propmap["cellpose_jl_onnx_path"] = ""
 
 
     on(workspace_dir) do x
         Workspace.set_workspace_dir(x)
         s_log_message("@info", "WS Changed to $x")
     end
-    
+
     ENV["QT_QUICK_CONTROLS_STYLE"] = "Basic"
     loadqml(qmlfile, propmap=propmap)
 

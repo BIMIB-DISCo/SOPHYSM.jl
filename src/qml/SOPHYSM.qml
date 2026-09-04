@@ -255,7 +255,7 @@ ApplicationWindow {
                                             anchors.leftMargin: 8
                                             anchors.rightMargin: 4
                                             spacing: 6
-                                            Image {
+                                            /* Image {
                                                 source: "img/image_24dp.png"
                                                 width: 16
                                                 height: 16
@@ -266,7 +266,7 @@ ApplicationWindow {
                                                 width: 16
                                                 height: 16
                                                 visible: modelData.hasOutput
-                                            }
+                                            } */
                                             Label {
                                                 text: modelData.name
                                                 font.pixelSize: 11

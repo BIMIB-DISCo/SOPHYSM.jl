@@ -32,10 +32,27 @@ Item {
 
     property bool hasChanges: false
 
-    signal settingsApplied()
+    // Create the dictionary on startup
+    Component.onCompleted: {
+        if (propmap["cellpose_jl_onnx_path"] === undefined) {
+            propmap["segmentation_method"] = root.segmentationMethod;
+            propmap["cellpose_diameter"] = root.cellposeDiameter;
+            propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold;
+            propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold;
+            propmap["cellpose_min_size"] = root.cellposeMinSize;
+            propmap["cellpose_invert"] = root.cellposeInvert;
+            propmap["cellpose_augment"] = root.cellposeAugment;
+            propmap["cellpose_cache_models"] = root.cellposeCacheModels;
+            propmap["cellpose_max_cached"] = root.cellposeMaxCachedModels;
+            propmap["cellpose_pretrained"] = root.cellposePretrainedModel;
+            propmap["cellpose_jl_onnx_path"] = root.cellposeJlOnnxPath;
+        }
+    }
+
+    signal settingsApplied
 
     function open() {
-        settingsPopup.open()
+        settingsPopup.open();
     }
 
     // FileDialog for JNet (BSON)
@@ -44,7 +61,7 @@ Item {
         title: "Select JNet Model File"
         nameFilters: ["BSON files (*.bson)"]
         onAccepted: {
-            root.modelBsonPath = selectedFile.toString().slice(7)
+            root.modelBsonPath = selectedFile.toString().slice(7);
         }
     }
 
@@ -54,7 +71,7 @@ Item {
         title: "Select Cellpose.jl ONNX Model"
         nameFilters: ["ONNX files (*.onnx)", "All files (*)"]
         onAccepted: {
-            root.cellposeJlOnnxPath = selectedFile.toString().slice(7)
+            root.cellposeJlOnnxPath = selectedFile.toString().slice(7);
         }
     }
 
@@ -96,25 +113,29 @@ Item {
                         Common.CheckBox {
                             text: "JNet"
                             checked: root.segmentationMethod === "jnet"
-                            onCheckedChanged: if (checked) root.segmentationMethod = "jnet"
+                            onCheckedChanged: if (checked)
+                                root.segmentationMethod = "jnet"
                         }
 
                         Common.CheckBox {
                             text: "Graph"
                             checked: root.segmentationMethod === "graph"
-                            onCheckedChanged: if (checked) root.segmentationMethod = "graph"
+                            onCheckedChanged: if (checked)
+                                root.segmentationMethod = "graph"
                         }
 
                         Common.CheckBox {
                             text: "Cellpose"
                             checked: root.segmentationMethod === "cellpose"
-                            onCheckedChanged: if (checked) root.segmentationMethod = "cellpose"
+                            onCheckedChanged: if (checked)
+                                root.segmentationMethod = "cellpose"
                         }
 
                         Common.CheckBox {
                             text: "Cellpose.jl"
                             checked: root.segmentationMethod === "cellpose_jl"
-                            onCheckedChanged: if (checked) root.segmentationMethod = "cellpose_jl"
+                            onCheckedChanged: if (checked)
+                                root.segmentationMethod = "cellpose_jl"
                         }
                     }
 
@@ -127,21 +148,24 @@ Item {
                         Common.ParamSlider {
                             label: "Gray Threshold"
                             value: root.thresholdGray
-                            from: 0; to: 1
+                            from: 0
+                            to: 1
                             onValueChanged: root.thresholdGray = value
                         }
 
                         Common.ParamSlider {
                             label: "Marker Threshold"
                             value: root.thresholdMarker
-                            from: 0; to: 1
+                            from: 0
+                            to: 1
                             onValueChanged: root.thresholdMarker = value
                         }
 
                         Common.ParamSlider {
                             label: "Min Threshold"
                             value: root.minThreshold
-                            from: 1; to: 1000
+                            from: 1
+                            to: 1000
                             decimals: 0
                             onValueChanged: root.minThreshold = value
                         }
@@ -149,7 +173,8 @@ Item {
                         Common.ParamSlider {
                             label: "Max Threshold"
                             value: root.maxThreshold
-                            from: 1; to: 10000
+                            from: 1
+                            to: 10000
                             decimals: 0
                             onValueChanged: root.maxThreshold = value
                         }
@@ -164,7 +189,8 @@ Item {
                         Common.ParamSlider {
                             label: "Diameter"
                             value: root.cellposeDiameter
-                            from: 0; to: 200
+                            from: 0
+                            to: 200
                             decimals: 0
                             onValueChanged: root.cellposeDiameter = value
                         }
@@ -172,21 +198,24 @@ Item {
                         Common.ParamSlider {
                             label: "Flow Threshold"
                             value: root.cellposeFlowThreshold
-                            from: 0; to: 2
+                            from: 0
+                            to: 2
                             onValueChanged: root.cellposeFlowThreshold = value
                         }
 
                         Common.ParamSlider {
                             label: "Cellprob Threshold"
                             value: root.cellposeCellprobThreshold
-                            from: -10; to: 10
+                            from: -10
+                            to: 10
                             onValueChanged: root.cellposeCellprobThreshold = value
                         }
 
                         Common.ParamSlider {
                             label: "Min Size"
                             value: root.cellposeMinSize
-                            from: 0; to: 10000
+                            from: 0
+                            to: 10000
                             decimals: 0
                             onValueChanged: root.cellposeMinSize = value
                         }
@@ -217,7 +246,8 @@ Item {
                         Common.ParamSlider {
                             label: "Diameter"
                             value: root.cellposeDiameter
-                            from: 0; to: 200
+                            from: 0
+                            to: 200
                             decimals: 0
                             onValueChanged: root.cellposeDiameter = value
                         }
@@ -225,21 +255,24 @@ Item {
                         Common.ParamSlider {
                             label: "Flow Threshold"
                             value: root.cellposeFlowThreshold
-                            from: 0; to: 2
+                            from: 0
+                            to: 2
                             onValueChanged: root.cellposeFlowThreshold = value
                         }
 
                         Common.ParamSlider {
                             label: "Cellprob Threshold"
                             value: root.cellposeCellprobThreshold
-                            from: -10; to: 10
+                            from: -10
+                            to: 10
                             onValueChanged: root.cellposeCellprobThreshold = value
                         }
 
                         Common.ParamSlider {
                             label: "Min Size"
                             value: root.cellposeMinSize
-                            from: 0; to: 10000
+                            from: 0
+                            to: 10000
                             decimals: 0
                             onValueChanged: root.cellposeMinSize = value
                         }
@@ -326,39 +359,41 @@ Item {
             // === APPLY BUTTON ===
             RowLayout {
                 Layout.fillWidth: true
-                Item { Layout.fillWidth: true }
+                Item {
+                    Layout.fillWidth: true
+                }
 
                 Common.Button {
                     text: "Apply"
                     isHighlighted: true
                     onClicked: {
-                        propmap["segmentation_method"] = root.segmentationMethod
+                        propmap["segmentation_method"] = root.segmentationMethod;
 
                         // GRAPH params
-                        propmap["threshold_gray"] = root.thresholdGray
-                        propmap["threshold_marker"] = root.thresholdMarker
-                        propmap["min_threshold"] = root.minThreshold
-                        propmap["max_threshold"] = root.maxThreshold
+                        propmap["threshold_gray"] = root.thresholdGray;
+                        propmap["threshold_marker"] = root.thresholdMarker;
+                        propmap["min_threshold"] = root.minThreshold;
+                        propmap["max_threshold"] = root.maxThreshold;
 
                         // CELLPOSE / CELLPOSE.JL
-                        propmap["cellpose_diameter"] = root.cellposeDiameter
-                        propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold
-                        propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold
-                        propmap["cellpose_min_size"] = root.cellposeMinSize
-                        propmap["cellpose_invert"] = root.cellposeInvert
-                        propmap["cellpose_augment"] = root.cellposeAugment
-                        propmap["cellpose_cache_models"] = root.cellposeCacheModels
-                        propmap["cellpose_max_cached"] = root.cellposeMaxCachedModels
-                        propmap["cellpose_pretrained"] = root.cellposePretrainedModel
+                        propmap["cellpose_diameter"] = root.cellposeDiameter;
+                        propmap["cellpose_flow_threshold"] = root.cellposeFlowThreshold;
+                        propmap["cellpose_cellprob_threshold"] = root.cellposeCellprobThreshold;
+                        propmap["cellpose_min_size"] = root.cellposeMinSize;
+                        propmap["cellpose_invert"] = root.cellposeInvert;
+                        propmap["cellpose_augment"] = root.cellposeAugment;
+                        propmap["cellpose_cache_models"] = root.cellposeCacheModels;
+                        propmap["cellpose_max_cached"] = root.cellposeMaxCachedModels;
+                        propmap["cellpose_pretrained"] = root.cellposePretrainedModel;
 
                         // CELLPOSE.JL ONNX path
-                        propmap["cellpose_jl_onnx_path"] = root.cellposeJlOnnxPath
+                        propmap["cellpose_jl_onnx_path"] = root.cellposeJlOnnxPath;
 
                         // JNet model path
-                        propmap["model_bson_path"] = root.modelBsonPath
+                        propmap["model_bson_path"] = root.modelBsonPath;
 
-                        root.settingsApplied()
-                        settingsPopup.close()
+                        root.settingsApplied();
+                        settingsPopup.close();
                     }
                 }
             }
