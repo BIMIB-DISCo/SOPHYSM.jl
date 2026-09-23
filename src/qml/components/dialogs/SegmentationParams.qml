@@ -54,7 +54,13 @@ Item {
         title: "Select Cellpose.jl ONNX Model"
         nameFilters: ["ONNX files (*.onnx)", "All files (*)"]
         onAccepted: {
-            root.cellposeJlOnnxPath = selectedFile.toString().slice(7)
+            var url = selectedFile.toString()
+            if (url.startsWith("file:///")) {
+                url = url.substring(8)
+            }
+            root.cellposeJlOnnxPath = url
+
+            console.log("[Cellpose.jl] Selected ONNX:", root.cellposeJlOnnxPath)
         }
     }
 

@@ -33,13 +33,33 @@ ApplicationWindow {
     property string expandImageTitleBase: "Preview"
 
     // ================= HELPER =================
+
+    //function setSource(imageItem, path) {
+    //    if (!path || path === "")
+    //        return;
+
+    //    var resolved = Julia.resolve_image_for_qml(path);
+
+    //    imageItem.source = "file://" + resolved + "?t=" + Date.now();
+    //}
+
     function setSource(imageItem, path) {
         if (!path || path === "")
             return;
 
-        var resolved = Julia.resolve_image_for_qml(path);
+        var resolved = Julia.resolve_image_for_qml(
+            localPathFromUrl(path)
+        );
 
-        imageItem.source = "file://" + resolved + "?t=" + Date.now();
+        var url = fileUrl(resolved);
+
+        console.log("   setSource");
+        console.log("   input:", path);
+        console.log("   resolved:", resolved);
+        console.log("   url:", url);
+
+        imageItem.source = "";
+        imageItem.source = url + "?t=" + Date.now();
     }
 
     function updateWorkflowStep() {
@@ -57,6 +77,113 @@ ApplicationWindow {
         }
         workflowStep = 3;
     }
+
+    // path conversion function fix in order to work on windows too (/C:/ problem)
+    // Convert a QML URL into a filesystem path
+
+    function localPathFromUrl(url) {
+        if (!url)
+            return "";
+
+        var s = url.toString();
+
+        // remove query string
+        var queryIndex = s.indexOf("?");
+        if (queryIndex >= 0)
+            s = s.substring(0, queryIndex);
+
+        // file:///C:/Users/...
+        if (s.startsWith("file:///")) {
+            s = s.substring(8);
+        }
+        // file://C:/Users/...
+        else if (s.startsWith("file://")) {
+            s = s.substring(7);
+        }
+
+        // Decode %20, %5C, ecc. 
+        try {
+            s = decodeURIComponent(s);
+        } catch (e) {
+            console.warn("Could not decode path:", s);
+        }
+
+        // uniform path on Windows
+        if (Qt.platform.os === "windows") {
+            s = s.replace(/\//g, "\\");
+        }
+
+        return s;
+    }
+
+    // function fileUrl(path) {
+    //     if (!path || path === "")
+    //         return "";
+
+    //     var s = path.toString();
+
+    //     // Remove query string
+    //     var queryIndex = s.indexOf("?");
+    //     if (queryIndex >= 0)
+    //         s = s.substring(0, queryIndex);
+
+    //     // normalize if already an URL file
+    //     if (s.startsWith("file:///")) {
+    //         s = s.substring(8);
+    //     } else if (s.startsWith("file://")) {
+    //         s = s.substring(7);
+    //     }
+
+    //     // Decode URL characters
+    //     try {
+    //         s = decodeURIComponent(s);
+    //     } catch (e) {
+    //         console.warn("Could not decode path:", s);
+    //     }
+
+    //     // Windows: C:\Users\... -> C:/Users/...
+    //     s = s.replace(/\\/g, "/");
+
+    //     // Windows absolute path
+    //     if (/^[A-Za-z]:\//.test(s)) {
+    //         return "file:///" + s;
+    //     }
+
+    //     // Unix absolute path
+    //     if (s.startsWith("/")) {
+    //         return "file://" + s;
+    //     }
+
+    //     // Relative path
+    //     return Qt.resolvedUrl(s).toString();
+    // }
+
+    // fileUrl semplified
+
+    function fileUrl(path) {
+        if (!path || path === "")
+            return "";
+
+        var s = path.toString();
+
+        // Normalize path separators for file URLs
+        s = s.replace(/\\/g, "/");
+
+        // Windows absolute path: C:/Users/...
+        if (/^[A-Za-z]:\//.test(s)) {
+            return "file:///" + s;
+        }
+
+        // Unix absolute path: /home/... or /Users/...
+        if (s.startsWith("/")) {
+            return "file://" + s;
+        }
+
+        // Relative path
+        return Qt.resolvedUrl(s).toString();
+    }
+
+
 
     function onSegmentationCompleted(imageName, outputs) {
         console.log("✅ Segmentation completed for:", imageName);
@@ -581,13 +708,38 @@ ApplicationWindow {
 
             Julia.log_message("@info", "Base path for outputs: " + basePath);
 
-            var ts = "?t=" + Date.now();
+            //var ts = "?t=" + Date.now();
 
-            panelSegmented.imageItem.source = "file://" + segPath + ts;
-            panelVertices.imageItem.source = "file://" + basePath + "_graph_vertex.png" + ts;
-            panelGraph.imageItem.source = "file://" + basePath + "_graph_edges.png" + ts;
-            panelOverlay.imageItem.source = "file://" + basePath + "_graph_edges_orig.png" + ts;
-            panelVoronoi.imageItem.source = "file://" + basePath + "_voronoi_orig.png" + ts;
+            //panelSegmented.imageItem.source = "file://" + segPath + ts;
+            //panelVertices.imageItem.source = "file://" + basePath + "_graph_vertex.png" + ts;
+            //panelGraph.imageItem.source = "file://" + basePath + "_graph_edges.png" + ts;
+            //panelOverlay.imageItem.source = "file://" + basePath + "_graph_edges_orig.png" + ts;
+            //panelVoronoi.imageItem.source = "file://" + basePath + "_voronoi_orig.png" + ts;
+
+            setSource(
+                panelSegmented.imageItem,
+                segPath
+            );
+
+            setSource(
+                panelVertices.imageItem,
+                basePath + "_graph_vertex.png"
+            );
+
+            setSource(
+                panelGraph.imageItem,
+                basePath + "_graph_edges.png"
+            );
+
+            setSource(
+                panelOverlay.imageItem,
+                basePath + "_graph_edges_orig.png"
+            );
+
+            setSource(
+                panelVoronoi.imageItem,
+                basePath + "_voronoi_orig.png"
+            );
 
             for (var i = 0; i < projectImages.length; i++) {
                 if (projectImages[i].path === currentImage) {
@@ -641,7 +793,7 @@ ApplicationWindow {
         id: workspaceDialog
         title: "Select Workspace Directory"
         onAccepted: {
-            workspaceDir = selectedFolder.toString().slice(7);
+            workspaceDir = localPathFromUrl(selectedFolder); // selectedFolder.toString().slice(7);
             propmap.workspace_dir = workspaceDir;
             downloadDialog.workspaceDir = workspaceDir;
             settingsDialog.workspaceDir = workspaceDir;
@@ -832,19 +984,39 @@ ApplicationWindow {
                 var resolved = Julia.get_image_for_expanded_view(expandImagePath);
                 console.log("🔍 Julia returned:", resolved);
 
-                var finalSource = resolved;
-                if (!resolved.startsWith("file://")) {
-                    finalSource = Qt.resolvedUrl(resolved).toString();
-                    console.log("🔍 Converted to Qt URL:", finalSource);
-                }
+                // var finalSource = resolved;
+                // if (!resolved.startsWith("file://")) {
+                //     finalSource = Qt.resolvedUrl(resolved).toString();
+                //     console.log("🔍 Converted to Qt URL:", finalSource);
+                // }
 
-                finalSource = finalSource + "?t=" + Date.now();
-                console.log("🔍 Setting source:", finalSource);
+                // finalSource = finalSource + "?t=" + Date.now();
+                // console.log("🔍 Setting source:", finalSource);
 
-                expandedImage.source = "";  // Reset to trigger reload
-                expandedImage.source = finalSource;
+                // expandedImage.source = "";  // Reset to trigger reload
+                // expandedImage.source = finalSource;
 
-                expandImageTitle.text = expandImageTitleBase + " — " + expandImagePath.split('/').pop();
+                // expandImageTitle.text = expandImageTitleBase + " — " + expandImagePath.split('/').pop();
+
+                // we now use fileUrl
+                var finalSource =
+                    fileUrl(resolved);
+
+                console.log(
+                    "🔍 Setting source:",
+                    finalSource
+                );
+
+                expandedImage.source = "";
+                expandedImage.source =
+                    finalSource + "?t=" + Date.now();
+
+                expandImageTitle.text =
+                    expandImageTitleBase +
+                    " — " +
+                    expandImagePath
+                        .split(/[\/\\]/)
+                        .pop();
             } catch (e) {
                 console.error("❌ Error in onOpened:", e);
                 Julia.log_message("@error", "QML onOpened error: " + e);
@@ -861,7 +1033,7 @@ ApplicationWindow {
         id: openProjectDialog
         title: "Open Project Folder"
         onAccepted: {
-            openProject(selectedFolder.toString().slice(7));
+            openProject(localPathFromUrl(selectedFolder)); // selectedFolder.toString().slice(7)
         }
     }
 
@@ -870,7 +1042,7 @@ ApplicationWindow {
         title: "Select Image File"
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.tiff *.tif)"]
         onAccepted: {
-            addImageToProject(selectedFile.toString().slice(7));
+            addImageToProject(localPathFromUrl(selectedFile)); // selectedFile.toString().slice(7)
         }
     }
 
@@ -988,20 +1160,52 @@ ApplicationWindow {
         Julia.log_message("@info", "Image added to project: " + name);
     }
 
+//    function loadCurrentImage() {
+//        if (!currentImage)
+//            return;
+//
+//        var resolved = Julia.resolve_image_for_qml(currentImage);
+//        panelInput.imageItem.source = "file://" + resolved + "?t=" + Date.now();
+//
+//        panelSegmented.imageItem.source = "";
+//        panelVertices.imageItem.source = "";
+//        panelGraph.imageItem.source = "";
+//        panelOverlay.imageItem.source = "";
+//        panelVoronoi.imageItem.source = "";
+//        tessellateButton.enabled = false;
+//    }
+
+    // no more "file://" + resolved and centralized logic with setSource()      
     function loadCurrentImage() {
         if (!currentImage)
             return;
 
-        var resolved = Julia.resolve_image_for_qml(currentImage);
-        panelInput.imageItem.source = "file://" + resolved + "?t=" + Date.now();
+        setSource(
+            panelInput.imageItem,
+            currentImage
+        );
 
         panelSegmented.imageItem.source = "";
         panelVertices.imageItem.source = "";
         panelGraph.imageItem.source = "";
         panelOverlay.imageItem.source = "";
         panelVoronoi.imageItem.source = "";
+
         tessellateButton.enabled = false;
     }
+
+    // function expandImage(path, title) {
+    //     if (!path || path === "") {
+    //         Julia.log_message("@warn", "expandImage: empty path");
+    //         return;
+    //     }
+
+    //     expandImagePath = path;
+    //     expandImageTitleBase = title || "Preview";
+
+    //     Julia.log_message("@info", "Opening expanded view: " + title + " — " + path);
+    //     expandImageDialog.open();
+    // }
 
     function expandImage(path, title) {
         if (!path || path === "") {
@@ -1009,10 +1213,20 @@ ApplicationWindow {
             return;
         }
 
-        expandImagePath = path;
+        // The expanded view must work with a filesystem path,
+        // not with file:// URL QML.
+        expandImagePath = localPathFromUrl(path);
+
         expandImageTitleBase = title || "Preview";
 
-        Julia.log_message("@info", "Opening expanded view: " + title + " — " + path);
+        Julia.log_message(
+            "@info",
+            "Opening expanded view: " +
+            title +
+            " — " +
+            expandImagePath
+        );
+
         expandImageDialog.open();
     }
 }

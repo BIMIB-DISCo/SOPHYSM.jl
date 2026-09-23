@@ -134,8 +134,8 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             min_size = Int(round(get(propmap, "cellpose_min_size", 15.0)))
             
             # Model path: deve essere un file .onnx valido
-            pretrained_raw = strip(String(get(propmap, "cellpose_pretrained_model", "")))
-            model_path = pretrained_raw == "" ? nothing : String(pretrained_raw)
+            pretrained_raw = strip(String(get(propmap, "cellpose_jl_onnx_path", ""))) # cellpose_pretrained_model
+            model_path = pretrained_raw == "" ? nothing : pretrained_raw # String(pretrained_raw) 
 
             CellposeJLSegmentation.start_segmentation_SOPHYSM_cellpose_jl(
                 i_str, o_str;
@@ -220,9 +220,9 @@ function start_async_job(method, model, img, output)
         augment = Bool(get(propmap, "cellpose_augment", false))
 
         cache_models = Bool(get(propmap, "cellpose_cache_models", true))
-        max_cached = Int(round(get(propmap, "cellpose_max_cached_models", 2.0)))
+        max_cached = Int(round(get(propmap, "cellpose_max_cached", 2.0)))
 
-        pretrained = strip(String(get(propmap, "cellpose_pretrained_model", "")))
+        pretrained = strip(String(get(propmap, "cellpose_jl_onnx_path", ""))) #  cellpose_pretrained_model
 
         rc = CellposeSegmentation.start_cellpose_job(
             String(img), String(output);
@@ -419,32 +419,100 @@ function get_base_output_path(img_path, suffix)
 end
 
 """
+    normalize_file_path(path) -> String
+    Normalizes a file path or file URI, handling paths provided by QML/GUI components across different operating systems.
+    - path: String or QStringAllocated (QML)
+    Removes the `file://` URI prefix and any query string. On Windows, also converts `/C:/...` paths to `C:/...` and normalizes path separators.
+    Returns the normalized file path.
+"""
+
+function normalize_file_path(path)
+    path = String(path)
+
+    # Caso: file:///C:/Users/...
+    if startswith(path, "file:///")
+        path = path[9:end]
+
+    # Caso: file://C:/Users/...
+    elseif startswith(path, "file://")
+        path = path[8:end]
+    end
+
+    # Rimuove eventuale query string, ad esempio ?t=123456
+    query_index = findfirst('?', path)
+    if query_index !== nothing
+        path = path[1:query_index-1]
+    end
+
+    if Sys.iswindows()
+        # Caso /C:/Users/... -> C:/Users/...
+        if startswith(path, "/") &&
+           length(path) >= 3 &&
+           path[3] == ':'
+            path = path[2:end]
+        end
+
+        # Uniforma i separatori Windows
+        path = replace(path, '\\' => '/')
+    end
+
+    return path
+end
+
+"""
     copy_image_to_project(image_path, project_dir) -> String
     Copies an image file to the given project directory, handling potential name conflicts by appending a counter.
     - image_path: String or QStringAllocated (QML)
     - project_dir: String or QStringAllocated (QML)
     Returns the path of the copied image in the project directory.
 """
-function copy_image_to_project(image_path, project_dir)
-    img_path = String(image_path)
-    proj_dir = String(project_dir)
+
+# function copy_image_to_project(image_path, project_dir)
+#     img_path = String(image_path)
+#     proj_dir = String(project_dir)
     
+#     filename = basename(img_path)
+#     dest_path = joinpath(proj_dir, filename)
+    
+#     if isfile(dest_path)
+#         base, ext = splitext(filename)
+#         counter = 1
+#         while isfile(dest_path)
+#             new_name = "$(base)_$(counter)$(ext)"
+#             dest_path = joinpath(proj_dir, new_name)
+#             counter += 1
+#         end
+#     end
+    
+#     cp(img_path, dest_path; force=false)
+#     s_log_message("@info", "Image copied to project: $dest_path")
+    
+#     return dest_path
+# end
+
+# version using the normalize_file_path function 
+function copy_image_to_project(image_path, project_dir)
+    img_path = normalize_file_path(image_path)
+    proj_dir = normalize_file_path(project_dir)
+
     filename = basename(img_path)
     dest_path = joinpath(proj_dir, filename)
-    
+
     if isfile(dest_path)
         base, ext = splitext(filename)
         counter = 1
+
         while isfile(dest_path)
             new_name = "$(base)_$(counter)$(ext)"
             dest_path = joinpath(proj_dir, new_name)
             counter += 1
         end
     end
-    
+
     cp(img_path, dest_path; force=false)
+
     s_log_message("@info", "Image copied to project: $dest_path")
-    
+
     return dest_path
 end
 
@@ -456,7 +524,9 @@ end
     If conversion fails, it returns the original path, allowing QML to attempt loading it natively (which may or may not work).
 """
 function resolve_image_for_qml(image_path::AbstractString)
-    path = String(image_path)
+
+    path = normalize_file_path(image_path)
+    
     s_log_message("@debug", "[resolve_image_for_qml] Input: $path")
     
     if endswith(lowercase(path), ".png")
@@ -611,9 +681,17 @@ function start_GUI()
     propmap["cellpose_invert"] = false
     propmap["cellpose_augment"] = false
 
+    # propmap["cellpose_cache_models"] = true
+    # propmap["cellpose_max_cached_models"] = 2.0
+    # propmap["cellpose_pretrained_model"] = ""
+
+    # Cellpose Python
     propmap["cellpose_cache_models"] = true
-    propmap["cellpose_max_cached_models"] = 2.0
-    propmap["cellpose_pretrained_model"] = ""
+    propmap["cellpose_max_cached"] = 2.0
+    propmap["cellpose_pretrained"] = ""
+
+    # Cellpose.jl native
+    propmap["cellpose_jl_onnx_path"] = ""
 
 
     on(workspace_dir) do x
