@@ -8,8 +8,8 @@ using Observables
 using JSON
 using JHistint
 using Base.Threads
-using FileIO 
-using ImageIO 
+using FileIO
+using ImageIO
 using Colors
 using PNGFiles
 using SHA
@@ -124,15 +124,14 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose (direct) Start...")
             CellposeSegmentation.start_segmentation_SOPHYSM_cellpose(i_str, o_str)
 
-                elseif m_str == "cellpose_jl"
+        elseif m_str == "cellpose_jl"
             s_log_message("@info", "[THREAD-$(Threads.threadid())] Cellpose.jl (Native) Start...")
-            
+
             minT = Float32(get(propmap, "min_threshold", 50.0))
             maxT = Float32(get(propmap, "max_threshold", 1000.0))
             diameter = get(propmap, "cellpose_diameter", 0.0)
             diameter_val = diameter <= 0 ? nothing : Float64(diameter)
-            
-            # Parametri UI mantenuti per compatibilità, ma ignorati da Cellpose.jl
+
             flow_th = Float64(get(propmap, "cellpose_flow_threshold", 0.4))
             cellprob = Float64(get(propmap, "cellpose_cellprob_threshold", 0.0))
             invert = Bool(get(propmap, "cellpose_invert", false))
@@ -143,12 +142,14 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             pretrained_raw = strip(String(get(propmap, "cellpose_jl_onnx_path", ""))) # cellpose_pretrained_model
             model_path = pretrained_raw == "" ? nothing : pretrained_raw # String(pretrained_raw) 
 
+            pretrained_raw = strip(String(get(propmap, "cellpose_jl_onnx_path", "")))
+            model_path = pretrained_raw == "" ? nothing : String(pretrained_raw)
+            println("Path ONNX ricevuto da QML: ", String(model_arg))
             CellposeJLSegmentation.start_segmentation_SOPHYSM_cellpose_jl(
                 i_str, o_str;
                 min_threshold=minT, max_threshold=maxT,
                 diameter=diameter_val,
                 pretrained_model=model_path,
-                # Parametri mantenuti per compatibilità signature
                 flow_threshold=flow_th,
                 cellprob_threshold=cellprob,
                 invert=invert,
@@ -401,7 +402,7 @@ end
     Supported image formats: PNG, JPG, JPEG, TIFF, BMP (case-insensitive)
 """
 function scan_project_images(proj_path)
-    path_str = String(proj_path) 
+    path_str = String(proj_path)
     images = String[]
     for f in readdir(path_str)
         if endswith(lowercase(f), r"\.(png|jpg|jpeg|tif|tiff|bmp)$")
@@ -431,7 +432,6 @@ end
     Removes the `file://` URI prefix and any query string. On Windows, also converts `/C:/...` paths to `C:/...` and normalizes path separators.
     Returns the normalized file path.
 """
-
 function normalize_file_path(path)
     path = String(path)
 
@@ -465,6 +465,9 @@ function normalize_file_path(path)
     return path
 end
 
+
+# version using the normalize_file_path function 
+
 """
     copy_image_to_project(image_path, project_dir) -> String
     Copies an image file to the given project directory, handling potential name conflicts by appending a counter.
@@ -472,31 +475,6 @@ end
     - project_dir: String or QStringAllocated (QML)
     Returns the path of the copied image in the project directory.
 """
-
-# function copy_image_to_project(image_path, project_dir)
-#     img_path = String(image_path)
-#     proj_dir = String(project_dir)
-    
-#     filename = basename(img_path)
-#     dest_path = joinpath(proj_dir, filename)
-    
-#     if isfile(dest_path)
-#         base, ext = splitext(filename)
-#         counter = 1
-#         while isfile(dest_path)
-#             new_name = "$(base)_$(counter)$(ext)"
-#             dest_path = joinpath(proj_dir, new_name)
-#             counter += 1
-#         end
-#     end
-    
-#     cp(img_path, dest_path; force=false)
-#     s_log_message("@info", "Image copied to project: $dest_path")
-    
-#     return dest_path
-# end
-
-# version using the normalize_file_path function 
 function copy_image_to_project(image_path, project_dir)
     img_path = normalize_file_path(image_path)
     proj_dir = normalize_file_path(project_dir)
@@ -534,45 +512,45 @@ function resolve_image_for_qml(image_path::AbstractString)
     path = normalize_file_path(image_path)
     
     s_log_message("@debug", "[resolve_image_for_qml] Input: $path")
-    
+
     if endswith(lowercase(path), ".png")
         s_log_message("@debug", "[resolve_image_for_qml] Already PNG, returning as-is")
         return path
     end
-    
+
     if !isfile(path)
         s_log_message("@error", "[resolve_image_for_qml] File not found: $path")
         return path     # fallback, QML will handle error display
     end
-    
+
     cache_dir = joinpath(dirname(path), ".sophysm_cache")
     mkpath(cache_dir)
-    
+
     path_hash = bytes2hex(sha256(path))[1:16]
     source_mtime = mtime(path)
     mtime_int = floor(Int, source_mtime)
     cache_path = joinpath(cache_dir, "$(path_hash)_$(mtime_int).png")
-    
+
     s_log_message("@debug", "[resolve_image_for_qml] Cache path: $cache_path")
-    
+
     if isfile(cache_path) && mtime(cache_path) >= source_mtime
         s_log_message("@debug", "[resolve_image_for_qml] Using cached: $cache_path")
         return cache_path
     end
-    
+
     try
         s_log_message("@info", "[resolve_image_for_qml] Converting: $path")
-        
+
         img = load(path)
         s_log_message("@debug", "[resolve_image_for_qml] Loaded, size: $(size(img)), eltype: $(eltype(img))")
-        
+
         # Conversion to RGBA{N0f8} for QML compatibility
         img_rgba = convert.(RGBA{N0f8}, img)
         s_log_message("@debug", "[resolve_image_for_qml] Converted to RGBA{N0f8}")
-        
+
         # Saving PNG
         save(cache_path, img_rgba)
-        
+
         if isfile(cache_path) && filesize(cache_path) > 0
             s_log_message("@info", "[resolve_image_for_qml] ✅ Saved: $cache_path ($(filesize(cache_path)) bytes)")
             return cache_path
@@ -580,7 +558,7 @@ function resolve_image_for_qml(image_path::AbstractString)
             s_log_message("@error", "[resolve_image_for_qml] ❌ Failed to save PNG: $cache_path")
             return path  # Fallback
         end
-        
+
     catch e
         s_log_message("@error", "[resolve_image_for_qml] ❌ Conversion error: $e")
         showerror(stdout, e, catch_backtrace())
@@ -614,17 +592,17 @@ end
 """
 function check_existing_outputs(img_path::AbstractString)
     base = splitext(String(img_path))[1]
-    outputs = Dict{String, String}()
-    
+    outputs = Dict{String,String}()
+
     # Dict of expected suffixes and their corresponding output types
     suffixes = Dict(
-        "segmented"   => "_seg.png",
-        "graphVertex" => "_graph_vertex.png", 
-        "graphEdges"  => "_graph_edges.png",
-        "overlay"     => "_graph_edges_orig.png",
-        "voronoi"     => "_voronoi_orig.png"
+        "segmented" => "_seg.png",
+        "graphVertex" => "_graph_vertex.png",
+        "graphEdges" => "_graph_edges.png",
+        "overlay" => "_graph_edges_orig.png",
+        "voronoi" => "_voronoi_orig.png"
     )
-    
+
     for (key, suffix) in suffixes
         candidate = base * suffix
         if isfile(candidate)
@@ -632,7 +610,7 @@ function check_existing_outputs(img_path::AbstractString)
             s_log_message("@debug", "Found existing output: $candidate")
         end
     end
-    
+
     return outputs
 end
 
@@ -704,7 +682,7 @@ function start_GUI()
         Workspace.set_workspace_dir(x)
         s_log_message("@info", "WS Changed to $x")
     end
-    
+
     ENV["QT_QUICK_CONTROLS_STYLE"] = "Basic"
     loadqml(qmlfile, propmap=propmap)
 
