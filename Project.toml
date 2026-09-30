@@ -69,3 +69,7 @@ PNGFiles = "0.3, 0.4"
 Plots = "1.40, 1.41"
 SHA = "0.7.0"
 SimpleWeightedGraphs = "1.5"
+
+[apps]
+sophysm = {julia_flags = ["--threads=auto"]}
+

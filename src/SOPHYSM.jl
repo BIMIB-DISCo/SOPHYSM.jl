@@ -26,6 +26,12 @@ include("imaging/CellposeJL/CellposeJLSegmentation.jl")
 ### Exported functions
 export start_GUI, run_segmentation_pure, start_tessellation, start_async_job, check_job_status
 
+# For package app
+function (@main)(args)
+    start_GUI()
+end
+
+
 ### Constants
 const workspace_dir = Observable(Workspace.get_workspace_dir())
 
