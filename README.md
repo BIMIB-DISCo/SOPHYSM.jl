@@ -101,6 +101,8 @@ Once segmentation is complete, the simulation can be initiated to study the spat
 
 ## Installation & Run
 
+### Standard Julia installation
+
 - Step 1 - Clone the `SOPHYSM.jl` and `JHistint.jl` repository:
 
 - Step 2 - go to the `SOPHYSM.jl/` folder where you cloned the repository:
@@ -123,4 +125,79 @@ julia > using SOPHYSM
 
 ```julia
 julia > start_GUI()
+```
+
+### Running SOPHYSM as a Julia App
+
+SOPHYSM can also be installed as a Julia application and launched directly from the command line. This allows you to run the application without explicitly activating the environment, instantiating the dependencies, or importing the package with `using SOPHYSM`.
+
+#### Initial setup
+
+First, open Julia and activate the `SOPHYSM.jl` environment:
+
+```julia
+(@v1.xx) pkg> activate .
+```
+
+Then install the application using `app develop`. This creates the `sophysm` application and links it to the local copy of `SOPHYSM.jl`, so that the application uses the version currently under development:
+
+```julia
+(SOPHYSM) pkg> app develop C:\PATH\TO\SOPHYSM.jl
+```
+
+This needs to be done only when setting up the application or when changing the local development setup.
+
+#### Add the Julia application directory to PATH
+
+In order to run `sophysm` from any directory, add Julia's application directory to the user's `PATH`.
+
+From PowerShell on Windows:
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+    "Path",
+    [Environment]::GetEnvironmentVariable("Path", "User") + ";C:\Users\[your_user]\.julia\bin",
+    "User"
+)
+```
+
+Alternatively, `C:\Users\[your_user]\.julia\bin` can be added manually to the **User environment variables** in Windows.
+
+After this configuration, the application can be launched from any directory simply with:
+
+```powershell
+sophysm
+```
+
+No `activate`, `instantiate`, or `using SOPHYSM` commands are required when launching the application this way.
+
+#### Updating the application after code changes
+
+If the SOPHYSM source code is modified without changing its `Project.toml`, the `sophysm` application can continue to be launched normally:
+
+```powershell
+sophysm
+```
+
+If the dependencies change, however, the SOPHYSM environment needs to be updated before launching the application again.
+
+For example, if the `Project.toml` of a dependency such as `J-Space.jl` is modified by adding a new dependency, the SOPHYSM environment must be updated/resolved accordingly. From the `SOPHYSM.jl` directory, activate the environment and run:
+
+```julia
+(@v1.xx) pkg> activate .
+(SOPHYSM) pkg> instantiate
+```
+
+Depending on the changes, it may also be necessary to run:
+
+```julia
+(SOPHYSM) pkg> update
+```
+
+or perform the corresponding `add`/`dev` operation if a new dependency has been introduced.
+
+After the environment has been updated, the application can again be launched directly with:
+
+```powershell
+sophysm
 ```
