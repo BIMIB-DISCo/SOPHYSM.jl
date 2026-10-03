@@ -460,7 +460,7 @@ ApplicationWindow {
                             Layout.fillWidth: true
                             height: 36
                             font.pixelSize: 11
-                            model: ["JNet", "Graph", "Cellpose Wrapper", "Cellpose.jl"]
+                            model: ["JNet", "Graph", "Cellpose", "Cellpose.jl"]
 
                             contentItem: Text {
                                 text: methodComboBox.displayText
