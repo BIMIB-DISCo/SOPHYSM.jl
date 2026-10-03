@@ -87,18 +87,13 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
 
     try
         m_str = String(method_arg)
-        mod_str = String(model_arg)
-        i_str = String(img_arg)
-        o_str = String(output_arg)
+        mod_str = normalize_file_path(model_arg)
+        i_str = normalize_file_path(img_arg)
+        o_str = normalize_file_path(output_arg)
 
         # Skip if dummy input (WARMUP)
         if i_str == "dummy_in"
             return ""
-        end
-
-        if Sys.iswindows() && startswith(i_str, "/")
-            i_str = i_str[2:end]
-            o_str = o_str[2:end]
         end
 
         if m_str == "jnet"
@@ -137,14 +132,17 @@ function run_segmentation_pure(method_arg, model_arg, img_arg, output_arg)
             invert = Bool(get(propmap, "cellpose_invert", false))
             augment = Bool(get(propmap, "cellpose_augment", false))
             min_size = Int(round(get(propmap, "cellpose_min_size", 15.0)))
-            
-            # Model path: deve essere un file .onnx valido
-            pretrained_raw = strip(String(get(propmap, "cellpose_jl_onnx_path", ""))) # cellpose_pretrained_model
-            model_path = pretrained_raw == "" ? nothing : pretrained_raw # String(pretrained_raw) 
 
+            # Model path: deve essere un file .onnx valido
             pretrained_raw = strip(String(get(propmap, "cellpose_jl_onnx_path", "")))
-            model_path = pretrained_raw == "" ? nothing : String(pretrained_raw)
-            println("Path ONNX ricevuto da QML: ", String(model_arg))
+            if pretrained_raw != ""
+                pretrained_raw = normalize_file_path(pretrained_raw)
+            end
+
+            model_path = pretrained_raw == "" ? nothing : pretrained_raw
+
+            println("Path ONNX normalizzato inviato: ", model_path)
+
             CellposeJLSegmentation.start_segmentation_SOPHYSM_cellpose_jl(
                 i_str, o_str;
                 min_threshold=minT, max_threshold=maxT,
@@ -229,7 +227,11 @@ function start_async_job(method, model, img, output)
         cache_models = Bool(get(propmap, "cellpose_cache_models", true))
         max_cached = Int(round(get(propmap, "cellpose_max_cached", 2.0)))
 
-        pretrained = strip(String(get(propmap, "cellpose_jl_onnx_path", ""))) #  cellpose_pretrained_model
+        # Recupera e normalizza
+        pretrained = strip(String(get(propmap, "cellpose_pretrained", "")))
+        if pretrained != ""
+            pretrained = normalize_file_path(pretrained)
+        end
 
         rc = CellposeSegmentation.start_cellpose_job(
             String(img), String(output);
@@ -388,7 +390,8 @@ end
 """
 function create_project_dir(name)
     name_str = String(name)
-    wd = String(workspace_dir[])
+    # Assicura che la workspace_dir non contenga file://
+    wd = normalize_file_path(workspace_dir[])
     path = joinpath(wd, name_str)
     mkpath(path)
     s_log_message("@info", "Project created: $path")
@@ -402,8 +405,14 @@ end
     Supported image formats: PNG, JPG, JPEG, TIFF, BMP (case-insensitive)
 """
 function scan_project_images(proj_path)
-    path_str = String(proj_path)
+    path_str = normalize_file_path(proj_path)
     images = String[]
+
+    # Previene ENOENT se la cartella è inesistente
+    if !isdir(path_str)
+        return images
+    end
+
     for f in readdir(path_str)
         if endswith(lowercase(f), r"\.(png|jpg|jpeg|tif|tiff|bmp)$")
             push!(images, joinpath(path_str, f))
@@ -419,7 +428,7 @@ end
     - suffix: String or QStringAllocated (QML), e.g. "_seg.png"
 """
 function get_base_output_path(img_path, suffix)
-    img_str = String(img_path)
+    img_str = normalize_file_path(img_path)
     suffix_str = String(suffix)
     base = splitext(img_str)[1]
     return base * suffix_str
@@ -435,31 +444,27 @@ end
 function normalize_file_path(path)
     path = String(path)
 
-    # Caso: file:///C:/Users/...
     if startswith(path, "file:///")
         path = path[9:end]
-
-    # Caso: file://C:/Users/...
     elseif startswith(path, "file://")
         path = path[8:end]
     end
 
-    # Rimuove eventuale query string, ad esempio ?t=123456
     query_index = findfirst('?', path)
     if query_index !== nothing
-        path = path[1:query_index-1]
+        path = path[1:(query_index-1)]
     end
 
     if Sys.iswindows()
-        # Caso /C:/Users/... -> C:/Users/...
-        if startswith(path, "/") &&
-           length(path) >= 3 &&
-           path[3] == ':'
+        if startswith(path, "/") && length(path) >= 3 && path[3] == ':'
             path = path[2:end]
         end
-
-        # Uniforma i separatori Windows
         path = replace(path, '\\' => '/')
+    else
+        # Fix macOS/Linux: ripristina lo slash root assoluto
+        if !startswith(path, "/") && !isempty(path)
+            path = "/" * path
+        end
     end
 
     return path
@@ -478,6 +483,8 @@ end
 function copy_image_to_project(image_path, project_dir)
     img_path = normalize_file_path(image_path)
     proj_dir = normalize_file_path(project_dir)
+
+    mkpath(proj_dir)
 
     filename = basename(img_path)
     dest_path = joinpath(proj_dir, filename)
@@ -510,7 +517,7 @@ end
 function resolve_image_for_qml(image_path::AbstractString)
 
     path = normalize_file_path(image_path)
-    
+
     s_log_message("@debug", "[resolve_image_for_qml] Input: $path")
 
     if endswith(lowercase(path), ".png")
@@ -591,10 +598,9 @@ end
     This allows the UI to quickly determine which outputs are already available for a given input image.
 """
 function check_existing_outputs(img_path::AbstractString)
-    base = splitext(String(img_path))[1]
+    base = splitext(normalize_file_path(img_path))[1]
     outputs = Dict{String,String}()
 
-    # Dict of expected suffixes and their corresponding output types
     suffixes = Dict(
         "segmented" => "_seg.png",
         "graphVertex" => "_graph_vertex.png",
@@ -698,12 +704,9 @@ end
 """
 function start_tessellation(img_path::AbstractString, output_path::AbstractString)
     try
-        img_path_str = String(img_path)
-        output_path_str = String(output_path)
-        if Sys.iswindows() && startswith(img_path_str, "/")
-            img_path_str = img_path_str[2:end]
-            output_path_str = output_path_str[2:end]
-        end
+        img_path_str = normalize_file_path(img_path)
+        output_path_str = normalize_file_path(output_path)
+
 
         s_log_message("@info", "Starting tessellation...")
 
