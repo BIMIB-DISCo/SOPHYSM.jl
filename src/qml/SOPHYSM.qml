@@ -47,9 +47,7 @@ ApplicationWindow {
         if (!path || path === "")
             return;
 
-        var resolved = Julia.resolve_image_for_qml(
-            localPathFromUrl(path)
-        );
+        var resolved = Julia.resolve_image_for_qml(localPathFromUrl(path));
 
         var url = fileUrl(resolved);
 
@@ -95,13 +93,13 @@ ApplicationWindow {
         // file:///C:/Users/...
         if (s.startsWith("file:///")) {
             s = s.substring(8);
-        }
+        } else
         // file://C:/Users/...
-        else if (s.startsWith("file://")) {
+        if (s.startsWith("file://")) {
             s = s.substring(7);
         }
 
-        // Decode %20, %5C, ecc. 
+        // Decode %20, %5C, ecc.
         try {
             s = decodeURIComponent(s);
         } catch (e) {
@@ -182,8 +180,6 @@ ApplicationWindow {
         // Relative path
         return Qt.resolvedUrl(s).toString();
     }
-
-
 
     function onSegmentationCompleted(imageName, outputs) {
         console.log("✅ Segmentation completed for:", imageName);
@@ -464,7 +460,62 @@ ApplicationWindow {
                             Layout.fillWidth: true
                             height: 36
                             font.pixelSize: 11
-                            model: ["JNet", "Graph", "Cellpose", "Cellpose.jl"]
+                            model: ["JNet", "Graph", "Cellpose Wrapper", "Cellpose.jl"]
+
+                            contentItem: Text {
+                                text: methodComboBox.displayText
+                                font: methodComboBox.font
+                                color: isDarkTheme ? "#ffffff" : "#000000"
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                                leftPadding: 10
+                            }
+
+                            background: Rectangle {
+                                implicitHeight: 36
+                                color: isDarkTheme ? "#333333" : "#ffffff"
+                                border.color: isDarkTheme ? "#555555" : "#cccccc"
+                                border.width: 1
+                                radius: 4
+                            }
+
+                            popup: Popup {
+                                y: methodComboBox.height - 1
+                                width: methodComboBox.width
+                                implicitHeight: contentItem.implicitHeight
+                                padding: 1
+
+                                contentItem: ListView {
+                                    clip: true
+                                    implicitHeight: contentHeight
+                                    model: methodComboBox.popup.visible ? methodComboBox.delegateModel : null
+                                    currentIndex: methodComboBox.highlightedIndex
+                                }
+
+                                background: Rectangle {
+                                    color: isDarkTheme ? "#1e1e1e" : "#ffffff"
+                                    border.color: isDarkTheme ? "#444444" : "#cccccc"
+                                    radius: 4
+                                }
+                            }
+
+                            delegate: ItemDelegate {
+                                width: methodComboBox.width
+
+                                contentItem: Text {
+                                    text: modelData
+                                    color: highlighted ? (isDarkTheme ? "#ffffff" : "#000000") : (isDarkTheme ? "#cccccc" : "#333333")
+                                    font: methodComboBox.font
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                background: Rectangle {
+                                    color: highlighted ? (isDarkTheme ? "#444444" : "#eeeeee") : "transparent"
+                                }
+
+                                highlighted: methodComboBox.highlightedIndex === index
+                            }
 
                             Component.onCompleted: {
                                 var methods = ["jnet", "graph", "cellpose", "cellpose_jl"];
@@ -716,30 +767,15 @@ ApplicationWindow {
             //panelOverlay.imageItem.source = "file://" + basePath + "_graph_edges_orig.png" + ts;
             //panelVoronoi.imageItem.source = "file://" + basePath + "_voronoi_orig.png" + ts;
 
-            setSource(
-                panelSegmented.imageItem,
-                segPath
-            );
+            setSource(panelSegmented.imageItem, segPath);
 
-            setSource(
-                panelVertices.imageItem,
-                basePath + "_graph_vertex.png"
-            );
+            setSource(panelVertices.imageItem, basePath + "_graph_vertex.png");
 
-            setSource(
-                panelGraph.imageItem,
-                basePath + "_graph_edges.png"
-            );
+            setSource(panelGraph.imageItem, basePath + "_graph_edges.png");
 
-            setSource(
-                panelOverlay.imageItem,
-                basePath + "_graph_edges_orig.png"
-            );
+            setSource(panelOverlay.imageItem, basePath + "_graph_edges_orig.png");
 
-            setSource(
-                panelVoronoi.imageItem,
-                basePath + "_voronoi_orig.png"
-            );
+            setSource(panelVoronoi.imageItem, basePath + "_voronoi_orig.png");
 
             for (var i = 0; i < projectImages.length; i++) {
                 if (projectImages[i].path === currentImage) {
@@ -835,6 +871,9 @@ ApplicationWindow {
                 focus: true
                 selectByMouse: true
                 cursorVisible: true
+
+                color: isDarkTheme ? "#fff" : "#333"
+                placeholderTextColor: isDarkTheme ? "#888888" : "#aaaaaa"
 
                 background: Rectangle {
                     color: isDarkTheme ? "#333" : "#fff"
@@ -999,24 +1038,14 @@ ApplicationWindow {
                 // expandImageTitle.text = expandImageTitleBase + " — " + expandImagePath.split('/').pop();
 
                 // we now use fileUrl
-                var finalSource =
-                    fileUrl(resolved);
+                var finalSource = fileUrl(resolved);
 
-                console.log(
-                    "🔍 Setting source:",
-                    finalSource
-                );
+                console.log("🔍 Setting source:", finalSource);
 
                 expandedImage.source = "";
-                expandedImage.source =
-                    finalSource + "?t=" + Date.now();
+                expandedImage.source = finalSource + "?t=" + Date.now();
 
-                expandImageTitle.text =
-                    expandImageTitleBase +
-                    " — " +
-                    expandImagePath
-                        .split(/[\/\\]/)
-                        .pop();
+                expandImageTitle.text = expandImageTitleBase + " — " + expandImagePath.split(/[\/\\]/).pop();
             } catch (e) {
                 console.error("❌ Error in onOpened:", e);
                 Julia.log_message("@error", "QML onOpened error: " + e);
@@ -1160,30 +1189,27 @@ ApplicationWindow {
         Julia.log_message("@info", "Image added to project: " + name);
     }
 
-//    function loadCurrentImage() {
-//        if (!currentImage)
-//            return;
-//
-//        var resolved = Julia.resolve_image_for_qml(currentImage);
-//        panelInput.imageItem.source = "file://" + resolved + "?t=" + Date.now();
-//
-//        panelSegmented.imageItem.source = "";
-//        panelVertices.imageItem.source = "";
-//        panelGraph.imageItem.source = "";
-//        panelOverlay.imageItem.source = "";
-//        panelVoronoi.imageItem.source = "";
-//        tessellateButton.enabled = false;
-//    }
+    //    function loadCurrentImage() {
+    //        if (!currentImage)
+    //            return;
+    //
+    //        var resolved = Julia.resolve_image_for_qml(currentImage);
+    //        panelInput.imageItem.source = "file://" + resolved + "?t=" + Date.now();
+    //
+    //        panelSegmented.imageItem.source = "";
+    //        panelVertices.imageItem.source = "";
+    //        panelGraph.imageItem.source = "";
+    //        panelOverlay.imageItem.source = "";
+    //        panelVoronoi.imageItem.source = "";
+    //        tessellateButton.enabled = false;
+    //    }
 
-    // no more "file://" + resolved and centralized logic with setSource()      
+    // no more "file://" + resolved and centralized logic with setSource()
     function loadCurrentImage() {
         if (!currentImage)
             return;
 
-        setSource(
-            panelInput.imageItem,
-            currentImage
-        );
+        setSource(panelInput.imageItem, currentImage);
 
         panelSegmented.imageItem.source = "";
         panelVertices.imageItem.source = "";
@@ -1219,13 +1245,7 @@ ApplicationWindow {
 
         expandImageTitleBase = title || "Preview";
 
-        Julia.log_message(
-            "@info",
-            "Opening expanded view: " +
-            title +
-            " — " +
-            expandImagePath
-        );
+        Julia.log_message("@info", "Opening expanded view: " + title + " — " + expandImagePath);
 
         expandImageDialog.open();
     }
